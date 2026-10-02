@@ -12,6 +12,8 @@ dependencies = [
     "pydantic>=2.8,<3",
     "SQLAlchemy>=2.0,<2.1",
     "PyYAML>=6",
+    "defusedxml>=0.7",
+    "pypdf>=5",
 ]
 
 [project.optional-dependencies]
@@ -33,3 +35,4 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 "spikes/*" = ["E501", "UP031"]   # lab scripts, not product code
+"tests/*" = ["E501"]              # long data literals (HTML, feeds, certificates)

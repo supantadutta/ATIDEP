@@ -74,6 +74,8 @@ class IntelligenceItem(Base):
     raw_sha256: Mapped[str] = mapped_column(String(64), unique=True)
     sanitised_sha256: Mapped[str] = mapped_column(String(64))
     sanitisation_stripped: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    url: Mapped[str | None] = mapped_column(String)
+    fingerprint: Mapped[list[Any]] = mapped_column(JSON, default=list)  # bottom-k shingle hashes
     cluster_id: Mapped[str | None] = mapped_column(String)
     tlp: Mapped[str] = mapped_column(String, default="CLEAR")
     credibility_rating: Mapped[int] = mapped_column(Integer, default=3)
