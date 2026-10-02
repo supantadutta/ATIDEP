@@ -49,6 +49,17 @@ class Outcome(StrEnum):
     INCOMPLETE = "incomplete"
 
 
+class Defect(Strict):
+    """One structured defect handed back to the Rule Agent in the repair loop. It names the
+    gate, a stable code, the location in the rule and a short message; it never carries
+    report text."""
+
+    gate: GateId
+    code: str = Field(min_length=1)
+    path: str = ""
+    message: str = Field(min_length=1, max_length=400)
+
+
 class GateResult(Strict):
     gate: GateId
     status: GateStatus

@@ -1,4 +1,4 @@
-"""SQLite schema: the 15 tables of blueprint §39.
+"""SQLite schema: the 16 tables of blueprint §39.
 
 CHECK constraints are generated from the same enums the Pydantic schemas use, so the two
 cannot drift apart.
@@ -175,6 +175,7 @@ class RuleVersion(Base):
     content: Mapped[str] = mapped_column(Text)
     content_sha256: Mapped[str] = mapped_column(String(64))
     assumptions: Mapped[list[Any]] = mapped_column(JSON, default=list)
+    use_case: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     quality_score: Mapped[int | None] = mapped_column(Integer)  # ranking only
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     __table_args__ = (
@@ -249,6 +250,17 @@ class DetectionResult(Base):
     __table_args__ = (CheckConstraint(
         _in("disposition", ["true_positive", "false_positive", "benign_true_positive",
                             "unknown"])),)
+
+
+class RuleIdAllocation(Base):
+    """Stable mapping from an owner key (Sigma id + sibling index, or IOC bundle + template)
+    to a Wazuh rule ID. IDs are never reused, even after a rule is retired."""
+
+    __tablename__ = "rule_id_allocations"
+    wazuh_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    owner_key: Mapped[str] = mapped_column(String, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    __table_args__ = (CheckConstraint("wazuh_id >= 100000 AND wazuh_id < 120000"),)
 
 
 class ModelRun(Base):

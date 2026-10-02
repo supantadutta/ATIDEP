@@ -1,0 +1,13 @@
+{
+  "note": "Services where anyone can publish content. A bare domain mention is a reference, a deep URL on them can be attacker content and is kept as a URL indicator, but a detection list never blocks the host itself, because that would match every legitimate use of the service.",
+  "domains": [
+    "twitter.com", "x.com", "youtube.com", "facebook.com", "reddit.com", "linkedin.com",
+    "medium.com", "github.com", "githubusercontent.com", "gitlab.com", "bitbucket.org",
+    "discord.com", "discordapp.com", "discordapp.net", "pastebin.com", "paste.ee", "ghostbin.com",
+    "dropbox.com", "dropboxusercontent.com", "drive.google.com", "docs.google.com",
+    "storage.googleapis.com", "onedrive.live.com", "1drv.ms", "sharepoint.com", "mega.nz",
+    "mediafire.com", "transfer.sh", "wetransfer.com", "t.me", "telegram.org", "telegra.ph",
+    "bit.ly", "tinyurl.com", "cutt.ly", "is.gd", "amazonaws.com", "blob.core.windows.net",
+    "cloudfront.net", "workers.dev", "pages.dev", "herokuapp.com", "firebaseapp.com"
+  ]
+}

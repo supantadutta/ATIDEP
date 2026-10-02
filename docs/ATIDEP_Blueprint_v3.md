@@ -40,7 +40,7 @@ v3 keeps the v2 architecture and governance ideas (evidence grounding, determini
 | 17 | H6 compared against a commercial baseline that was never measured, and against a manual workflow with no software cost. | H6 is dropped. A **break-even analysis** replaces ROI %. | 22 |
 | 18 | LLM variance and training-data contamination ignored. | Pinned model, ≥3 runs per item, post-cutoff reports, SigmaHQ similarity check. | 27.9 |
 | 19 | Ground truth labelled by the system's builder alone. | Second labeler on a sample; Cohen's κ; labels frozen and hashed before the main run. | 27.3 |
-| 20 | Scope: 10 agents, 7 dashboard pages, 23 tables, 21 endpoints in 16 weeks, experiments in week 15. | Cut list, 5 components, 3 UI pages, 15 tables, freeze at end of week 12, experiments in weeks 13–15. | 10.3, 26 |
+| 20 | Scope: 10 agents, 7 dashboard pages, 23 tables, 21 endpoints in 16 weeks, experiments in week 15. | Cut list, 5 components, 3 UI pages, 16 tables, freeze at end of week 12, experiments in weeks 13–15. | 10.3, 26 |
 | 21 | Security gaps. | SSRF guard, sandboxed document parsing, IOC refanging, benign-domain allowlist, verbatim-quote check, tool-less extraction model. | 19 |
 | 22 | "Environmental relevance", "potential impact" and source reliability were undefined. | Defined, with a synthetic organisation profile. | 17.2.5 |
 | 23 | Editorial: subsection numbers did not match sections; "a open-source" typo; success statement near-unfalsifiable; cost positioned as both secondary and central. | Renumbered; fixed; success split into engineering criteria and reported-either-way research outcomes; one cost lane. | throughout |
@@ -700,7 +700,7 @@ Priority orders the review queue. It does not by itself reject an item; rejectio
 
 #### 17.3.1 Opportunity Agent (LLM) with deterministic override
 
-**Purpose:** decide whether the intelligence supports a defensible detection.
+**Purpose:** decide whether the intelligence supports a defensible detection. A report usually contains both indicators and behaviours, so the agent returns **up to three opportunities per item, at most one per decision** (for example an IOC opportunity and a behavioural opportunity); each is stored as its own `detection_opportunities` row and overridden independently. `detectable` is derived from the decision and is not a field the model can set.
 
 ```json
 {
@@ -725,9 +725,10 @@ Priority orders the review queue. It does not by itself reject an item; rejectio
 **Deterministic override (the LLM cannot bypass it):**
 
 - If the required log source or event is not *available* in `telemetry_catalog.yaml`, the decision is forced to (5) additional telemetry required.
-- If the item's evidence support rate is below `policies.rule_generation.minimum_evidence_support_rate`, or its computed Intelligence Confidence is below `minimum_intelligence_confidence`, the decision is forced to (6) insufficient evidence.
+- If the item's evidence support is below `policies.rule_generation.minimum_evidence_support_pct`, or its computed Intelligence Confidence is below `minimum_intelligence_confidence`, a detectable decision is forced to (6) insufficient evidence. The override can only restrict a proposal; it never promotes one.
 - Indicators past `expires_at` force decision (8).
-- `evidence_ids` must resolve to verified claims.
+- `evidence_ids` must resolve to verified claims; unresolved IDs are dropped and a detectable decision left with none becomes (6). For an IOC opportunity the evidence and the log source are derived from the live indicators themselves, not from the model, and an IOC opportunity needs at least one indicator whose type maps to an *available* log source.
+- Required fields outside the log source's catalog field list and ATT&CK IDs absent from the pinned release are removed.
 
 #### 17.3.2 Rule Agent: behaviours (LLM)
 
@@ -736,14 +737,14 @@ Priority orders the review queue. It does not by itself reject an item; rejectio
 **Constrained generation**
 
 - The prompt contains the Wazuh-compatible Sigma subset specification (§20.2), the logsource's *allowed field list* from the telemetry catalog, and the verified evidence quotes.
-- Output must be a Sigma YAML plus use-case fields, validated against schema before anything else happens.
-- All output starts as `status: experimental`.
+- Output must validate against a strict schema (unknown keys are errors) before anything else happens. The model supplies the discriminating parts (`title`, `description`, `tags`, `logsource`, `detection`, `falsepositives`, `level`, `assumptions`) and the use-case text; **the system adds `id` (a stable UUIDv5 of the item and opportunity), `status: experimental`, `author`, `date` and `references`**, so a model cannot choose its own identity or status and every draft starts experimental. The baseline condition B has the model write the full rule so that gates G1–G2 can still fail.
+- The facts block lists only the verified quotations of the opportunity's evidence, the allowed field list and the ATT&CK IDs, inside a delimiter whose marker depends on the content.
 
 **Required use-case fields:** title, objective, threat scenario, ATT&CK mapping, required telemetry and fields, detection logic, expected result, known false positives, triage guidance, test requirements, references, confidence (computed), rule owner, review date.
 
 **Restrictions:** cannot create conditions unsupported by verified evidence or a declared engineering assumption; cannot invent field names (checked by G5); cannot deploy; cannot output commands.
 
-**Engineering assumptions.** A condition not directly stated in the report (for example "exclude parent process `ccmexec.exe`") must be declared in an `assumptions` list with a justification. Assumptions are shown to the human reviewer and counted in the quality ranking, never silently accepted.
+**Engineering assumptions.** A condition not directly stated in the report (for example "exclude parent process `ccmexec.exe`") must be declared in an `assumptions` list with a justification. Each assumption lists the detection values it covers (`covers`), which is how G4 maps a condition value to it. Assumptions are shown to the human reviewer and counted in the quality ranking, never silently accepted.
 
 #### 17.3.3 Bounded repair loop
 
@@ -759,7 +760,7 @@ if still defective: stop; route to human as "repair exhausted" or reject
 
 - Maximum **2** repair attempts (configured in `policies.yaml`).
 - The repair prompt never re-includes the raw report text, only verified quotes, which limits the injection surface.
-- Every attempt is stored as a `rule_version` with `origin = llm_initial | llm_repair_1 | llm_repair_2 | human_edit`.
+- Every attempt is stored as a `rule_version` with `origin = llm_initial | llm_repair_1 | llm_repair_2 | human_edit`. A rule whose repairs are exhausted stays in `draft` (the terminal states Rejected and Blocked would stop a human from fixing it) with an audit event `rule.exhausted`; only a G6 failure sets `blocked`. If no valid draft is ever produced, no rule is created and the calls are still logged.
 - **Reported metrics:** first-pass validity (attempt 0 passes G1–G7), post-repair validity, repair success rate, tokens and latency per attempt.
 - The loop's exit is decided entirely by deterministic validators, which is what makes it a controlled agentic loop rather than free-running autonomy.
 
@@ -1560,7 +1561,7 @@ In every case, report the order-effect and first-exposure analyses, the independ
 
 ---
 
-## 39. Initial Database Tables (15)
+## 39. Initial Database Tables (16)
 
 - `sources`
 - `intelligence_items` (includes sanitisation info and priority components)
@@ -1569,6 +1570,7 @@ In every case, report the order-effect and first-exposure analyses, the independ
 - `detection_opportunities`
 - `rules` (includes IOC lists)
 - `rule_versions` (origin: initial, repair 1–2, human edit, improvement)
+- `rule_id_allocations` (stable owner key → Wazuh rule ID in the ATIDEP block; IDs are never reused)
 - `validation_results` (per gate)
 - `approvals`
 - `deployments` (packages, dry-runs, rollbacks)

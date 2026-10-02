@@ -89,6 +89,19 @@ class _Llm(Strict):
     runs_per_item: int = Field(ge=1)
 
 
+class _Ioc(Strict):
+    require_malicious_context: bool
+    max_hashes_per_rule: int = Field(ge=1, le=500)
+    max_list_entries: int = Field(ge=1)
+    list_names: dict[str, str]
+
+    @model_validator(mode="after")
+    def _names(self) -> Self:
+        if set(self.list_names) != {"domain", "ipv4"} or len(set(self.list_names.values())) != 2:
+            raise ValueError("list_names needs one distinct list file name each for domain, ipv4")
+        return self
+
+
 class _Ingest(Strict):
     allowed_schemes: list[str]
     max_redirects: int = Field(ge=0, le=10)
@@ -109,6 +122,7 @@ class PoliciesConfig(Strict):
     validation: _Validation
     approval: _Approval
     llm: _Llm
+    ioc: _Ioc
     ingest: _Ingest
     deployment: _Deployment
 

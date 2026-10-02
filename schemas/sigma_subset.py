@@ -49,10 +49,12 @@ class Logsource(Strict):
 
 
 class Assumption(Strict):
-    """A condition not stated in the report, declared with its justification (G4)."""
+    """A condition not stated in the report, declared with its justification (G4).
+    ``covers`` lists the detection values the assumption stands behind."""
 
     statement: str = Field(min_length=1)
     justification: str = Field(min_length=1)
+    covers: list[str] = Field(default_factory=list)
 
 
 class SigmaDraft(Strict):

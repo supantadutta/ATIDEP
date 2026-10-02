@@ -22,6 +22,8 @@ class ExclusionReason(StrEnum):
     UNVERIFIED_EVIDENCE = "unverified_evidence"
     INVALID_FORMAT = "invalid_format"
     DUPLICATE = "duplicate"
+    UNSUPPORTED_BY_TARGET = "unsupported_by_target"
+    NO_THREAT_CONTEXT = "no_threat_context"
 
 
 class IocEntry(Strict):

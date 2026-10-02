@@ -1,13 +1,16 @@
 logsources:
   windows_process_creation:
+    sigma_category: process_creation      # Sigma logsource: category + product windows
     available: true
     events: [sysmon_event_1]
     fields: [Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName]
   windows_network_connection:
+    sigma_category: network_connection
     available: true
     events: [sysmon_event_3]
     fields: [Image, DestinationIp, DestinationPort, Initiated]
   windows_dns_query:
+    sigma_category: dns_query
     available: true
     events: [sysmon_event_22]
     fields: [Image, QueryName]

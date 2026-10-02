@@ -11,7 +11,7 @@ Scaffold only (blueprint week 0, before spikes S1–S4). Implemented so far:
 | Area | Where |
 |---|---|
 | Pydantic schemas: claims with verified evidence, intelligence record, priority bands, IOC bundle, detection opportunity, Sigma draft metadata, hard-gate validation, effort records, approval state machine | `schemas/` |
-| SQLite schema: the 15 tables of blueprint §39, enum-backed `CHECK` constraints, foreign keys on | `app/db/` |
+| SQLite schema: the 16 tables of blueprint §39, enum-backed `CHECK` constraints, foreign keys on | `app/db/` |
 | Hash-chained audit trail with verification | `app/db/audit.py` |
 | Config loading that **refuses to start** if a safety policy is weakened | `app/config.py`, `config/` |
 | Component packages for the build | `components/c1_ingest` … `c5_deploy_feedback` |

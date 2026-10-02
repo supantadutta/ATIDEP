@@ -26,7 +26,9 @@ import tldextract
 from components.c1_ingest.ssrf import host_allowed, is_public_address
 from schemas.claim import IndicatorContext, IndicatorType
 
-BENIGN_DOMAINS_PATH = Path(__file__).resolve().parents[2] / "knowledge" / "benign_domains.json"
+KNOWLEDGE = Path(__file__).resolve().parents[2] / "knowledge"
+BENIGN_DOMAINS_PATH = KNOWLEDGE / "benign_domains.json"
+SHARED_CONTENT_PATH = KNOWLEDGE / "shared_content_domains.json"
 INERT_TLDS = frozenset({"invalid", "test", "example"})
 # Real TLDs that are far more often file names in reports (install.sh, config.py, README.md).
 FILE_LIKE_TLDS = frozenset({"sh", "py", "pl", "rb", "rs", "md", "js", "so", "ps", "pm", "cs",
@@ -50,9 +52,10 @@ _MALICIOUS_CUES = re.compile(
     r"hosted on|served from|indicators? of compromise|iocs?)\b", re.I)
 
 # Sites where anyone can publish content: a bare domain is a reference, but a deep URL on them
-# can be attacker content (a release asset, a post) and is kept as a URL indicator.
-USER_CONTENT_DOMAINS = frozenset({"twitter.com", "x.com", "youtube.com", "facebook.com",
-                                  "reddit.com", "linkedin.com", "medium.com", "github.com"})
+# can be attacker content (a release asset, a post) and is kept as a URL indicator. The list
+# is data (knowledge/shared_content_domains.json); the IOC builder never lists such hosts.
+USER_CONTENT_DOMAINS = frozenset(
+    json.loads(SHARED_CONTENT_PATH.read_text(encoding="utf-8"))["domains"])
 _SENT_BREAK = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(\[])|\n{2,}")
 
 _tld = tldextract.TLDExtract(suffix_list_urls=(), cache_dir=None)

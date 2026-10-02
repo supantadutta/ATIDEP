@@ -24,3 +24,11 @@ class Prompt:
 def load_prompt(name: str, directory: Path = PROMPT_DIR) -> Prompt:
     text = (directory / f"{name}.md").read_text(encoding="utf-8")
     return Prompt(name=name, text=text, sha256=hashlib.sha256(text.encode("utf-8")).hexdigest())
+
+
+def compose_prompt(name: str, parts: list[str], directory: Path = PROMPT_DIR) -> Prompt:
+    """One prompt made of several files (for example instructions plus the Sigma subset
+    specification). The hash covers the combined text, so changing any part changes it."""
+    text = "\n\n".join((directory / f"{p}.md").read_text(encoding="utf-8").strip()
+                       for p in parts) + "\n"
+    return Prompt(name=name, text=text, sha256=hashlib.sha256(text.encode("utf-8")).hexdigest())

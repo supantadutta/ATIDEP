@@ -30,6 +30,12 @@ llm:
   daily_cost_limit: 5.00                  # must be > 0 if cloud_enabled
   runs_per_item: 3
 
+ioc:
+  require_malicious_context: false       # true: only indicators with explicit threat wording
+  max_hashes_per_rule: 100               # PCRE2 alternation size cap; larger sets are split
+  max_list_entries: 5000
+  list_names: {domain: atidep-domains, ipv4: atidep-ips}   # declared in ossec.conf at provisioning
+
 ingest:
   allowed_schemes: [https]
   max_redirects: 3
