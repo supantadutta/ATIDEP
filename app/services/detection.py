@@ -196,9 +196,10 @@ def create_sigma_rule(session: Session, opportunity_id: int, *, cfg: AppConfig, 
                       prompt: Prompt, validate: Validator, seed: int | None = None,
                       run_id: str = "rule", owner: str = "researcher",
                       review_date: str | None = None, intelligence_confidence: int | None = None,
-                      actor: str = "system", ctx: RuleContext | None = None
-                      ) -> tuple[str | None, RuleLoopResult]:
-    """Runs the repair loop and stores what it produced. Returns (rule_id or None, result)."""
+                      actor: str = "system", ctx: RuleContext | None = None,
+                      max_repairs: int | None = None) -> tuple[str | None, RuleLoopResult]:
+    """Runs the repair loop and stores what it produced. Returns (rule_id or None, result).
+    ``max_repairs`` overrides the policy (0 switches repair off for the B-R ablation)."""
     ctx = ctx or rule_context_for(session, opportunity_id, cfg)
     item = session.get(m.IntelligenceItem, ctx.intel_id)
     if intelligence_confidence is None and item is not None:
@@ -206,7 +207,8 @@ def create_sigma_rule(session: Session, opportunity_id: int, *, cfg: AppConfig, 
     review_date = review_date or (
         datetime.now(UTC) + timedelta(days=REVIEW_DAYS)).date().isoformat()
     result = generate_rule(client, ctx, validate, prompt=prompt, seed=seed,
-                           max_repairs=cfg.policies.rule_generation.repair_max_attempts)
+                           max_repairs=cfg.policies.rule_generation.repair_max_attempts
+                           if max_repairs is None else max_repairs)
     for n, attempt in enumerate(result.attempts):
         log_calls(session, run_id=run_id, agent="rule", intel_id=ctx.intel_id,
                   calls=attempt.calls, prompt=prompt, repair_attempt=n)
