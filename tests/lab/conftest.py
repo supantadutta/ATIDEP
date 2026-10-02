@@ -4,8 +4,8 @@ import os
 
 import pytest
 
-from components.c2_processing.indicators import load_benign_domains  # noqa: F401  (import check)
 from components.c4_validation.tier2 import LabError, LabManager
+from tests.unit.test_c4_governance import world  # noqa: F401  (shared pipeline fixture)
 
 LISTS = {"atidep-domains": "placeholder.invalid:\n", "atidep-ips": "240.0.0.1:\n"}
 
@@ -30,4 +30,6 @@ def lab():
     if not manager.available():
         pytest.skip("the lab container is not running")
     manager.provision(LISTS)
-    return manager
+    manager.reset_atidep_files(LISTS)          # start from a known state
+    yield manager
+    manager.reset_atidep_files(LISTS)          # and leave no test rule behind

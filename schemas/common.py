@@ -88,8 +88,10 @@ RULE_TRANSITIONS: dict[RuleState, frozenset[RuleState]] = {
     RuleState.PENDING_APPROVAL: frozenset({RuleState.APPROVED, RuleState.REJECTED,
                                            RuleState.DRAFT}),
     RuleState.APPROVED: frozenset({RuleState.DEPLOYED, RuleState.REVISED}),
-    RuleState.DEPLOYED: frozenset({RuleState.MONITORED, RuleState.REVISED, RuleState.RETIRED}),
-    RuleState.MONITORED: frozenset({RuleState.REVISED, RuleState.RETIRED}),
+    # a rollback restores the previous files; the approval still stands, the rule is not deployed
+    RuleState.DEPLOYED: frozenset({RuleState.MONITORED, RuleState.REVISED, RuleState.RETIRED,
+                                   RuleState.APPROVED}),
+    RuleState.MONITORED: frozenset({RuleState.REVISED, RuleState.RETIRED, RuleState.APPROVED}),
     RuleState.REVISED: frozenset({RuleState.DRAFT}),
     RuleState.REJECTED: frozenset(),
     RuleState.BLOCKED: frozenset(),

@@ -11,11 +11,10 @@ from tests.unit.test_c4_governance import (  # noqa: F401  (fixtures and helpers
     TEST_SET,
     make_ioc,
     make_sigma_rule,
-    world,
 )
 
 
-def test_a_sigma_rule_is_judged_at_tier_2_and_the_tiers_agree(world, lab):  # noqa: F811
+def test_a_sigma_rule_is_judged_at_tier_2_and_the_tiers_agree(world, lab):
     engine, _, ids = world
     rid, _ = make_sigma_rule(engine, ids[0])
     with session_scope(engine) as s:
@@ -30,7 +29,7 @@ def test_a_sigma_rule_is_judged_at_tier_2_and_the_tiers_agree(world, lab):  # no
     assert ev["baseline_matches"] == 0
 
 
-def test_a_generated_rule_that_is_too_loose_is_caught_by_the_real_pipeline(world, lab):  # noqa: F811
+def test_a_generated_rule_that_is_too_loose_is_caught_by_the_real_pipeline(world, lab):
     from tests.unit.test_c4_governance import sigma
     engine, _, ids = world
     loose = sigma(detection={"selection": {"Image|endswith": "\\powershell.exe",
@@ -44,7 +43,7 @@ def test_a_generated_rule_that_is_too_loose_is_caught_by_the_real_pipeline(world
     assert out.details["events"]["fidelity_disagreements"] == []
 
 
-def test_an_ioc_bundle_built_by_the_pipeline_behaves_on_the_real_manager(world, lab):  # noqa: F811
+def test_an_ioc_bundle_built_by_the_pipeline_behaves_on_the_real_manager(world, lab):
     engine, _, ids = world
     rid = make_ioc(engine, ids[1])
     with session_scope(engine) as s:

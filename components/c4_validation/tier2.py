@@ -46,6 +46,18 @@ INJECT_SCRIPT = (
     "        time.sleep(0.2)\n")
 
 
+# A valid rule file that can never match. The API rejects an empty <group> and a <decoded_as>
+# naming a decoder that does not exist (ADR-001 F15), so a scratch or retired file is
+# overwritten with a level-0 rule under a real parent whose pattern cannot match.
+NEUTRAL_RULES_XML = (
+    '<group name="atidep,neutral,">\n'
+    '  <rule id="119999" level="0">\n'
+    "    <if_sid>61603</if_sid>\n"
+    '    <field name="win.eventdata.commandLine" type="pcre2">(?!)</field>\n'
+    "    <description>ATIDEP placeholder: matches nothing</description>\n"
+    "  </rule>\n</group>\n")
+
+
 class LabError(Exception):
     pass
 
@@ -156,6 +168,48 @@ class LabManager:
             raise LabError(f"list name {name!r} is not an ATIDEP name")
         self._upload("lists", name, content, token or self.token())
 
+    def copy_out(self, remote: str, local: Path | str) -> None:
+        proc = subprocess.run(["docker", "cp", f"{self.container}:{remote}", str(local)],
+                              capture_output=True, text=True, timeout=60, check=False)
+        if proc.returncode != 0:
+            raise LabError(f"docker cp failed: {proc.stderr.strip()[:200]}")
+
+    def create_deploy_user(self, user: str, password: str, actions: list[str]) -> None:
+        """The least-privilege API user the deployment adapter logs in as (spike S2): a policy
+        with only the given actions, a role and a user. Uses the admin credentials."""
+        tok = self.token()
+
+        def call(method: str, path: str, body: dict | None = None) -> dict:
+            text = self._request(method, path, token=tok, headers={"Content-Type":
+                                 "application/json"}, body=json.dumps(body).encode()
+                                 if body is not None else None)
+            try:
+                return json.loads(text)
+            except ValueError:
+                return {}
+
+        def created_id(doc: dict) -> int:
+            try:
+                return doc["data"]["affected_items"][0]["id"]
+            except (KeyError, IndexError, TypeError) as exc:
+                raise LabError(f"could not create the API user: {str(doc)[:200]}") from exc
+
+        for kind, key, ids in (("users", "username", "user_ids"), ("roles", "name", "role_ids"),
+                               ("policies", "name", "policy_ids")):
+            listing = call("GET", f"/security/{kind}?limit=500")
+            for item in listing.get("data", {}).get("affected_items", []):
+                if str(item.get(key, "")).startswith("atidep") or item.get(key) == user:
+                    call("DELETE", f"/security/{kind}?{ids}={item['id']}")
+        pid = created_id(call("POST", "/security/policies", {"name": "atidep_deploy", "policy": {
+            "actions": actions, "resources": ["*:*:*", "rule:file:*", "list:file:*"],
+            "effect": "allow"}}))
+        rid = created_id(call("POST", "/security/roles", {"name": "atidep_role"}))
+        uid = created_id(call("POST", "/security/users", {"username": user,
+                                                          "password": password}))
+        call("POST", f"/security/roles/{rid}/policies?policy_ids={pid}")
+        call("POST", f"/security/users/{uid}/roles?role_ids={rid}")
+        time.sleep(3)                 # tokens issued in the same second as an RBAC change die (F9)
+
     # ---- provisioning and restart -----------------------------------------------------------
     def declare_lists(self, names: list[str]) -> bool:
         """Make sure ``ossec.conf`` declares the lists. Returns True if it was changed (a
@@ -209,6 +263,34 @@ class LabManager:
             self.restart()
 
     # ---- replay ---------------------------------------------------------------------------
+    def reset_atidep_files(self, lists: dict[str, str]) -> None:
+        """Lab hygiene (admin credentials): neutralise every ATIDEP rule file and give every
+        ATIDEP list the sentinel content, so a failed earlier run cannot poison the next.
+        Restarts the manager only if something had to change."""
+        tok = self.token()
+        doc = json.loads(self._request("GET", "/rules/files?search=atidep&limit=500", token=tok))
+        changed = False
+        for item in doc.get("data", {}).get("affected_items", []):
+            name = item["filename"]
+            if not RULE_FILE_RE.match(name):
+                continue
+            current = self._request("GET", f"/rules/files/{name}?raw=true", token=tok)
+            if current != NEUTRAL_RULES_XML:
+                self.upload_rule_file(name, NEUTRAL_RULES_XML, tok)
+                changed = True
+        for name, content in lists.items():
+            current = self._request("GET", f"/lists/files/{name}?raw=true", token=tok)
+            if current != content:
+                self.upload_list(name, content, tok)
+                changed = True
+        if changed:
+            self.restart()
+
+    def reset_candidate(self) -> None:
+        """Neutralise the Tier 2 candidate file so a leftover rule cannot load at the next
+        restart. No restart is needed: the engine only reads the file when it starts."""
+        self.upload_rule_file(CANDIDATE_RULE_FILE, NEUTRAL_RULES_XML)
+
     def deploy_candidate(self, rules_xml: str, lists: dict[str, str] | None = None) -> float:
         """Install the rule under test (alone, in one file) and the lists it needs, then
         restart. Returns the restart time in seconds."""
