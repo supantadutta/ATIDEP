@@ -37,6 +37,7 @@ from app.services.governance import (
     ApprovalError,
     GovernanceError,
     decide,
+    edit_rule,
     evaluate_rule,
     load_report,
     loop_validator,
@@ -89,6 +90,11 @@ class CommentBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
     comment: str = Field(default="", max_length=2000)
     author: str = Field(default="ATIDEP", max_length=80)
+
+
+class EditBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    content: str = Field(min_length=10, max_length=100_000)
 
 
 class TestBody(BaseModel):
@@ -427,6 +433,15 @@ def create_app(ctx: AppContext) -> FastAPI:
                                "message": r.message} for r in ev.results],
                     "passed": all(r.status is GateStatus.PASSED for r in ev.results),
                     "events": ev.detail.get("events")}
+
+    @app.put("/rules/{rule_id}/content", dependencies=guarded)
+    def edit(rule_id: str, body: EditBody, who: str = Depends(analyst)) -> dict[str, Any]:
+        """A person's edit: a new version; validation and any approval no longer apply."""
+        with session_scope(ctx.engine) as s:
+            v = edit_rule(s, rule_id, body.content, editor=who)
+            return {"rule_id": rule_id, "version": v.version, "origin": v.origin,
+                    "content_sha256": v.content_sha256,
+                    "state": s.get(m.Rule, rule_id).state}
 
     @app.post("/rules/{rule_id}/submit", dependencies=guarded)
     def submit(rule_id: str, who: str = Depends(analyst)) -> dict[str, str]:
