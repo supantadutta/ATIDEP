@@ -40,7 +40,7 @@ v3 keeps the v2 architecture and governance ideas (evidence grounding, determini
 | 17 | H6 compared against a commercial baseline that was never measured, and against a manual workflow with no software cost. | H6 is dropped. A **break-even analysis** replaces ROI %. | 22 |
 | 18 | LLM variance and training-data contamination ignored. | Pinned model, ≥3 runs per item, post-cutoff reports, SigmaHQ similarity check. | 27.9 |
 | 19 | Ground truth labelled by the system's builder alone. | Second labeler on a sample; Cohen's κ; labels frozen and hashed before the main run. | 27.3 |
-| 20 | Scope: 10 agents, 7 dashboard pages, 23 tables, 21 endpoints in 16 weeks, experiments in week 15. | Cut list, 5 components, 3 UI pages, 16 tables, freeze at end of week 12, experiments in weeks 13–15. | 10.3, 26 |
+| 20 | Scope: 10 agents, 7 dashboard pages, 23 tables, 21 endpoints in 16 weeks, experiments in week 15. | Cut list, 5 components, 3 UI pages, 17 tables, freeze at end of week 12, experiments in weeks 13–15. | 10.3, 26 |
 | 21 | Security gaps. | SSRF guard, sandboxed document parsing, IOC refanging, benign-domain allowlist, verbatim-quote check, tool-less extraction model. | 19 |
 | 22 | "Environmental relevance", "potential impact" and source reliability were undefined. | Defined, with a synthetic organisation profile. | 17.2.5 |
 | 23 | Editorial: subsection numbers did not match sections; "a open-source" typo; success statement near-unfalsifiable; cost positioned as both secondary and central. | Renumbered; fixed; success split into engineering criteria and reported-either-way research outcomes; one cost lane. | throughout |
@@ -1576,7 +1576,7 @@ In every case, report the order-effect and first-exposure analyses, the independ
 
 ---
 
-## 39. Initial Database Tables (16)
+## 39. Initial Database Tables (17)
 
 - `sources`
 - `intelligence_items` (includes sanitisation info and priority components)
@@ -1591,6 +1591,7 @@ In every case, report the order-effect and first-exposure analyses, the independ
 - `deployments` (packages, dry-runs, rollbacks)
 - `detection_results` (alerts and analyst dispositions; the Wazuh rule that fired and the alert features kept for the statistics)
 - `model_runs`
+- `timer_events` (the analyst timer's log: start, heartbeat, pause, resume, stop)
 - `effort_cost_records` (timers, resources, tokens)
 - `audit_events` (hash-chained)
 - `experiment_runs` (condition, item, run number, seed, outputs)

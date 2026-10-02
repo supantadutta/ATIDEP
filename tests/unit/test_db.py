@@ -34,9 +34,9 @@ def seed(s):
     s.flush()
 
 
-def test_has_exactly_the_16_tables_of_the_blueprint(engine):
+def test_has_exactly_the_17_tables_of_the_blueprint(engine):
     assert set(inspect(engine).get_table_names()) == set(m.TABLE_NAMES)
-    assert len(m.TABLE_NAMES) == 16
+    assert len(m.TABLE_NAMES) == 17
 
 
 def test_foreign_keys_are_enforced(engine):

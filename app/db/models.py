@@ -1,4 +1,4 @@
-"""SQLite schema: the 16 tables of blueprint §39.
+"""SQLite schema: the 17 tables of blueprint §39.
 
 CHECK constraints are generated from the same enums the Pydantic schemas use, so the two
 cannot drift apart.
@@ -290,6 +290,25 @@ class ModelRun(Base):
         CheckConstraint(_in("agent", ["extraction", "opportunity", "rule", "improvement",
                                       "single_prompt_baseline"])),
         CheckConstraint("repair_attempt >= 0"),
+    )
+
+
+class TimerEvent(Base):
+    """The analyst timer's log (blueprint §23). Active time is computed from these events, so
+    nothing about a running timer is held in memory."""
+
+    __tablename__ = "timer_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session_id: Mapped[str] = mapped_column(String, index=True)
+    analyst: Mapped[str] = mapped_column(String)
+    intel_id: Mapped[str | None] = mapped_column(ForeignKey("intelligence_items.intel_id"))
+    condition: Mapped[str] = mapped_column(String)
+    activity: Mapped[str] = mapped_column(String)
+    kind: Mapped[str] = mapped_column(String)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (
+        CheckConstraint(_in("kind", ["start", "heartbeat", "pause", "resume", "stop"])),
+        CheckConstraint(_in("condition", Condition)),
     )
 
 
