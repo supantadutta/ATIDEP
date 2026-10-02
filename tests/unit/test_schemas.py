@@ -282,5 +282,8 @@ def test_state_machine_cannot_skip_validation_or_approval():
     assert not can_transition(RuleState.DRAFT, RuleState.APPROVED)
     assert not can_transition(RuleState.VALIDATED, RuleState.DEPLOYED)
     assert not can_transition(RuleState.PENDING_APPROVAL, RuleState.DEPLOYED)
+    assert can_transition(RuleState.VALIDATED, RuleState.DRAFT)         # an edit voids validation
+    assert can_transition(RuleState.PENDING_APPROVAL, RuleState.DRAFT)
+    assert not can_transition(RuleState.APPROVED, RuleState.DRAFT)      # approved goes via revised
     assert not can_transition(RuleState.REJECTED, RuleState.DRAFT)
     assert not can_transition(RuleState.BLOCKED, RuleState.VALIDATED)

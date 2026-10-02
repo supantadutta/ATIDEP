@@ -66,8 +66,29 @@ def _canonical(t: IndicatorType, value: str | None) -> str:
     return v if t is IndicatorType.URL else v.lower()
 
 
-def _check(c: Claim, v: str, now: datetime, benign: tuple[str, ...], require_malicious: bool
-           ) -> ExclusionReason | None:
+def effective_kind(t: IndicatorType, value: str) -> str:
+    """The list or rule an indicator ends up in: a URL is matched by its host."""
+    if t is IndicatorType.URL:
+        try:
+            ipaddress.IPv4Address(_host_of(value))
+            return IndicatorType.IPV4.value
+        except ValueError:
+            return IndicatorType.DOMAIN.value
+    return t.value
+
+
+def available_kinds(catalog: dict, mapping: dict | None = None) -> set[str]:
+    """Indicator kinds for which at least one mapped log source is available."""
+    from components.c2_processing.logsources import load_mapping
+
+    sources = catalog.get("logsources", {})
+    by_type = (mapping or load_mapping())["indicator_types"]
+    return {k for k, names in by_type.items()
+            if k != "url" and any(sources.get(n, {}).get("available") for n in names)}
+
+
+def _check(c: Claim, v: str, now: datetime, benign: tuple[str, ...], require_malicious: bool,
+           available: set[str] | None = None) -> ExclusionReason | None:
     """The reason an indicator claim must stay out of every detection list, if any."""
     t = c.type
     if not c.evidence.verified:
@@ -114,12 +135,18 @@ def _check(c: Claim, v: str, now: datetime, benign: tuple[str, ...], require_mal
         return ExclusionReason.EXPIRED
     if require_malicious and c.context is not IndicatorContext.MALICIOUS:
         return ExclusionReason.NO_THREAT_CONTEXT
+    if available is not None and effective_kind(c.type, v) not in available:
+        return ExclusionReason.TELEMETRY_UNAVAILABLE
     return None
 
 
 def build_bundle(intel_id: str, claims: Iterable[Claim], *, now: datetime,
-                 benign_domains: Iterable[str], policy: PoliciesConfig) -> BundleBuild:
+                 benign_domains: Iterable[str], policy: PoliciesConfig,
+                 catalog: dict | None = None) -> BundleBuild:
+    """``catalog``: when given, indicators whose telemetry is not available are excluded
+    (a rule for them could never fire)."""
     benign = tuple(benign_domains)
+    available = available_kinds(catalog) if catalog is not None else None
     entries: list[IocEntry] = []
     excluded: list[ExcludedIoc] = []
     seen: set[tuple[IndicatorType, str]] = set()
@@ -135,7 +162,7 @@ def build_bundle(intel_id: str, claims: Iterable[Claim], *, now: datetime,
             duplicates += 1
             continue
         seen.add(key)
-        reason = _check(c, value, now, benign, policy.ioc.require_malicious_context)
+        reason = _check(c, value, now, benign, policy.ioc.require_malicious_context, available)
         if reason is not None:
             excluded.append(ExcludedIoc(value=value or "(empty)", reason=reason))
             reasons[reason.value] += 1

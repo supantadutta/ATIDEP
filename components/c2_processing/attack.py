@@ -52,6 +52,10 @@ class AttackRelease:
         t = self.get(technique_id)
         return bool(t and t.active)
 
+    def tactic_shortnames(self) -> frozenset[str]:
+        """Every tactic short name in the release, for example ``command-and-control``."""
+        return frozenset(self._tactics)
+
     def tactic_names(self, technique_id: str) -> list[str]:
         t = self.get(technique_id)
         return [self._tactics[s]["name"] for s in t.tactics if s in self._tactics] if t else []

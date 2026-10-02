@@ -83,8 +83,10 @@ class RuleState(StrEnum):
 # Allowed transitions. Anything not listed is refused.
 RULE_TRANSITIONS: dict[RuleState, frozenset[RuleState]] = {
     RuleState.DRAFT: frozenset({RuleState.VALIDATED, RuleState.REJECTED, RuleState.BLOCKED}),
-    RuleState.VALIDATED: frozenset({RuleState.PENDING_APPROVAL}),
-    RuleState.PENDING_APPROVAL: frozenset({RuleState.APPROVED, RuleState.REJECTED}),
+    # an edit voids validation: the new version goes back to draft and through the gates again
+    RuleState.VALIDATED: frozenset({RuleState.PENDING_APPROVAL, RuleState.DRAFT}),
+    RuleState.PENDING_APPROVAL: frozenset({RuleState.APPROVED, RuleState.REJECTED,
+                                           RuleState.DRAFT}),
     RuleState.APPROVED: frozenset({RuleState.DEPLOYED, RuleState.REVISED}),
     RuleState.DEPLOYED: frozenset({RuleState.MONITORED, RuleState.REVISED, RuleState.RETIRED}),
     RuleState.MONITORED: frozenset({RuleState.REVISED, RuleState.RETIRED}),

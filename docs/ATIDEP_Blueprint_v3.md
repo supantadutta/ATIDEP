@@ -789,9 +789,20 @@ All gates must pass for a rule to become *Validated*. There is no weighted path 
 | **G8** | Positive test: matches every designated positive event (Tier 1; Tier 2 when available). | Revision |
 | **G9** | Negative test: matches none of the negative events. | Revision |
 | **G10** | Benign look-alike test: matches none of the look-alike events, unless an exclusion has been added and re-tested. | Revision |
-| **G11** | Breadth guard: matches no more than `max_benign_match_rate` of the benign baseline corpus (default 0.5%, pilot-fixed), and contains at least one discriminating condition beyond a bare generic match. | Revision |
+| **G11** | Breadth guard: matches no more than `max_benign_match_pct` (a percentage) of the benign baseline corpus (default 0.5%, pilot-fixed), and contains at least one discriminating condition beyond a bare generic match. | Revision |
 
 G1–G5 and G7 run inside the repair loop (they need no events), and G6 is checked on every attempt but ends the loop as *Blocked* when it fails. G8–G11 run after G1–G7 pass.
+
+**How the gates are decided (implemented definitions).**
+
+- **G1** uses pySigma to parse the rule and its condition; **G2** checks the required metadata fields directly.
+- **G3** is the Sigma-subset parser plus the converter; it reports the converter's stable reason code. A problem that another gate reports better (an invented field, an invalid level) is not repeated.
+- **G4** passes when every value in the detection logic, with wildcards, path separators and case removed, occurs in a verified quotation of the opportunity's evidence, or is listed in the `covers` of a declared assumption. For a regular expression each literal run of three or more characters is checked. Boolean fields are exempt. The result also reports how many values were quoted and how many assumed (the evidence-coverage input of the quality score).
+- **G5** compares every field with the catalog's list for the rule's log source, and the rule's log source with the opportunity's. **G6** is false when the opportunity's log source or the rule's own is not *available*; the defect carries the catalog's enable hint.
+- **G7** requires at least one technique tag; every technique must exist and be active in the pinned release and be supported by the opportunity's verified techniques or an assumption; tactic tags must be valid for the release (ATT&CK v19 renamed several, so older names such as `attack.defense_evasion` fail with the valid list in the defect) and consistent with the listed techniques.
+- **G8–G10** run the item's positive, negative and look-alike events through Tier 1 and, when a lab manager is available, Tier 2; **Tier 2 decides** and any event on which the tiers disagree is recorded as a conversion-fidelity finding. A missing event kind fails the gate rather than passing vacuously.
+- **G11** has two parts. Every alternative of the condition needs a *discriminating* term: a positive condition of at least four characters on a field other than process names or users, or positive conditions on two different fields. The rule must also match at most `max_benign_match_pct` of a baseline of at least 100 events (the limit is inclusive: 2 of 400 is exactly 0.5%).
+- **Indicator bundles** use the same eleven gates with these meanings: G1 the bundle validates, G2 it is non-empty and belongs to the item, G3 lists and rules render to well-formed XML, G4 every entry links to a verified quotation, G5 and G7 not applicable, G6 telemetry for every rendered rule, G8–G11 on events **synthesised from the bundle** (a positive per entry, unlisted negatives, look-alikes such as a sub-domain, an upper-case name, a neighbouring address and a changed hash). They test the plumbing, not the intelligence.
 
 **Outcome logic**
 
@@ -811,8 +822,9 @@ For rules that passed all gates, a 0–100 score orders the review queue: eviden
 ```text
 Draft → Validated → Pending Approval → Approved → Deployed(lab) → Monitored
               ↘ Rejected / Blocked
-Deployed → Revised → (gates re-run) → Validated → Pending Approval → …
+Deployed → Revised → Draft (new version) → gates re-run → Validated → Pending Approval → …
 Deployed → Retired
+Validated / Pending Approval → Draft   (an edit voids validation; the new version re-runs the gates)
 ```
 
 - Only *Validated* rules can enter *Pending Approval*; only a human identity can approve.
@@ -1301,6 +1313,7 @@ Each item has: expected indicators, expected behaviours, expected ATT&CK techniq
 ### 27.7 Event corpora
 
 - **Positive events:** public attack datasets (for example EVTX-ATTACK-SAMPLES and OTRF Security-Datasets), converted to the JSON event form that Tier 1 and Tier 2 accept. **[verify: S4]** formats, conversion path, and licence terms.
+- **Development baseline.** Until spike S4 delivers the lab-VM baseline, gate G11 is exercised on a **synthetic** 400-event baseline (`tests/events/make_benign_baseline.py`: fixed seed, documentation address ranges, ordinary vendor domains). It checks the mechanism, not real-world false-positive rates, and any result measured on it must be reported as synthetic.
 - **Benign baseline:** (a) a lab Windows VM with Sysmon running scripted routine administration and software-deployment activity; (b) benign background events within the public datasets; (c) hand-built benign look-alikes for specific techniques (for example legitimate administrative scripts using encoded commands). Public attack sets alone are not a benign corpus.
 - **Held-out split:** events used during development and pilot are never used for evaluation; no evaluation event appears in any prompt, example, or repair message.
 - Event sets are hashed and frozen at `freeze-v1`.

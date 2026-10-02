@@ -154,7 +154,7 @@ def create_ioc_rule(session: Session, opportunity_id: int, *, cfg: AppConfig,
         raise DetectionError(f"opportunity {opportunity_id} is {opp.decision}, not ioc_based")
     built = build_bundle(opp.intel_id, load_claims(session, opp.intel_id),
                          now=now or datetime.now(UTC), benign_domains=benign_domains,
-                         policy=cfg.policies)
+                         policy=cfg.policies, catalog=cfg.telemetry_catalog)
     if not built.bundle.entries:
         raise DetectionError("the bundle would be empty; nothing to detect")
     rule = m.Rule(rule_id=_next_rule_id(session, datetime.now(UTC).year),

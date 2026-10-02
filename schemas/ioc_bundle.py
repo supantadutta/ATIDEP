@@ -24,6 +24,7 @@ class ExclusionReason(StrEnum):
     DUPLICATE = "duplicate"
     UNSUPPORTED_BY_TARGET = "unsupported_by_target"
     NO_THREAT_CONTEXT = "no_threat_context"
+    TELEMETRY_UNAVAILABLE = "telemetry_unavailable"
 
 
 class IocEntry(Strict):
