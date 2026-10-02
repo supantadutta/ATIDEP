@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "note": "Candidate telemetry for ATT&CK techniques that the v0 Sigma subset can express, as keys of config/telemetry_catalog.yaml, in order of preference. A technique absent here has no candidate telemetry in the MVP (the Opportunity step reports it as needing additional telemetry or as not detectable). Techniques are matched exactly, then by parent technique (T1059.007 falls back to T1059).",
+  "techniques": {
+    "T1059": ["windows_process_creation"],
+    "T1059.001": ["windows_process_creation", "windows_powershell_script_block"],
+    "T1059.003": ["windows_process_creation"],
+    "T1047": ["windows_process_creation"],
+    "T1053.005": ["windows_process_creation"],
+    "T1218": ["windows_process_creation"],
+    "T1105": ["windows_process_creation", "windows_network_connection"],
+    "T1140": ["windows_process_creation"],
+    "T1027": ["windows_process_creation"],
+    "T1036": ["windows_process_creation"],
+    "T1204": ["windows_process_creation"],
+    "T1071": ["windows_network_connection", "windows_dns_query"],
+    "T1071.001": ["windows_network_connection", "windows_dns_query"],
+    "T1071.004": ["windows_dns_query"],
+    "T1568": ["windows_dns_query"],
+    "T1021": ["windows_network_connection"],
+    "T1041": ["windows_network_connection"],
+    "T1571": ["windows_network_connection"]
+  },
+  "indicator_types": {
+    "domain": ["windows_dns_query"],
+    "url": ["windows_network_connection"],
+    "ipv4": ["windows_network_connection"],
+    "ipv6": ["windows_network_connection"],
+    "md5": ["windows_process_creation"],
+    "sha1": ["windows_process_creation"],
+    "sha256": ["windows_process_creation"]
+  }
+}

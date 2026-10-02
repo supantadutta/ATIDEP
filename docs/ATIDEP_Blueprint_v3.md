@@ -642,7 +642,7 @@ Indicator-based detections use a typed bundle, not Sigma:
 
 - **Input:** sanitised text chunks inside a delimited data block, with an instruction that the block is untrusted data. The agent has no tools, no browsing, no function calling.
 - **Output:** JSON validated against a schema: behaviours, tools, malware names, affected products, candidate ATT&CK IDs, each with a `quote`.
-- **Verbatim-quote check (deterministic):** after whitespace and Unicode normalisation, the quote must be a substring of the sanitised source. A claim that fails is dropped and counted as `unsupported_extraction`. A model cannot introduce a claim the document does not contain.
+- **Verbatim-quote check (deterministic):** after whitespace and Unicode normalisation, the quote must be a substring of the sanitised source. A claim that fails is **kept but marked unverified** (`evidence.verified = false`), counted as an `unsupported_extraction`, lowers the item's evidence support rate, and is never used for scoring, opportunity decisions or rule generation. Keeping it makes the unsupported rate measurable (§9, E1). A model cannot introduce a claim the document does not contain.
 - **ATT&CK ID validation:** IDs must exist in the pinned release; tactic/technique consistency is checked.
 - Retries are bounded (max 2) and only on schema failure.
 
@@ -654,7 +654,8 @@ Indicator-based detections use a typed bundle, not Sigma:
 #### 17.2.4 Correlation (stage)
 
 - Deduplicate indicators and cluster near-duplicate documents.
-- `independent_sources` = number of distinct publishers within a cluster, excluding syndicated copies (same cluster by near-duplicate hash).
+- `independent_sources` = 1 + the number of distinct other publishers that report at least one of the item's verified, non-reference indicators or CVE IDs. A publisher is **not** independent if it is the item's own source or published any item of the item's near-duplicate cluster: a syndicated copy cannot be corroborated by the publisher it was copied from. Behaviours are not matched across items, because common technique IDs would corroborate almost everything.
+- Corroboration by an independent publisher raises an item's effective credibility to at most 2 (never lowers it); the effective value is stored with the score.
 - No graph visualisation.
 
 #### 17.2.5 Prioritisation (stage)
@@ -676,7 +677,7 @@ Every component is on 0–100. Definitions (v1 parameters, held in `scoring.yaml
 | **SR** | Admiralty source-reliability letter assigned per source in `sources.yaml`: A = 100, B = 80, C = 60, D = 40, E = 20, F (cannot be judged) = 50 and flagged. |
 | **IC** | Admiralty information-credibility digit mapped 1 = 100, 2 = 80, 3 = 60, 4 = 40, 5 = 20, 6 (cannot be judged) = 50, **multiplied by the evidence support rate** (fraction of the item's claims whose quotes verified). Credibility is assigned by the analyst at source level and raised to 2 when corroborated by an independent source. |
 | **ER** | `0.5 × TechMatch + 0.3 × TelemetryMatch + 0.2 × SectorMatch`, evaluated against `org_profile.yaml`. TechMatch: 100 if an affected product, OS, or tool matches the profile; 50 for a platform-level match (for example "Windows"); else 0. TelemetryMatch: 100 if at least one candidate detection's log source is *available* in the telemetry catalog, else 0. SectorMatch: 100 if the profile's sector is targeted, 50 if the item states no sector, else 0. |
-| **RE** | `100 × 0.5^(age_days / half_life)`; half-life by the item's primary type: IP 14 days, domain/URL 30, hash 180, behaviour/TTP 365. |
+| **RE** | `100 × 0.5^(age_days / half_life)`; half-life by the item's primary type: IP 14 days, domain/URL 30, hash 180, behaviour/TTP 365. The primary type is *behaviour* if the item has a usable behaviour claim; otherwise the most numerous usable indicator class, a tie going to the more perishable class; an item with neither counts as behaviour. |
 | **CS** | 0 for one independent publisher, 50 for two, 100 for three or more. |
 | **PI** | For behaviours: the highest value among the item's ATT&CK tactics in a configurable table (for example Impact, Exfiltration, Command and Control, Execution higher than Discovery); for CVEs: CVSS base score × 10 when available; default 50 when unmapped. |
 

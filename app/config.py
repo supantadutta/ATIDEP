@@ -27,6 +27,7 @@ class ScoringConfig(Strict):
     environmental_relevance: dict[str, dict[str, float]]
     potential_impact: dict[str, Any]
     quality_ranking_weights: dict[str, float]
+    indicator_expiry_days: dict[str, int]
 
     @model_validator(mode="after")
     def _invariants(self) -> Self:
@@ -38,6 +39,10 @@ class ScoringConfig(Strict):
             raise ValueError("priority_weights must sum to 1.0")
         if abs(sum(self.quality_ranking_weights.values()) - 1.0) > 1e-9:
             raise ValueError("quality_ranking_weights must sum to 1.0")
+        if set(self.indicator_expiry_days) != {"ip", "domain", "url", "hash"} \
+                or any(d <= 0 for d in self.indicator_expiry_days.values()):
+            raise ValueError(
+                "indicator_expiry_days needs positive values for ip, domain, url, hash")
         if abs(sum(self.environmental_relevance["weights"].values()) - 1.0) > 1e-9:
             raise ValueError("environmental_relevance weights must sum to 1.0")
         bands = self.priority_bands

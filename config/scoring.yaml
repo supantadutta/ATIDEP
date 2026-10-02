@@ -52,3 +52,10 @@ quality_ranking_weights:  # ranking only; never an experimental outcome
   attack_mapping_precision: 0.10
   test_coverage: 0.10
   lint_cleanliness: 0.05
+
+# Days after retrieval that an indicator stays eligible for a detection list (blueprint 17.3.4).
+indicator_expiry_days:
+  ip: 30
+  domain: 90
+  url: 90
+  hash: 365

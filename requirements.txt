@@ -9,3 +9,10 @@ SQLAlchemy==2.0.54
 PyYAML==6.0.1
 defusedxml==0.7.1
 pypdf==6.19.0
+tldextract==5.3.2          # public-suffix validation of domains; used offline (bundled snapshot)
+requests==2.34.2           # tldextract dependencies, pinned
+requests-file==3.0.1
+filelock==4.0.9
+idna==3.18
+certifi==2026.6.17
+urllib3==2.7.0

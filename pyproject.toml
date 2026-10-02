@@ -14,6 +14,7 @@ dependencies = [
     "PyYAML>=6",
     "defusedxml>=0.7",
     "pypdf>=5",
+    "tldextract>=5.1",
 ]
 
 [project.optional-dependencies]
