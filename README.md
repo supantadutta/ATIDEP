@@ -15,6 +15,7 @@ Scaffold only (blueprint week 0, before spikes S1–S4). Implemented so far:
 | Hash-chained audit trail with verification | `app/db/audit.py` |
 | Config loading that **refuses to start** if a safety policy is weakened | `app/config.py`, `config/` |
 | Component packages for the build | `components/c1_ingest` … `c5_deploy_feedback` |
+| Thesis draft: Chapter 1 (Introduction), Chapter 2 (Literature Review), 45-entry bibliography with per-entry verification status | `paper/` (build with `paper/build.sh`, needs pandoc 3) |
 
 Not built yet: collectors, extraction, agents, converter, validators, Wazuh adapter, UI. Build order is in blueprint §25.
 

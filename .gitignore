@@ -17,3 +17,6 @@ deployment/packages/*
 deployment/rollback/*
 !deployment/packages/.gitkeep
 !deployment/rollback/.gitkeep
+
+# Built thesis drafts
+paper/build/

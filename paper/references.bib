@@ -1,0 +1,453 @@
+% ATIDEP thesis bibliography.
+%
+% Every entry was checked on 2 October 2026 against retrieved search extracts or an
+% author-supplied BibTeX record. The annote field states the level reached:
+%   V1 = authors, title, venue and year confirmed in retrieved extracts.
+%   V2 = core identity confirmed; the listed fields were NOT confirmed (taken from memory
+%        or inferred) and must be checked against the publisher record before submission.
+%   V3 = author-supplied BibTeX record.
+% Publisher sites (arXiv, USENIX, ACM, IEEE, Springer, DBLP, Crossref) were not reachable
+% from the authoring environment, so a publisher-side metadata pass is still pending.
+
+% ---------- Cyber threat intelligence ----------
+@online{bianco2013pyramid,
+  author  = {Bianco, David J.},
+  title   = {The {Pyramid} of {Pain}},
+  year    = {2013},
+  url     = {https://detect-respond.blogspot.com/2013/03/the-pyramid-of-pain.html},
+  note    = {Blog post, updated 2014 to add the hash-value level},
+  annote  = {V2: author, title, 2013 date and the 2014 update confirmed; the URL is from memory (the Sqrrl mirror of the post was the retrieved copy).}
+}
+
+@techreport{johnson2016nist,
+  author      = {Johnson, Chris and Badger, Lee and Waltermire, David and Snyder, Julie and Skorupka, Clem},
+  title       = {Guide to Cyber Threat Information Sharing},
+  institution = {National Institute of Standards and Technology},
+  type        = {NIST Special Publication},
+  number      = {800-150},
+  year        = {2016},
+  month       = oct,
+  url         = {https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-150.pdf},
+  annote      = {V1}
+}
+
+@article{tounsi2018survey,
+  author  = {Tounsi, Wiem and Rais, Helmi},
+  title   = {A survey on technical threat intelligence in the age of sophisticated cyber attacks},
+  journal = {Computers \& Security},
+  volume  = {72},
+  pages   = {212--233},
+  year    = {2018},
+  doi     = {10.1016/j.cose.2017.09.001},
+  annote  = {V2: authors, title, journal, year confirmed; volume, pages and DOI from memory.}
+}
+
+@article{wagner2019sharing,
+  author  = {Wagner, Thomas D. and Mahbub, Khaled and Palomar, Esther and Abdallah, Ali E.},
+  title   = {Cyber threat intelligence sharing: Survey and research directions},
+  journal = {Computers \& Security},
+  volume  = {87},
+  pages   = {101589},
+  year    = {2019},
+  doi     = {10.1016/j.cose.2019.101589},
+  annote  = {V1}
+}
+
+@inproceedings{li2019tea,
+  author    = {Li, Vector Guo and Dunn, Matthew and Pearce, Paul and McCoy, Damon and Voelker, Geoffrey M. and Savage, Stefan and Levchenko, Kirill},
+  title     = {Reading the Tea Leaves: A Comparative Analysis of Threat Intelligence},
+  booktitle = {28th USENIX Security Symposium (USENIX Security 19)},
+  year      = {2019},
+  url       = {https://www.usenix.org/conference/usenixsecurity19/presentation/li},
+  annote    = {V1: authors, title, venue, year confirmed. Findings were not retrieved, so none are quoted in the text.}
+}
+
+@inproceedings{bouwman2020cup,
+  author    = {Bouwman, Xander and Griffioen, Harm and Egbers, Jelle and Doerr, Christian and Klievink, Bram and van Eeten, Michel},
+  title     = {A Different Cup of {TI}? The Added Value of Commercial Threat Intelligence},
+  booktitle = {29th USENIX Security Symposium (USENIX Security 20)},
+  year      = {2020},
+  url       = {https://www.usenix.org/conference/usenixsecurity20/presentation/bouwman},
+  annote    = {V1}
+}
+
+@inproceedings{griffioen2020quality,
+  author    = {Griffioen, Harm and Booij, Tim M. and Doerr, Christian},
+  title     = {Quality Evaluation of Cyber Threat Intelligence Feeds},
+  booktitle = {Applied Cryptography and Network Security (ACNS 2020)},
+  pages     = {277--296},
+  year      = {2020},
+  annote    = {V1: authors, title, venue, pages, year confirmed (24 open-source feeds). LNCS volume and publisher not confirmed.}
+}
+
+@online{oasis2021stix,
+  author       = {{OASIS Open}},
+  title        = {{STIX} Version 2.1},
+  year         = {2021},
+  url          = {https://docs.oasis-open.org/cti/stix/v2.1/stix-v2.1.html},
+  annote       = {V2: URL carried over from the project blueprint; year of the OASIS Standard from memory.}
+}
+
+% ---------- ATT&CK, Sigma, detection engineering ----------
+@techreport{strom2018attack,
+  author      = {Strom, Blake E. and Applebaum, Andy and Miller, Doug P. and Nickels, Kathryn C. and Pennington, Adam G. and Thomas, Cody B.},
+  title       = {{MITRE} {ATT\&CK}: Design and Philosophy},
+  institution = {The MITRE Corporation},
+  year        = {2018},
+  month       = jul,
+  url         = {https://www.mitre.org/news-insights/publication/mitre-attck-design-and-philosophy},
+  annote      = {V1: authors, title, July 2018. Report number not confirmed.}
+}
+
+@online{sigmahq2024spec,
+  author  = {{SigmaHQ}},
+  title   = {Sigma Specification: Generic Signature Format for {SIEM} Systems},
+  url     = {https://sigmahq.io/sigma-specification/},
+  urldate = {2026-10-02},
+  annote  = {V1: existence and description confirmed; specification repository at github.com/SigmaHQ/sigma-specification.}
+}
+
+@online{palantir2017ads,
+  author  = {{Palantir Technologies}},
+  title   = {Alerting and Detection Strategy Framework},
+  year    = {2017},
+  url     = {https://blog.palantir.com/alerting-and-detection-strategy-framework-52dc33722df2},
+  annote  = {V2: title, URL and framework sections confirmed; the accompanying repository was created 19 December 2017. Exact publication date of the post not confirmed.}
+}
+
+@online{tyagi2026sigmalint,
+  author  = {Tyagi, Nishant},
+  title   = {Static Quality Assessment of {Sigma} Detection Rules: Framework and Empirical Evaluation},
+  year    = {2026},
+  url     = {https://papers.ssrn.com/abstract=6823718},
+  note    = {SSRN preprint},
+  annote  = {V2: author, title, abstract confirmed; year inferred from the SSRN identifier and the surrounding 2026 literature. Not peer reviewed.}
+}
+
+@misc{dhananjeyan2026exclusion,
+  author        = {Dhananjeyan, Sudaroli and {Kumaran U}},
+  title         = {The Exclusion Ratchet: False-Positive Suppression Accumulates and Persists in Detection Rule Repositories},
+  year          = {2026},
+  eprint        = {2608.31062},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2608.31062},
+  annote        = {V1: authors as given in the retrieved extract; name order of the second author to be checked.}
+}
+
+@misc{maiorano2026probe,
+  author        = {Maiorano, Alexandre Cristov{\~a}o},
+  title         = {From Attack Simulation to {SIEM} Rule: Deterministic Detection-as-Code Synthesis with Probe-Level Traceability},
+  year          = {2026},
+  eprint        = {2606.05252},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.05252},
+  annote        = {V1}
+}
+
+@online{zshguy2026tyrian,
+  author  = {{zshguy}},
+  title   = {Tyrian Detection Pack: {Sigma} detections compiled to {Wazuh}, {Splunk} and {Sentinel}},
+  url     = {https://github.com/zshguy/tyrian-detection-pack},
+  urldate = {2026-10-02},
+  annote  = {V1: repository README read. States that Wazuh rules cannot hold disjunctions (OR becomes sibling rules), that the compiler refuses what it cannot translate faithfully, a 96% compilation rate on the SigmaHQ corpus, and an MIT licence. Software project, not peer reviewed.}
+}
+
+@online{theflakes2024sigmatowazuh,
+  author  = {{theflakes}},
+  title   = {sigma\_to\_wazuh: Convert {Sigma} rules to {Wazuh} rules},
+  url     = {https://github.com/theflakes/sigma_to_wazuh},
+  urldate = {2026-10-02},
+  annote  = {V1: repository README read. Documents partial support (OR logic conversion, no near/timeframe/aggregation) and that the Python version is no longer updated as the project moves to Go. Software project, not peer reviewed.}
+}
+
+@online{wazuh2026overview,
+  author  = {{Wazuh, Inc.}},
+  title   = {Wazuh: Open Source {XDR}. Open Source {SIEM}},
+  url     = {https://wazuh.com/platform/overview/},
+  urldate = {2026-10-02},
+  annote  = {V1}
+}
+
+@online{wazuh2026docs,
+  author  = {{Wazuh, Inc.}},
+  title   = {Wazuh documentation, stable branch 4.14 (user manual: rules, {CDB} lists, logtest, {API} {RBAC})},
+  year    = {2026},
+  url     = {https://github.com/wazuh/wazuh-documentation/tree/4.14},
+  urldate = {2026-10-02},
+  note    = {Source read at commit 617f407, dated 2026-09-30},
+  annote  = {V1: read directly from the documentation repository.}
+}
+
+% ---------- Extracting attack behaviour from CTI text ----------
+@inproceedings{husari2017ttpdrill,
+  author    = {Husari, Ghaith and Al-Shaer, Ehab and Ahmed, Mohiuddin and Chu, Bill and Niu, Xi},
+  title     = {{TTPDrill}: Automatic and Accurate Extraction of Threat Actions from Unstructured Text of {CTI} Sources},
+  booktitle = {Proceedings of the 33rd Annual Computer Security Applications Conference (ACSAC 2017)},
+  year      = {2017},
+  annote    = {V1: authors, venue, year confirmed. Pages not confirmed.}
+}
+
+@misc{legoy2020rcatt,
+  author        = {Legoy, Valentine and Caselli, Marco and Seifert, Christin and Peter, Andreas},
+  title         = {Automated Retrieval of {ATT\&CK} Tactics and Techniques for Cyber Threat Reports},
+  year          = {2020},
+  eprint        = {2004.14322},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2004.14322},
+  annote        = {V2: one extract spelled the first author "Legov" and the second "Christin" Seifert; the spelling "Legoy" follows the author's repository handle. Check against the publisher record.}
+}
+
+@inproceedings{alam2023ladder,
+  author    = {Alam, Md Tanvirul and Bhusal, Dipkamal and Park, Youngja and Rastogi, Nidhi},
+  title     = {Looking Beyond {IoCs}: Automatically Extracting Attack Patterns from External {CTI}},
+  booktitle = {Proceedings of the 26th International Symposium on Research in Attacks, Intrusions and Defenses (RAID '23)},
+  year      = {2023},
+  eprint    = {2211.01753},
+  archiveprefix = {arXiv},
+  annote    = {V1: authors, title, venue (RAID '23, Hong Kong, 16-18 October 2023). The framework is named LADDER.}
+}
+
+@inproceedings{satvat2021extractor,
+  author    = {Satvat, Kiavash and Gjomemo, Rigel and Venkatakrishnan, V. N.},
+  title     = {{EXTRACTOR}: Extracting Attack Behavior from Threat Reports},
+  booktitle = {2021 IEEE European Symposium on Security and Privacy (EuroS\&P)},
+  pages     = {598--615},
+  year      = {2021},
+  annote    = {V1}
+}
+
+@misc{siracusano2023action,
+  author        = {Siracusano, Giuseppe and others},
+  title         = {Time for {aCTIon}: Automated Analysis of Cyber Threat Intelligence in the Wild},
+  year          = {2023},
+  eprint        = {2307.10214},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2307.10214},
+  annote        = {V2: first author and NEC Laboratories Europe affiliation confirmed; full author list not retrieved.}
+}
+
+@inproceedings{alam2024ctibench,
+  author    = {Alam, Md Tanvirul and Bhusal, Dipkamal and Nguyen, Le and Rastogi, Nidhi},
+  title     = {{CTIBench}: A Benchmark for Evaluating {LLMs} in Cyber Threat Intelligence},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {37},
+  pages     = {50805--50825},
+  year      = {2024},
+  note      = {Datasets and Benchmarks Track},
+  annote    = {V3: BibTeX from the authors' repository (github.com/xashru/cti-bench).}
+}
+
+% ---------- LLMs for detection-rule generation ----------
+@misc{schwartz2024llmcloudhunter,
+  author        = {Schwartz, Yuval and Ben-Shimol, Lavi and Mimran, Dudu and Elovici, Yuval and Shabtai, Asaf},
+  title         = {{LLMCloudHunter}: Harnessing {LLMs} for Automated Extraction of Detection Rules from Cloud-Based {CTI}},
+  year          = {2024},
+  eprint        = {2407.05194},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2407.05194},
+  annote        = {V1}
+}
+
+@inproceedings{cai2026sigmerge,
+  author    = {Cai, Yongxin and Qiu, Jing and Li, Qingming and Cheng, Du and Chen, Lei},
+  title     = {From Texts to Rules: Generating {Sigma} Rules with Large Language Models from Cyber Threat Reports},
+  booktitle = {USENIX Security Symposium (USENIX Security 26)},
+  year      = {2026},
+  url       = {https://www.usenix.org/conference/usenixsecurity26/presentation/cai},
+  annote    = {V1: authors, title, venue from the USENIX presentation page as retrieved through search. The framework is named SIGMERGE. Full text not read.}
+}
+
+@misc{ghaffarzadegan2026autosigma,
+  author        = {Ghaffarzadegan, Sepehr and Nour, Boubakr and Pourzandi, Makan and Debbabi, Mourad and Assi, Chadi},
+  title         = {From Threat Intelligence to Detection: Knowledge-driven Enrichment and Template-based Rule Grounding for Automated {Sigma} Rule Generation},
+  year          = {2026},
+  eprint        = {2608.19011},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2608.19011},
+  annote        = {V1: authors and title confirmed. The system is named AutoSigma. Full text not read.}
+}
+
+@misc{chakraborty2026ctirealm,
+  author        = {Chakraborty, Arjun and Ho, Sandra and Cook, Adam and Mel{\'e}ndez, Manuel},
+  title         = {{CTI-REALM}: Benchmark to Evaluate Agent Performance on Security Detection Rule Generation Capabilities},
+  year          = {2026},
+  eprint        = {2603.13517},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2603.13517},
+  annote        = {V1: authors (Microsoft Security AI) and title confirmed. Full text not read.}
+}
+
+@misc{xu2024llmsecurity,
+  author        = {Xu, Hanxiang and Wang, Shenao and Li, Ningke and Wang, Kailong and Zhao, Yanjie and Chen, Kai and Yu, Ting and Liu, Yang and Wang, Haoyu},
+  title         = {Large Language Models for Cyber Security: A Systematic Literature Review},
+  year          = {2024},
+  eprint        = {2405.04760},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2405.04760},
+  annote        = {V1: first submitted May 2024; later versions exist (v5, September 2025). Cite the version used.}
+}
+
+% ---------- LLM reliability, safety, agents ----------
+@article{ji2023hallucination,
+  author  = {Ji, Ziwei and Lee, Nayeon and Frieske, Rita and Yu, Tiezheng and Su, Dan and Xu, Yan and Ishii, Etsuko and Bang, Yejin and Madotto, Andrea and Fung, Pascale},
+  title   = {Survey of Hallucination in Natural Language Generation},
+  journal = {ACM Computing Surveys},
+  volume  = {55},
+  number  = {12},
+  pages   = {248:1--248:38},
+  year    = {2023},
+  annote  = {V1: the spelling of the ninth-listed author's given name ("Yejin" in the retrieved extract) to be checked.}
+}
+
+@inproceedings{greshake2023indirect,
+  author    = {Greshake, Kai and Abdelnabi, Sahar and Mishra, Shailesh and Endres, Christoph and Holz, Thorsten and Fritz, Mario},
+  title     = {Not what you've signed up for: Compromising Real-World {LLM}-Integrated Applications with Indirect Prompt Injection},
+  booktitle = {Proceedings of the 16th ACM Workshop on Artificial Intelligence and Security (AISec '23)},
+  year      = {2023},
+  annote    = {V1: authors, title, venue (AISec at ACM CCS 2023); first posted February 2023.}
+}
+
+@inproceedings{perez2022ignore,
+  author    = {Perez, F{\'a}bio and Ribeiro, Ian},
+  title     = {Ignore Previous Prompt: Attack Techniques For Language Models},
+  booktitle = {NeurIPS 2022 ML Safety Workshop},
+  year      = {2022},
+  eprint    = {2211.09527},
+  archiveprefix = {arXiv},
+  annote    = {V1}
+}
+
+@online{owasp2023llmtop10,
+  author  = {{OWASP Foundation}},
+  title   = {{OWASP} Top 10 for Large Language Model Applications, Version 1.0},
+  year    = {2023},
+  month   = aug,
+  url     = {https://owasp.org/www-project-top-10-for-large-language-model-applications/assets/PDF/OWASP-Top-10-for-LLMs-2023-slides-v1_0.pdf},
+  annote  = {V1: version 1.0 published 1 August 2023 (from the document title). Later editions exist; cite the one used.}
+}
+
+@online{schluntz2024effective,
+  author  = {Schluntz, Erik and Zhang, Barry},
+  title   = {Building effective agents},
+  year    = {2024},
+  organization = {Anthropic},
+  url     = {https://www.anthropic.com/engineering/building-effective-agents},
+  annote  = {V1: authors and content confirmed; December 2024 per secondary descriptions. Industry article, not peer reviewed.}
+}
+
+@inproceedings{madaan2023selfrefine,
+  author    = {Madaan, Aman and others},
+  title     = {Self-Refine: Iterative Refinement with Self-Feedback},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {36},
+  year      = {2023},
+  eprint    = {2303.17651},
+  archiveprefix = {arXiv},
+  annote    = {V2: title, venue (NeurIPS 2023), first author confirmed; remaining authors not retrieved.}
+}
+
+@inproceedings{chen2024selfdebug,
+  author    = {Chen, Xinyun and others},
+  title     = {Teaching Large Language Models to Self-Debug},
+  booktitle = {The Twelfth International Conference on Learning Representations (ICLR 2024)},
+  year      = {2024},
+  eprint    = {2304.05128},
+  archiveprefix = {arXiv},
+  annote    = {V2: title, venue (ICLR 2024) confirmed; authors not retrieved; first author from memory.}
+}
+
+@inproceedings{zheng2023judge,
+  author    = {Zheng, Lianmin and Chiang, Wei-Lin and Sheng, Ying and Zhuang, Siyuan and Wu, Zhanghao and Zhuang, Yonghao and Lin, Zi and Li, Zhuohan and Li, Dacheng and Xing, Eric P. and Zhang, Hao and Gonzalez, Joseph E. and Stoica, Ion},
+  title     = {Judging {LLM}-as-a-Judge with {MT}-Bench and Chatbot Arena},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {36},
+  year      = {2023},
+  note      = {Datasets and Benchmarks Track},
+  annote    = {V1}
+}
+
+@inproceedings{sainz2023contamination,
+  author    = {Sainz, Oscar and Campos, Jon Ander and Garc{\'\i}a-Ferrero, Iker and Etxaniz, Julen and de Lacalle, Oier Lopez and Agirre, Eneko},
+  title     = {{NLP} Evaluation in trouble: On the Need to Measure {LLM} Data Contamination for each Benchmark},
+  booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2023},
+  pages     = {10776--10787},
+  year      = {2023},
+  annote    = {V1}
+}
+
+% ---------- Humans, automation, and evaluation methodology ----------
+@inproceedings{alahmadi2022false,
+  author    = {Alahmadi, Bushra A. and Axon, Louise and Martinovic, Ivan},
+  title     = {99\% False Positives: A Qualitative Study of {SOC} Analysts' Perspectives on Security Alarms},
+  booktitle = {31st USENIX Security Symposium (USENIX Security 22)},
+  year      = {2022},
+  url       = {https://www.usenix.org/conference/usenixsecurity22/presentation/alahmadi},
+  annote    = {V1: authors, title, venue, year, and the study design (survey n=20, interviews n=21) confirmed.}
+}
+
+@article{parasuraman2010complacency,
+  author  = {Parasuraman, Raja and Manzey, Dietrich H.},
+  title   = {Complacency and Bias in Human Use of Automation: An Attentional Integration},
+  journal = {Human Factors},
+  volume  = {52},
+  number  = {3},
+  pages   = {381--410},
+  year    = {2010},
+  annote  = {V1}
+}
+
+@article{goddard2012automation,
+  author  = {Goddard, Kate and Roudsari, Abdul and Wyatt, Jeremy C.},
+  title   = {Automation bias: a systematic review of frequency, effect mediators, and mitigators},
+  journal = {Journal of the American Medical Informatics Association},
+  volume  = {19},
+  number  = {1},
+  pages   = {121--127},
+  year    = {2012},
+  annote  = {V1}
+}
+
+@article{hevner2004design,
+  author  = {Hevner, Alan R. and March, Salvatore T. and Park, Jinsoo and Ram, Sudha},
+  title   = {Design Science in Information Systems Research},
+  journal = {MIS Quarterly},
+  volume  = {28},
+  number  = {1},
+  pages   = {75--105},
+  year    = {2004},
+  annote  = {V1}
+}
+
+@article{peffers2007dsrm,
+  author  = {Peffers, Ken and Tuunanen, Tuure and Rothenberger, Marcus A. and Chatterjee, Samir},
+  title   = {A Design Science Research Methodology for Information Systems Research},
+  journal = {Journal of Management Information Systems},
+  volume  = {24},
+  number  = {3},
+  pages   = {45--77},
+  year    = {2007},
+  annote  = {V2: authors, title, journal, volume, issue, year confirmed; pages from memory.}
+}
+
+@article{schuirmann1987tost,
+  author  = {Schuirmann, Donald J.},
+  title   = {A comparison of the Two One-Sided Tests Procedure and the Power Approach for assessing the equivalence of average bioavailability},
+  journal = {Journal of Pharmacokinetics and Biopharmaceutics},
+  volume  = {15},
+  number  = {6},
+  pages   = {657--680},
+  year    = {1987},
+  annote  = {V1}
+}
+
+@article{lakens2017equivalence,
+  author  = {Lakens, Dani{\"e}l},
+  title   = {Equivalence Tests: A Practical Primer for $t$ Tests, Correlations, and Meta-Analyses},
+  journal = {Social Psychological and Personality Science},
+  volume  = {8},
+  number  = {4},
+  pages   = {355--362},
+  year    = {2017},
+  doi     = {10.1177/1948550617697177},
+  annote  = {V2: author, title, journal, year, DOI confirmed; volume, issue and pages from memory.}
+}

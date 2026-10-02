@@ -1429,6 +1429,8 @@ The software shows concise totals only. The cost model, scenario and sensitivity
 
 ## 35. Expected Contributions
 
+*Positioning (from the literature review, `paper/chapters/02_literature_review.md`).* LLM-based Sigma generation from threat reports already exists and is strong (SIGMERGE, AutoSigma, LLMCloudHunter), and CTI-REALM benchmarks agents on the task. ATIDEP therefore does not claim a more accurate generator. Its contributions are the governed, fail-closed workflow for an open-source target and an evaluation that measures analyst effort, independently judged quality and gate effectiveness under attack. This positioning rests on abstract-level reading of the 2024-2026 works and must be re-checked against their full texts before the thesis is submitted.
+
 1. A reference architecture for governed CTI-to-detection automation with deterministic gates around bounded LLM steps.
 2. A **documented Wazuh-compatible Sigma subset and a conservative converter** that refuses what it cannot translate faithfully, plus a conversion-fidelity measurement method.
 3. An evidence-linked generation method (verbatim-quote verification, constrained fields, assumption declaration).
