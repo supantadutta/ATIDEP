@@ -1,0 +1,8 @@
+sources:
+  - name: example-feed
+    type: rss
+    url: "https://example.invalid/feed.xml"
+    allowed_domains: ["example.invalid"]
+    reliability: B            # Admiralty letter
+    default_credibility: 3    # Admiralty digit
+    rate_limit_per_hour: 6

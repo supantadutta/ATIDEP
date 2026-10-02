@@ -1,0 +1,19 @@
+currency: BDT
+labor:
+  analyst_hourly_rate: 800
+  engineer_hourly_rate: 1200
+  reviewer_hourly_rate: 1500
+infrastructure:
+  electricity_per_kwh: 15
+  hardware_monthly_allocation: 1500
+  storage_monthly_allocation: 300
+cloud_ai:
+  input_cost_per_million_tokens: 0
+  output_cost_per_million_tokens: 0
+maintenance:
+  monthly_connector_hours: 4
+  monthly_rule_tuning_hours: 6
+  monthly_platform_admin_hours: 4
+analysis:
+  amortisation_horizon_months: [12, 24, 36]
+  volume_scenarios_items_per_month: [50, 200, 1000]

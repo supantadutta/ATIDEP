@@ -1,0 +1,48 @@
+rule_generation:
+  minimum_intelligence_confidence: 60     # computed IC, 0-100 (not LLM-stated)
+  minimum_evidence_support_pct: 80        # share of claims with verified quotes
+  require_evidence_ids: true
+  repair_max_attempts: 2
+
+validation:
+  hard_gates: [G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11]
+  all_hard_gates_required: true
+  quality_score_is_a_gate: false          # ranking only
+  max_benign_match_pct: 0.5               # G11; pilot-fixed
+  require_positive_test: true
+  require_negative_test: true
+  require_benign_lookalike_test: true
+
+approval:
+  deployment_requires_human: true
+  approval_bound_to_content_hash: true
+  edit_voids_approval: true
+  allow_automatic_production_deployment: false
+
+llm:
+  tools_enabled: false
+  permit_command_generation: false
+  redact_sensitive_fields: true
+  reject_non_schema_output: true
+  use_stated_confidence_in_decisions: false
+  daily_cost_limit: 5.00
+  runs_per_item: 3
+
+ingest:
+  allowed_schemes: [https]
+  max_redirects: 3
+  max_response_mb: 10
+  block_private_and_reserved_ranges: true
+  connect_to_validated_ip: true
+
+deployment:
+  mode_default: dry_run
+  wazuh_api_allowlist:                    # method + path patterns; everything else is refused
+    - "PUT /logtest"
+    - "PUT /rules/files/*"
+    - "GET /rules/files/*"
+    - "PUT /lists/files/*"
+    - "GET /lists/files/*"
+    - "PUT /manager/restart"
+  custom_rule_id_range: [100000, 120000]  # per Wazuh 4.14 custom-rules docs
+  max_sibling_rules_per_sigma_rule: 20

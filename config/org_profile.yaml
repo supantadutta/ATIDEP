@@ -1,0 +1,5 @@
+organization: "Synthetic Org Ltd (fictional)"
+sector: financial_services
+operating_systems: [windows_10, windows_11, windows_server_2019, ubuntu_22_04]
+applications: [microsoft_365, active_directory, chrome, openssh_server]
+log_sources_collected: [sysmon_event_1, sysmon_event_3, sysmon_event_22, linux_auditd]

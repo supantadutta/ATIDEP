@@ -1,0 +1,12 @@
+# Runtime settings. Secrets never go here; use environment variables (.env.example).
+database:
+  url: "sqlite:///data/platform.db"
+paths:
+  evidence_dir: data/evidence
+  upload_dir: data/uploads
+  export_dir: data/exports
+  rules_dir: rules
+  deployment_dir: deployment
+api:
+  host: 127.0.0.1          # localhost only (blueprint §19.6)
+  port: 8000

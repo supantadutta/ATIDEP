@@ -1,0 +1,14 @@
+design: counterbalanced_crossover
+washout_days_min: 14
+set_assignment_seed: TBD                   # committed before assignment
+runs_per_item: 3
+model: {id: TBD, version: TBD, training_cutoff: TBD}   # fixed in S3
+primary_endpoint: analyst_active_minutes_per_item
+delta_t_pct: 30                            # provisional; pilot-fixed
+delta_q_rubric_points: 0.5                 # provisional; pilot-fixed
+h6_min_fp_reduction_pct: 50                # provisional; pilot-fixed
+h6_min_tp_retention_pct: 90
+alpha_familywise: 0.05
+bootstrap_resamples: 10000
+second_labeler_min_items: 10
+independent_analyst_min_items: 8          # only if the optional subset is run

@@ -1,0 +1,18 @@
+logsources:
+  windows_process_creation:
+    available: true
+    events: [sysmon_event_1]
+    fields: [Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName]
+  windows_network_connection:
+    available: true
+    events: [sysmon_event_3]
+    fields: [Image, DestinationIp, DestinationPort, Initiated]
+  windows_dns_query:
+    available: true
+    events: [sysmon_event_22]
+    fields: [Image, QueryName]
+  windows_powershell_script_block:
+    available: false                       # drives Scenario 5
+    events: [windows_event_4104]
+    fields: [ScriptBlockText]
+    enable_hint: "Enable PowerShell Script Block Logging via Group Policy."

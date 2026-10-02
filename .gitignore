@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Local data: evidence, uploads, database, exports
+data/*
+!data/.gitkeep
+
+# Generated rule/deployment artefacts stay out of git except curated samples
+deployment/packages/*
+deployment/rollback/*
+!deployment/packages/.gitkeep
+!deployment/rollback/.gitkeep
