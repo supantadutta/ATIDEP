@@ -175,6 +175,53 @@ def loop_validator(session: Session, cfg: AppConfig, attack: AttackRelease):
             session, key, id_range=tuple(cfg.policies.deployment.custom_rule_id_range)))
 
 
+@dataclass
+class Evaluation:
+    """The result of running the gates, before anything is stored or any state changes."""
+
+    results: list[GateResult]
+    blocked: bool
+    detail: dict[str, Any]
+    static: StaticReport | None
+    events: EventGateReport | None
+
+
+def evaluate_rule(session: Session, rule: m.Rule, version: m.RuleVersion, *, cfg: AppConfig,
+                  attack: AttackRelease, test_set: TestSet | None = None,
+                  baseline: list[TestEvent] | None = None, lab: LabManager | None = None
+                  ) -> Evaluation:
+    opp_row = session.get(m.DetectionOpportunity, rule.opportunity_id)
+    assert opp_row is not None
+    opp = to_schema(opp_row)
+    detail: dict[str, Any] = {}
+    if rule.kind != RuleKind.SIGMA.value:
+        results, blocked, detail, events, static = _validate_ioc(
+            session, rule, version, opp_row.intel_id, cfg, baseline, lab)
+        return Evaluation(_complete(results), blocked, detail, static, events)
+    quotes = _verified_quotes(session, opp_row.intel_id, opp.evidence_ids)
+    inp = GateInputs(
+        opp, quotes, cfg.telemetry_catalog, cfg.wazuh_mapping, attack, cfg.policies,
+        lambda key: allocate_rule_id(session, key,
+                                     id_range=tuple(cfg.policies.deployment.custom_rule_id_range)))
+    static = run_static_gates(version.content, [Assumption(**a) for a in version.assumptions],
+                              inp)
+    results = list(static.results)
+    events: EventGateReport | None = None
+    if static.passed and static.ir is not None and static.conversion is not None:
+        if test_set is None or baseline is None:
+            raise GovernanceError("a test set and a benign baseline are needed for G8-G11")
+        runners: list[Any] = [Tier1Runner(static.ir, cfg.wazuh_mapping)]
+        if lab is not None:
+            runners.append(Tier2Runner(lab, static.conversion.xml, static.conversion.rule_ids))
+        events = run_event_gates(static.ir, test_set, baseline, runners, cfg.policies)
+        results += events.results
+        detail = {"events": events.details, "conversion": static.conversion.report}
+    detail["defects"] = [d.model_dump() for d in static.defects
+                         + (events.defects if events else [])]
+    detail["static_stats"] = static.stats
+    return Evaluation(_complete(results), static.blocked, detail, static, events)
+
+
 def validate_rule(session: Session, rule_id: str, *, cfg: AppConfig, attack: AttackRelease,
                   test_set: TestSet | None = None, baseline: list[TestEvent] | None = None,
                   lab: LabManager | None = None, actor: str = "system") -> ValidationOutcome:
@@ -182,44 +229,14 @@ def validate_rule(session: Session, rule_id: str, *, cfg: AppConfig, attack: Att
     if rule.state != RuleState.DRAFT.value:
         raise GovernanceError(f"{rule_id} is {rule.state}; only drafts are validated")
     version = _current(session, rule)
-    opp_row = session.get(m.DetectionOpportunity, rule.opportunity_id)
-    assert opp_row is not None
-    opp = to_schema(opp_row)
-    quotes = _verified_quotes(session, opp_row.intel_id, opp.evidence_ids)
-    detail: dict[str, Any] = {}
-
-    if rule.kind == RuleKind.SIGMA.value:
-        inp = GateInputs(
-            opp, quotes, cfg.telemetry_catalog, cfg.wazuh_mapping, attack, cfg.policies,
-            lambda key: allocate_rule_id(session, key,
-                                         id_range=tuple(cfg.policies.deployment.custom_rule_id_range)))
-        static: StaticReport = run_static_gates(
-            version.content, [Assumption(**a) for a in version.assumptions], inp)
-        results = list(static.results)
-        events: EventGateReport | None = None
-        if static.passed and static.ir is not None and static.conversion is not None:
-            if test_set is None or baseline is None:
-                raise GovernanceError("a test set and a benign baseline are needed for G8-G11")
-            runners: list[Any] = [Tier1Runner(static.ir, cfg.wazuh_mapping)]
-            if lab is not None:
-                runners.append(Tier2Runner(lab, static.conversion.xml,
-                                           static.conversion.rule_ids))
-            events = run_event_gates(static.ir, test_set, baseline, runners, cfg.policies)
-            results += events.results
-            detail = {"events": events.details, "conversion": static.conversion.report}
-        blocked = static.blocked
-        defects = [d.model_dump() for d in static.defects + (events.defects if events else [])]
-        detail["defects"] = defects
-        detail["static_stats"] = static.stats
-    else:
-        results, blocked, detail, events, static = _validate_ioc(
-            session, rule, version, opp_row.intel_id, cfg, baseline, lab)
-    results = _complete(results)
+    ev = evaluate_rule(session, rule, version, cfg=cfg, attack=attack, test_set=test_set,
+                       baseline=baseline, lab=lab)
+    results, blocked, detail = ev.results, ev.blocked, ev.detail
     outcome = ValidationResult(results=results).outcome
     score: int | None = None
     breakdown: list[dict[str, Any]] = []
     if outcome is Outcome.VALIDATED:
-        score, breakdown = _score(version, rule, static, events, cfg)
+        score, breakdown = _score(version, rule, ev.static, ev.events, cfg)
         version.quality_score = score
     _store(session, version, results)
     digest = report_sha256(results)
@@ -231,9 +248,8 @@ def validate_rule(session: Session, rule_id: str, *, cfg: AppConfig, attack: Att
     append_audit_event(session, actor=actor, action="validate.completed", entity_type="rule",
                        entity_id=rule_id,
                        details={"version": version.version, "outcome": outcome.value,
-                                "failed": [g.value for g in
-                                           (r.gate for r in results
-                                            if r.status is GateStatus.FAILED)],
+                                "failed": [r.gate.value for r in results
+                                           if r.status is GateStatus.FAILED],
                                 "report_sha256": digest, "state_before": old.value,
                                 "quality_score": score,
                                 "tier": max((r.tier or 0) for r in results)})

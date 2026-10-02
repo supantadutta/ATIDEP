@@ -35,6 +35,10 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI declares parameters with calls in the defaults
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Body", "fastapi.Header"]
+
 [tool.ruff.lint.per-file-ignores]
 "spikes/*" = ["E501", "UP031"]   # lab scripts, not product code
 "tests/*" = ["E501"]              # long data literals (HTML, feeds, certificates)

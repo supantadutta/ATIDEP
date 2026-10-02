@@ -24,6 +24,9 @@ def make_engine(url: str = "sqlite:///data/platform.db") -> Engine:
         def _enable_foreign_keys(dbapi_conn, _record):  # pragma: no cover - trivial
             cursor = dbapi_conn.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
+            if ":memory:" not in url:                   # the API and the UI share one file
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA busy_timeout=5000")
             cursor.close()
 
     return engine
