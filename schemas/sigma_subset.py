@@ -32,6 +32,10 @@ class UnsupportedReason(StrEnum):
     UNSUPPORTED_AGGREGATION = "UNSUPPORTED_AGGREGATION"
     UNSUPPORTED_CORRELATION = "UNSUPPORTED_CORRELATION"
     EXPANSION_TOO_LARGE = "EXPANSION_TOO_LARGE"
+    UNSUPPORTED_SELECTION = "UNSUPPORTED_SELECTION"   # keyword lists, null values, no positive term
+    INVALID_CONDITION = "INVALID_CONDITION"           # the condition does not parse
+    INVALID_REGEX = "INVALID_REGEX"
+    UNMAPPED_FIELD = "UNMAPPED_FIELD"                 # no Wazuh field known for a Sigma field
 
 
 class Level(StrEnum):

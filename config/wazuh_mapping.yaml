@@ -1,9 +1,15 @@
 level_map: {informational: 3, low: 5, medium: 8, high: 10, critical: 12}
-field_map:                                 # confirmed on Wazuh 4.14.8 (spike S1)
+field_map:                                 # decoded names confirmed on Wazuh 4.14.8 (S1, C4)
   CommandLine: win.eventdata.commandLine
   Image: win.eventdata.image
   ParentImage: win.eventdata.parentImage
+  ParentCommandLine: win.eventdata.parentCommandLine
+  User: win.eventdata.user
+  OriginalFileName: win.eventdata.originalFileName
+  Hashes: win.eventdata.hashes
   DestinationIp: win.eventdata.destinationIp
+  DestinationPort: win.eventdata.destinationPort
+  Initiated: win.eventdata.initiated
   QueryName: win.eventdata.queryName
 parent_sids:                               # see knowledge/wazuh_parent_sids.json
   process_creation: 61603

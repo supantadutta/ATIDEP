@@ -32,6 +32,9 @@ from schemas.claim import Claim, ClaimKind, IndicatorContext, IndicatorType
 from schemas.ioc_bundle import ExcludedIoc, ExclusionReason, IocBundle, IocEntry
 
 IOC_RULE_LEVEL = 10
+# The Wazuh API refuses an empty CDB list (ADR-001 F12), so an empty list holds one key that
+# cannot occur in telemetry: a name under the reserved .invalid TLD and a class E address.
+EMPTY_LIST_SENTINEL = {"domain": "placeholder.invalid:\n", "ipv4": "240.0.0.1:\n"}
 HASH_LENGTH = {IndicatorType.MD5: 32, IndicatorType.SHA1: 40, IndicatorType.SHA256: 64}
 HASH_LABEL = {IndicatorType.MD5: "MD5", IndicatorType.SHA1: "SHA1", IndicatorType.SHA256: "SHA256"}
 _DOMAIN = re.compile(r"^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9-]{2,63}$")
@@ -185,12 +188,14 @@ def _split_targets(entries: Iterable[IocEntry]
 
 
 def render_lists(entries: Iterable[IocEntry], policy: PoliciesConfig) -> dict[str, str]:
-    """CDB list files (file name -> content) for the given entries, sorted and deduplicated."""
+    """CDB list files (file name -> content) for the given entries, sorted and deduplicated.
+    A list with no entries holds a sentinel key, because the API refuses an empty file."""
     domains, ips, _ = _split_targets(entries)
     names = policy.ioc.list_names
     ip_sorted = sorted(ips, key=lambda a: tuple(int(p) for p in a.split(".")))
-    return {names["domain"]: "".join(f"{d}:\n" for d in sorted(domains)),
-            names["ipv4"]: "".join(f"{a}:\n" for a in ip_sorted)}
+    return {names["domain"]: "".join(f"{d}:\n" for d in sorted(domains))
+            or EMPTY_LIST_SENTINEL["domain"],
+            names["ipv4"]: "".join(f"{a}:\n" for a in ip_sorted) or EMPTY_LIST_SENTINEL["ipv4"]}
 
 
 @dataclass

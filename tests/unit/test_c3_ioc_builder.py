@@ -190,7 +190,8 @@ def test_lists_are_sorted_deduplicated_and_urls_contribute_their_host():
 
 def test_empty_bundles_render_empty_lists_and_no_rules():
     lists = render_lists([], POLICY)
-    assert lists == {"atidep-domains": "", "atidep-ips": ""}
+    # the Wazuh API refuses an empty list file, so each holds one inert sentinel key
+    assert lists == {"atidep-domains": "placeholder.invalid:\n", "atidep-ips": "240.0.0.1:\n"}
     assert render_rules({}, policy=POLICY, allocate=lambda k: 1).xml == ""
 
 
