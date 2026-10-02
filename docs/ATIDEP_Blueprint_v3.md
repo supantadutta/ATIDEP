@@ -44,6 +44,7 @@ v3 keeps the v2 architecture and governance ideas (evidence grounding, determini
 | 21 | Security gaps. | SSRF guard, sandboxed document parsing, IOC refanging, benign-domain allowlist, verbatim-quote check, tool-less extraction model. | 19 |
 | 22 | "Environmental relevance", "potential impact" and source reliability were undefined. | Defined, with a synthetic organisation profile. | 17.2.5 |
 | 23 | Editorial: subsection numbers did not match sections; "a open-source" typo; success statement near-unfalsifiable; cost positioned as both secondary and central. | Renumbered; fixed; success split into engineering criteria and reported-either-way research outcomes; one cost lane. | throughout |
+| 24 | Cost story blurred between the solution and the paper, and "cost-effective with open source" was never defined measurably. | One cost story in two registers with a fixed interface; three pre-registered cost-effectiveness checks (C1-C3); a dedicated paper chapter; local-first inference with a cloud opt-in cap; an open-source claim audit. | 2.4, 22 |
 
 ### 0.2 How to read the status of claims about Wazuh
 
@@ -92,9 +93,20 @@ The minimum viable product uses **Python, FastAPI, Streamlit, SQLite, Sigma, MIT
 
 ATIDEP is agentic but not dangerously autonomous. LLM agents may extract, reason, draft, and recommend, but they have no tools, cannot execute anything, and cannot deploy. Deployment requires passing every hard gate plus a recorded human approval bound to the exact rule content. The platform never executes model-generated commands.
 
-### 2.4 Cost-positioning decision (one lane)
+### 2.4 Cost-positioning decision (one story, two registers)
 
-Cost is a **secondary, descriptive** dimension. The application's only cost responsibilities are to record timers, token usage, API calls, CPU/RAM samples, and accepted outputs, and to show totals. Total-cost-of-ownership modelling, unit economics, and break-even projections are computed offline from the exported records and reported in the paper (§22). No research question or hypothesis depends on a commercial-platform price comparison, and no ROI percentage is reported.
+Cost-effectiveness is part of the project's purpose: the claim is that a fully open-source pipeline can do this job without significant spending. To stop the solution and the paper from blurring into each other, cost is organised as **one story told in two registers, with a fixed interface**.
+
+| | Solution (project plan) | Paper |
+|---|---|---|
+| Role | Constraint and measurement: be cost-aware by construction | Research dimension: analyse, and be explicit about assumptions |
+| Contains | Open-source-only stack with a bill of materials and licence audit; local-first inference with cloud as an opt-in under a hard daily cap; timers, tokens, CPU/RAM and API-call records; running totals in one UI tab; CSV/SQLite export | Cost analysis (TCO in build and adopt views, unit economics, break-even, sensitivity); cost awareness (hidden-cost register, stated assumptions, where the conclusion fails); the cost-effectiveness verdict (C1-C3, §22.6) |
+| Lives in | §13, §22.1-22.2, §22.7, §23, `policies.yaml` | Chapter 8 of the paper (§34.2, §22.8), Section 2.8 of the paper's literature review, the method chapter's cost section, threats to validity |
+| Never contains | Cost modelling, ROI, price-comparison logic | Claims that were not measured |
+
+**Interface.** The paper consumes only (a) the exported effort and cost records and (b) the versioned `config/cost_rates.yaml`. The application computes nothing beyond running totals and the budget cap. Everything else is done offline and can be re-run from the exported data.
+
+**What "cost-effective" means here.** Three pre-registered, descriptive checks (§22.6): C1, an open-source stack with a measured cash outlay; C2, a lower adopt-view cost per accepted rule than the manual workflow; C3, a reported break-even volume with sensitivity analysis. Analyst labour is expected to dominate cost, so the verdict depends mainly on the measured efficiency result (H1) and the documented rates. The thesis does not claim that the open-source stack is cheaper than any commercial platform, because no commercial baseline is measured.
 
 ### 2.5 Success criteria
 
@@ -197,7 +209,7 @@ To design, implement, and experimentally evaluate an open-source platform, ATIDE
 
 ### Secondary (descriptive) research question
 
-8. What are the per-item and per-accepted-rule costs, and at what monthly volume would automation savings exceed development and maintenance costs under stated assumptions?
+8. Is the open-source workflow cost-effective under the three pre-registered checks of §22.6 (open-source stack and cash outlay, cost per accepted rule against the manual workflow, and break-even volume), and how sensitive is that conclusion to its assumptions?
 
 ---
 
@@ -219,7 +231,7 @@ All thresholds below marked **(pilot-fixed)** are set from the pilot set, writte
 
 **Exploratory analysis (no hypothesis).**
 
-- **E1 (economics).** Cost per item and per accepted rule, and the break-even monthly volume under stated scenarios (§22). Reported descriptively with sensitivity analysis.
+- **E1 (cost-effectiveness).** The three descriptive checks C1-C3 of §22.6, with the supporting unit costs and break-even volume under stated scenarios. Reported with bootstrap intervals and sensitivity analysis; no additional hypothesis test is made.
 
 v2's H6 (open-source workflow cheaper than "an equivalent manually operated or commercial workflow") is removed: the manual workflow has no software cost, so the claim was trivially true, and no commercial baseline was ever measured.
 
@@ -377,7 +389,7 @@ Merging v2's agents this way removes roughly four weeks of plumbing from the pla
 
 ### AI layer
 
-- Provider-neutral LLM adapter; one pinned primary model (local Ollama model or a limited cloud model with redacted inputs), selected in spike S3.
+- Provider-neutral LLM adapter; one pinned primary model, **local-first** (an open-weight model run with Ollama; a cloud model only by explicit opt-in, with redacted inputs and a hard daily cost cap), selected in spike S3.
 - Strict JSON output schema; temperature and seed fixed; prompt hashes recorded; no tool use, no function calling, no web access for any agent.
 
 ### Testing and quality
@@ -997,11 +1009,11 @@ Each spike has a time box, pass criteria, and a recorded decision (ADR). Results
 
 ---
 
-## 22. Cost Measurement and Analysis (secondary lane)
+## 22. Cost Awareness and Cost Analysis
 
-### 22.1 Positioning
+### 22.1 Division of responsibility
 
-The application records measurements; the paper analyses them. The UI has one Results & Cost tab with totals. No research claim depends on a price comparison with a commercial platform. If one is wanted, it appears as an appendix labelled *illustrative, based on published list prices, not measured*.
+The division and the interface are fixed in §2.4. In short: the application records and enforces (§22.2, §22.7); the paper analyses and judges (§22.3-22.6, §22.8). No research claim depends on a price comparison with a commercial platform. If one is wanted, it appears as an appendix labelled *illustrative, based on published list prices, not measured*, and only if the prices can be verified from the vendors' own publications.
 
 ### 22.2 Recorded cost events
 
@@ -1042,6 +1054,44 @@ Break-even volume per month  N* = (D/T + M) / (cm − ca)      (defined only if 
 ```
 
 Report N* and the savings curve at **50, 200, and 1,000 items per month**, for T = 12, 24, 36 months, with a sensitivity (tornado) analysis on rates, task times, and model price. At the study's scale (about 30 items), savings will be far below development cost; the paper states this plainly and presents the result as a projection, not a demonstrated return.
+
+### 22.6 Cost-effectiveness criteria (pre-registered, descriptive)
+
+"Cost-effective with a fully open-source platform" is operationalised as three checks, fixed in `config/experiment.yaml` before the main run. They are descriptive findings derived from data collected for H1; they are not extra hypothesis tests and carry no multiplicity correction.
+
+- **C1. Open-source stack and cash outlay.**
+  - Every software component in the bill of materials carries a licence that meets the Open Source Initiative's Open Source Definition (OSI, *The Open Source Definition*). The bill of materials is generated in week 12 (§22.7).
+  - The language model is recorded with its licence and classified. An open-weight model under a permissive licence is not "open-source AI" under the OSI's Open Source AI Definition 1.0 unless data information and code are also disclosed, so the thesis describes the stack as *an open-source software stack with an open-weight model* unless the pinned model meets that definition.
+  - Cash cost: measured spend on inference and services over the whole experiment, reported separately for local and cloud modes. Licence fees are zero; local inference costs electricity only.
+- **C2. Unit cost.** The adopt-view cost per accepted rule under ATIDEP is lower than under the manual workflow at the base-case rates, reported with a bootstrap 95% interval. Because cost is analyst minutes multiplied by a rate, plus inference and infrastructure, C2 is largely H1 restated in money, and the paper says so.
+- **C3. Break-even.** N* and the scenario table of §22.5 are reported with a sensitivity analysis. The verdict names the volume range in which the workflow pays back and the range in which it does not.
+
+**Not claimed.** That the open-source stack is cheaper than any commercial platform (no commercial baseline is measured), or any saving beyond what measured active time and documented rates support.
+
+### 22.7 Cost awareness in the solution
+
+Small, enforceable, and testable; nothing here models cost.
+
+- **Open-source-only stack.** `tools/licence_audit.py` (week 12) lists every direct and transitive Python dependency with its licence, the Wazuh version and licence, and the pinned model with its licence. The output is the bill of materials used for C1.
+- **Local-first inference.** `policies.llm.local_first` is always true and `cloud_enabled` is false by default. The configuration loader refuses to enable cloud inference without a positive daily cost cap. Cost-aware routing between models (cascades or learned routers) is out of scope beyond a two-mode local/cloud choice; the local versus cloud comparison is an exploratory condition if time permits.
+- **No repeated spend.** Each model call is logged with token counts and a price snapshot, and identical calls are replayed from saved outputs (§24), so experiments are not paid for twice.
+- **Running totals.** The Results & Cost tab (§23) shows tokens, analyst minutes and estimated cost per item.
+- **No hardware purchase.** Staged execution (§24) keeps the work within the existing 12 GB host.
+
+### 22.8 Cost awareness in the paper
+
+Cost awareness in the paper means being explicit about what was measured, what was assumed, and what would change the conclusion. The cost chapter (Chapter 8) has this structure:
+
+1. Cost model and assumptions: rates and their sources, currency (BDT), build and adopt views, horizon.
+2. Measured quantities: analyst active minutes by condition, tokens, CPU, RAM and electricity, cash spent.
+3. Unit economics: cost per item, per generated rule, per accepted rule and per useful alert, each with a bootstrap interval.
+4. Break-even and scenarios: 50, 200 and 1,000 items per month; horizons of 12, 24 and 36 months.
+5. Sensitivity: a tornado analysis over analyst rate, task time, review share, model price, hardware life and maintenance hours.
+6. Hidden-cost register: maintenance, model and prompt drift, rule tuning, review time, onboarding, model-licence compliance, electricity and backups, each with an estimated monthly effort marked as measured or assumed.
+7. Open-source claim audit: the C1 bill of materials, with the model's licence and classification.
+8. Verdict and limits: C1-C3, and the conditions under which the conclusion fails (low volume, a high review share, changed cloud prices).
+
+The principles are: state every rate with its source; separate measured from assumed; show which conclusions flip under plausible changes; and say plainly that analyst labour is expected to dominate and that licence savings matter only relative to an alternative that was not measured.
 
 ---
 
@@ -1148,11 +1198,11 @@ Experiments and writing are protected; the build freezes at the end of week 12. 
 | 9 | Converter productionised; IOC builder; Tier 1 matcher; event corpora | Seeded bad-rule set authored | **First end-to-end rule on 3 pilot items** |
 | 10 | G3, G6, G8–G11; approval; audit chain | Injection report set authored | All gates implemented |
 | 11 | Wazuh adapter; Tier 2; deploy/rollback; Improvement Agent | Rubric draft; calibration on pilot rules | Dry-run and rollback demonstrated |
-| 12 | UI (3 pages), timers, cost records; baseline C and ablation switches; pilot run | Fix thresholds (δ_t, Δ_q, G11 rate) from pilot; commit `config/experiment.yaml` | **FREEZE: tag `freeze-v1`, tag `prereg-v1`** |
+| 12 | UI (3 pages), timers, cost records; baseline C and ablation switches; pilot run; bill of materials and licence audit | Fix thresholds (δ_t, Δ_q, G11 rate) from pilot; document cost rates with their sources; commit `config/experiment.yaml` | **FREEZE: tag `freeze-v1`, tag `prereg-v1`** |
 | 13 | bug fixes only (no features) | Agentic runs ×3 per item; **Set Y agentic review**; baseline C and ablations; adversarial experiments | Raw experimental data complete for automated parts |
 | 14 | none | **Set X agentic review**; feedback experiment (H6); optional independent-analyst subset | Agentic and feedback data complete |
-| 15 | none | **Set Y manual** (≥ 14 days after its agentic review); blinded rubric rating; analysis | All data collected |
-| 16 | none | Analysis, report, demo, defence preparation | Final deliverables |
+| 15 | none | **Set Y manual** (≥ 14 days after its agentic review); blinded rubric rating; analysis; export cost records | All data collected |
+| 16 | none | Analysis including the cost chapter, report, demo, defence preparation | Final deliverables |
 
 Writing of Chapters 1–5 proceeds from week 8 onward so that weeks 15–16 are analysis and finishing.
 
@@ -1416,14 +1466,15 @@ The minimum viable project is successful when all of the following hold (each is
 4. **Requirements and Architecture:** requirements, components, data flow, threat model, governance.
 5. **Implementation:** stack, schemas, prompts, validators, converter and subset, Wazuh adapter, interface.
 6. **Experimental Setup:** hardware, software versions, datasets, event corpora, manual and agentic procedures, model pinning, cost assumptions.
-7. **Results:** extraction and opportunity accuracy, rule validity (first-pass and post-repair), quality and detection results, adversarial results, effort results, resource usage; economics (descriptive).
-8. **Discussion:** interpretation, ablation findings, failure analysis, trade-offs, practical implications.
-9. **Threats to Validity:** internal (carry-over, single analyst, builder bias), construct (rubric, active-time definition), external (synthetic org, small n, one model), conclusion validity (power, multiplicity).
-10. **Conclusion and Future Work:** answers to research questions, contributions, limitations, STIX/TAXII and MISP connectors, wider Sigma subset, production hardening.
+7. **Results:** extraction and opportunity accuracy, rule validity (first-pass and post-repair), quality and detection results, adversarial results, effort results, resource usage.
+8. **Cost Analysis and Cost-Effectiveness:** cost model and assumptions, measured quantities, unit economics, break-even and scenarios, sensitivity, hidden-cost register, open-source claim audit, verdict on C1-C3 (§22.8).
+9. **Discussion:** interpretation, ablation findings, failure analysis, trade-offs, practical implications.
+10. **Threats to Validity:** internal (carry-over, single analyst, builder bias), construct (rubric, active-time definition), external (synthetic org, small n, one model), conclusion validity (power, multiplicity), and the sensitivity of the cost verdict to its assumptions.
+11. **Conclusion and Future Work:** answers to research questions, contributions, limitations, STIX/TAXII and MISP connectors, wider Sigma subset, production hardening.
 
 ### 34.3 Separation rule
 
-The software shows concise totals only. The cost model, scenario and sensitivity analysis, and break-even projection live in the paper and the analysis files, so the security solution does not become a financial calculator.
+The software records, enforces its budget cap, and shows concise totals only. The cost model, scenario and sensitivity analysis, hidden-cost register and break-even projection live in Chapter 8 of the paper and in the analysis files, so the security solution does not become a financial calculator. The interface between the two is defined in §2.4.
 
 ---
 
@@ -1438,7 +1489,7 @@ The software shows concise totals only. The cost model, scenario and sensitivity
 5. A transparent prioritisation model with defined components and a sensitivity analysis.
 6. An experimental comparison of manual, single-prompt, and governed-pipeline workflows with explicit bias controls, a blinded quality rubric, and non-inferiority testing.
 7. Seeded-defect and prompt-injection test sets for evaluating detection-engineering pipelines.
-8. A descriptive economic analysis with break-even projections.
+8. A pre-registered cost-effectiveness analysis of an open-source stack (checks C1-C3), with break-even projections and an open-source claim audit.
 9. A resource-conscious deployment approach for academic labs and small teams.
 
 ---
@@ -1633,7 +1684,9 @@ llm:
   redact_sensitive_fields: true
   reject_non_schema_output: true
   use_stated_confidence_in_decisions: false
-  daily_cost_limit: 5.00
+  local_first: true                       # local open-weight model by default
+  cloud_enabled: false                    # cloud inference is an explicit opt-in
+  daily_cost_limit: 5.00                  # must be > 0 if cloud_enabled
   runs_per_item: 3
 
 ingest:
@@ -1732,6 +1785,10 @@ alpha_familywise: 0.05
 bootstrap_resamples: 10000
 second_labeler_min_items: 10
 independent_analyst_min_items: 8          # only if the optional subset is run
+cost_criteria:                             # pre-registered, descriptive (blueprint §22.6)
+  primary_view: adopt
+  views: [adopt, build]
+  inference_modes_reported_separately: [local, cloud]
 ```
 
 ### `cost_rates.yaml` (placeholders; replace with documented assumptions before the experiment)
@@ -1779,6 +1836,9 @@ These could not be confirmed from primary documentation while v3 was written. Do
 | A11 | Whether timing other people (optional independent-analyst subset) requires departmental approval. | Institutional rule not known. | Resolved by design: the subset is optional and off by default; run only if permitted |
 | A12 | Exact validator coverage of the pinned pySigma / `sigma-cli` versions. | Version-dependent. | S1 |
 | A13 | The lab target is Wazuh 4.14.x; the docs `main` branch describes an unreleased 5.x with a different Engine, which this design does not target. | Documentation repository README (`main` = latest development version) and 5.x release notes. | S2 (pin the exact 4.14.x patch version) |
+| A14 | The pinned local model can be run under a permissive licence, and its classification under the OSI's Open Source AI Definition is known. | Depends on the model chosen in S3; the OSI definitions were confirmed in search extracts. | S3 |
+| A15 | Analyst, engineer and reviewer hourly rates and electricity price used in `cost_rates.yaml` are documented with a source. | Current values are placeholders. | Week 12 |
+| A16 | Published vendor list prices exist and can be verified, if the optional illustrative appendix is wanted. | Not checked; vendor and blog price comparisons found in search were unsuitable as evidence. | Optional |
 
 ---
 

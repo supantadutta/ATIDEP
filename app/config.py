@@ -7,7 +7,7 @@ LLM gets tools makes loading fail, instead of silently weakening the design.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 import yaml
 from pydantic import Field, model_validator
@@ -78,6 +78,8 @@ class _Llm(Strict):
     redact_sensitive_fields: bool
     reject_non_schema_output: bool
     use_stated_confidence_in_decisions: bool
+    local_first: bool
+    cloud_enabled: bool
     daily_cost_limit: float = Field(ge=0)
     runs_per_item: int = Field(ge=1)
 
@@ -124,6 +126,10 @@ class PoliciesConfig(Strict):
                              "stated confidence must not drive decisions")
         if not (m.redact_sensitive_fields and m.reject_non_schema_output):
             raise ValueError("redaction and strict schema validation must stay on")
+        if not m.local_first:
+            raise ValueError("inference must be local-first; cloud is an explicit opt-in")
+        if m.cloud_enabled and m.daily_cost_limit <= 0:
+            raise ValueError("cloud inference needs a positive daily cost cap")
         if i.allowed_schemes != ["https"] or not i.block_private_and_reserved_ranges \
                 or not i.connect_to_validated_ip:
             raise ValueError("ingest must be https-only, block private ranges, and connect to "
@@ -133,6 +139,20 @@ class PoliciesConfig(Strict):
         lo, hi = d.custom_rule_id_range
         if not 100000 <= lo < hi <= 120000:
             raise ValueError("custom rule IDs must stay within 100000-120000")
+        return self
+
+
+class CostCriteria(Strict):
+    """Pre-registered, descriptive cost-effectiveness settings (blueprint §22.6)."""
+
+    primary_view: Literal["adopt", "build"]
+    views: list[Literal["adopt", "build"]]
+    inference_modes_reported_separately: list[Literal["local", "cloud"]]
+
+    @model_validator(mode="after")
+    def _primary_in_views(self) -> Self:
+        if self.primary_view not in self.views:
+            raise ValueError("primary_view must be one of the reported views")
         return self
 
 
@@ -151,6 +171,7 @@ class ExperimentConfig(Strict):
     bootstrap_resamples: int = Field(ge=1000)
     second_labeler_min_items: int = Field(ge=10)
     independent_analyst_min_items: int = Field(ge=0)
+    cost_criteria: CostCriteria
 
 
 class AppConfig(Strict):

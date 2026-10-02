@@ -25,7 +25,9 @@ llm:
   redact_sensitive_fields: true
   reject_non_schema_output: true
   use_stated_confidence_in_decisions: false
-  daily_cost_limit: 5.00
+  local_first: true                       # local open-weight model by default
+  cloud_enabled: false                    # cloud inference is an explicit opt-in
+  daily_cost_limit: 5.00                  # must be > 0 if cloud_enabled
   runs_per_item: 3
 
 ingest:

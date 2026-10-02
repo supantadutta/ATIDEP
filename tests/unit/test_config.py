@@ -6,7 +6,13 @@ import pytest
 import yaml
 from pydantic import ValidationError
 
-from app.config import DEFAULT_CONFIG_DIR, PoliciesConfig, ScoringConfig, load_config
+from app.config import (
+    DEFAULT_CONFIG_DIR,
+    CostCriteria,
+    PoliciesConfig,
+    ScoringConfig,
+    load_config,
+)
 from app.db.models import TABLE_NAMES
 from schemas.intelligence import BAND_LOWER_BOUNDS, CREDIBILITY_SCORE, RELIABILITY_SCORE
 
@@ -38,6 +44,8 @@ def test_scoring_config_matches_schema_constants():
     lambda p: p["llm"].update(tools_enabled=True),
     lambda p: p["llm"].update(permit_command_generation=True),
     lambda p: p["llm"].update(use_stated_confidence_in_decisions=True),
+    lambda p: p["llm"].update(local_first=False),
+    lambda p: p["llm"].update(cloud_enabled=True, daily_cost_limit=0),
     lambda p: p["approval"].update(allow_automatic_production_deployment=True),
     lambda p: p["approval"].update(deployment_requires_human=False),
     lambda p: p["approval"].update(edit_voids_approval=False),
@@ -67,3 +75,19 @@ def test_blueprint_table_list_matches_the_database():
     documented = set(re.findall(r"^- `([a-z_]+)`", section, re.M))
     # the code names validation_results/effort_cost_records exactly as documented
     assert documented == set(TABLE_NAMES)
+
+
+def test_cloud_is_off_by_default_and_needs_a_cap_to_enable():
+    cfg = load_config()
+    assert cfg.policies.llm.local_first and not cfg.policies.llm.cloud_enabled
+    p = copy.deepcopy(raw("policies.yaml"))
+    p["llm"].update(cloud_enabled=True, daily_cost_limit=5.0)
+    PoliciesConfig(**p)  # allowed once a positive cap exists
+
+
+def test_cost_criteria_are_preregistered_and_consistent():
+    cfg = load_config()
+    assert cfg.experiment.cost_criteria.primary_view == "adopt"
+    with pytest.raises(ValidationError):
+        CostCriteria(primary_view="build", views=["adopt"],
+                     inference_modes_reported_separately=["local"])

@@ -12,3 +12,7 @@ alpha_familywise: 0.05
 bootstrap_resamples: 10000
 second_labeler_min_items: 10
 independent_analyst_min_items: 8          # only if the optional subset is run
+cost_criteria:                             # pre-registered, descriptive (blueprint §22.6)
+  primary_view: adopt
+  views: [adopt, build]
+  inference_modes_reported_separately: [local, cloud]
