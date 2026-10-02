@@ -46,5 +46,5 @@ deployment:
     - "PUT /lists/files/*"
     - "GET /lists/files/*"
     - "PUT /manager/restart"
-  custom_rule_id_range: [100000, 120000]  # per Wazuh 4.14 custom-rules docs
+  custom_rule_id_range: [110000, 120000]  # ATIDEP block; the default local_rules.xml uses 100001-100002 (spike S1)
   max_sibling_rules_per_sigma_rule: 20

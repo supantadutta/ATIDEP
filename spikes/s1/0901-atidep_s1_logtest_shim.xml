@@ -1,0 +1,18 @@
+<!-- Spike S1 TEST-ONLY shim. logtest never runs the windows_eventchannel decoder, so Wazuh's
+     own Sysmon parent rules cannot fire in logtest. This stand-in parent matches the same
+     fields on a pre-decoded JSON event, and the rule below is the production rule with only
+     its parent substituted. -->
+<group name="atidep,sigma,shim,">
+  <rule id="199001" level="0">
+    <decoded_as>json</decoded_as>
+    <field name="win.system.providerName">^Microsoft-Windows-Sysmon$</field>
+    <field name="win.system.eventID">^1$</field>
+    <description>TEST SHIM: Sysmon event 1 on pre-decoded JSON</description>
+  </rule>
+  <rule id="199101" level="8">
+    <if_sid>199001</if_sid>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)\s[-/](enc|ec|encodedcommand)\s+[A-Za-z0-9+/=]{20,}</field>
+    <description>ATIDEP S1 (shim parent): encoded PowerShell command line</description>
+    <group>atidep,</group>
+  </rule>
+</group>

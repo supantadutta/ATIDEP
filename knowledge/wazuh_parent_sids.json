@@ -1,0 +1,20 @@
+{
+  "wazuh_version": "4.14.8",
+  "source": "ruleset/rules/0595-win-sysmon_rules.xml and 0810-sysmon_id_3.xml in wazuh/wazuh-manager:4.14.8 (spike S1, 2026-10-02)",
+  "windows_sysmon": {
+    "process_creation": {"event_id": 1, "parent_sid": 61603},
+    "network_connection": {"event_id": 3, "parent_sid": 61605},
+    "dns_query": {"event_id": 22, "parent_sid": 61650}
+  },
+  "known_shadowing_siblings": {
+    "61605": [
+      {
+        "sid": 92101,
+        "level": 0,
+        "condition": "win.eventdata.image matches (?i)\\\\powershell\\.exe and win.eventdata.protocol is tcp",
+        "source": "0810-sysmon_id_3.xml",
+        "note": "A rule that is a child of 61605 only is never evaluated for PowerShell TCP connections because 92101 matches first. List 92101 as an additional parent: <if_sid>61605, 92101</if_sid>."
+      }
+    ]
+  }
+}

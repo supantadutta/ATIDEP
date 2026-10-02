@@ -382,8 +382,8 @@ Merging v2's agents this way removes roughly four weeks of plumbing from the pla
 
 ### Detection engineering
 
-- Sigma as the portable behaviour format; pySigma for parsing and validation, and `sigma-cli check` for linting. **[verify: S1]** exact validator coverage at the pinned version.
-- A **custom Sigma-subset→Wazuh converter** (§20). No existing converter is assumed to be adequate; community converters exist (see §43) and may be used as reference, not as dependencies. **[verify: S1]**
+- Sigma as the portable behaviour format; pySigma for parsing and validation, and `sigma-cli check` for linting. Validator coverage at the pinned version is checked when the validators are built (§25, step 11).
+- A **custom Sigma-subset→Wazuh converter** (§20). No existing converter is assumed to be adequate; community converters exist (see §43) and may be used as reference, not as dependencies.
 - Wazuh manager (stable 4.14.x line), driven through its REST API (`PUT /logtest`, rules and lists file endpoints) with a least-privilege RBAC user.
 - A small Python matcher implementing the subset's semantics for Tier 1 tests, cross-checked against an independent engine such as Chainsaw or Zircolite on a sample of events **[verify: S4]**.
 
@@ -764,7 +764,7 @@ if still defective: stop; route to human as "repair exhausted" or reject
 
 #### 17.3.4 IOC path (deterministic builder)
 
-- No LLM writes IOC rules. The **IOC list builder** takes a verified, deduplicated, refanged, allowlist-filtered IOC bundle and produces (a) a Wazuh CDB list file and (b) **one parameterised rule template per indicator type and event source** (for example destination IP on network-connection events, DNS query name on DNS events, hash on process or file events). **[verify: S1]** the exact event sources and parent rules; lookup types are confirmed in §20.4.
+- No LLM writes IOC rules. The **IOC list builder** takes a verified, deduplicated, refanged, allowlist-filtered IOC bundle and produces (a) a Wazuh CDB list file and (b) **one parameterised rule template per indicator type and event source** (for example destination IP on network-connection events, DNS query name on DNS events, hash on process or file events). The event sources, parent rules and lookup behaviour are confirmed in §20.4 and ADR-001.
 - The Opportunity/Rule agents may draft the human-readable use case and false-positive notes for an IOC item, but the detection artefact is built by code.
 - IOCs carry `expires_at`; lists are regenerated rather than grown, and an expiry sweep removes stale entries (each removal is an audited rule-version change).
 - Reasoning: one rule per IOC multiplies rule count and maintenance; lists scale and update without rule changes.
@@ -912,7 +912,7 @@ IOC lists can be poisoned to trigger noise on legitimate domains. Controls: allo
 ---
 ## 20. Wazuh Integration Design
 
-Sigma→Wazuh conversion is the riskiest engineering component and a core deliverable, not an afterthought. Wazuh rules are XML conjunctions scoped to a parent rule; Sigma has richer boolean logic, modifiers, and correlation. Known characteristics of community converters, from a Wazuh community thread and project READMEs, include: they may not emit an `if_sid` parent (so the rule is evaluated against every event), they cannot express Sigma correlation rules, and OR logic has to be expanded. **[verify: S1]** All of this is treated as a hypothesis to test in week 1.
+Sigma→Wazuh conversion is the riskiest engineering component and a core deliverable, not an afterthought. Wazuh rules are XML conjunctions scoped to a parent rule; Sigma has richer boolean logic, modifiers, and correlation. Known characteristics of community converters, from a Wazuh community thread and project READMEs, include: they may not emit an `if_sid` parent (so the rule is evaluated against every event), they cannot express Sigma correlation rules, and OR logic has to be expanded. Spike S1 tested the Wazuh-side parts of this (ADR-001).
 
 ### 20.1 Principles
 
@@ -934,8 +934,8 @@ Sigma→Wazuh conversion is the riskiest engineering component and a core delive
 
 Notes:
 
-- Wazuh rule fields combine as AND within one rule; sibling rules provide OR across fields. Wazuh supports `osregex`/`pcre2` field matching and `<list>` lookups. **[verify: S1]** exact attribute names and PCRE flags.
-- `cidr` is rejected in v0 because address-range matching is done through CDB lists with address lookups (§20.4). **[verify: S1]**
+- Wazuh rule fields combine as AND within one rule; sibling rules provide OR across fields. Wazuh supports `osregex`/`pcre2` field matching (`type="pcre2"`, with inline flags such as `(?i)`, confirmed in S1) and `<list>` lookups.
+- `cidr` is rejected in v0 because address-range matching is done through CDB lists with address lookups, which handle exact addresses and prefix keys (§20.4, confirmed in S1).
 - The subset can be widened later; each addition needs unit tests and Tier 1/Tier 2 agreement evidence.
 
 ### 20.3 Conversion output
@@ -943,11 +943,11 @@ Notes:
 For each accepted Sigma rule the converter produces:
 
 - A Wazuh rule file in a dedicated custom file (for example `0900-atidep_rules.xml`), one `<rule>` per sibling.
-- **Custom rule IDs** from an allocator table with a stable mapping (Sigma `id` + sibling index → Wazuh ID), within 100000–120000, the range the Wazuh custom-rules documentation tells users to use for custom rules (confirmed in the 4.14 docs)
+- **Custom rule IDs** from an allocator table with a stable mapping (Sigma `id` + sibling index → Wazuh ID), in the **ATIDEP block 110000-119999** inside the 100000-120000 range that the Wazuh custom-rules documentation reserves for custom rules. The default `local_rules.xml` already uses 100001 and 100002, and a duplicate ID is silently ignored, so the allocator also reads the IDs present in `etc/rules` through the API before assigning (ADR-001, F7)
 - `<if_sid>` parent rule IDs from `knowledge/wazuh_parent_sids.json`, built in S1 by reading the manager's own ruleset, not hard-coded from memory.
 - `<description>` from the Sigma title; `<mitre><id>` from ATT&CK tags; a group tag identifying ATIDEP and the Sigma `id`.
 - Severity from Sigma `level` through a configurable table (provisional: informational 3, low 5, medium 8, high 10, critical 12; `wazuh_mapping.yaml`).
-- **Field mapping** from Sigma fields to Wazuh decoded fields (for example `CommandLine` → `win.eventdata.commandLine`, `Image` → `win.eventdata.image`, `ParentImage` → `win.eventdata.parentImage`, `DestinationIp` → `win.eventdata.destinationIp`, `QueryName` → `win.eventdata.queryName`). **[verify: S1]** the exact decoded field names on real Sysmon events.
+- **Field mapping** from Sigma fields to Wazuh decoded fields (for example `CommandLine` → `win.eventdata.commandLine`, `Image` → `win.eventdata.image`, `ParentImage` → `win.eventdata.parentImage`, `DestinationIp` → `win.eventdata.destinationIp`, `QueryName` → `win.eventdata.queryName`). The decoded field names were confirmed on real Sysmon Events 1, 3 and 22 (ADR-001, F4).
 - `conversion_report.json`: constructs handled, expansions performed, case-handling notes, rejected constructs with reason codes.
 
 ### 20.4 Indicator detections through CDB lists
@@ -961,36 +961,34 @@ Verified against the Wazuh 4.14 documentation:
 Design consequences:
 
 - **Pre-declare a fixed set of list files at provisioning time** (for example `atidep-domains`, `atidep-ips`, `atidep-hashes`). ATIDEP only replaces their content and never edits `ossec.conf`, so its API role does not need `manager:update_config` (§20.5).
-- **Domain matching is exact.** There is no wildcard or suffix matching for domain keys, so an entry for `example.invalid` will not match `a.example.invalid`. The builder lists the subdomains that appear in the report; the gap is a stated limitation and a test case.
-- **Hash matching** needs the hash as its own decoded field. Sysmon normally reports hashes as one combined string, so whether a usable SHA-256 field exists must be checked on real events. **[verify: S1]**
-- Every list rebuild is one deployment object with its own version, hash, expiry sweep, and approval, followed by a manager restart; Tier 2 tests run after the restart.
+- **Domain matching is exact and case-sensitive** (confirmed in S1). There is no wildcard or suffix matching, so an entry for `example.invalid` matches neither `a.example.invalid` nor `EXAMPLE.INVALID`. The builder lower-cases keys and lists the subdomains that appear in the report; the gap is a stated limitation and a test case.
+- **Hash matching** cannot use a CDB list: Sysmon reports hashes as one combined string (`SHA256=…`) in `win.eventdata.hashes`, which no CDB key matches (S1). Hash indicators use one PCRE2 alternation on that field, `(?i)SHA256=(h1|h2|…)`, with a size cap per rule (confirmed working in S1).
+- **IP matching** uses `address_match_key` and works for exact addresses and for prefix keys such as `198.51.100.:` (confirmed in S1).
+- Every list rebuild is one deployment object with its own version, hash, expiry sweep, and approval, followed by a manager restart (a list change does not take effect before it, confirmed in S1); Tier 2 tests run after the restart.
 - The IOC list builder writes one key-per-line list per indicator type and the matching rule template(s) that reference it.
 
 ### 20.5 Deployment adapter (Wazuh API, not SSH)
 
 - Authenticate to the Wazuh REST API with a **dedicated RBAC user** whose role grants only `logtest:run`, `rules:read`, `rules:update`, `lists:read`, `lists:update`, and `manager:restart`. It is explicitly denied `manager:update_config`, `rules:delete`, and `lists:delete`. The 4.14 RBAC reference confirms these action names and their endpoints. **Residual risk:** the reference lists the resource for the PUT file actions as `*:*`, so RBAC cannot restrict the role to particular filenames; the role can overwrite any custom rule or list file. The adapter therefore enforces filename patterns itself (§20.5, allowlist), and the manager is a lab instance only.
-- Calls used, all confirmed in the 4.14 docs: `PUT /logtest` (body fields `log_format`, `location`, `event`; returns a session token that `DELETE /logtest/sessions/{token}` ends), `PUT /rules/files/{filename}`, `PUT /lists/files/{filename}`, `GET` file endpoints for rollback, and `PUT /manager/restart`. **[verify: S2]** whether the API rejects invalid rule XML on upload; the adapter treats an upload as successful only after a follow-up `logtest`.
+- Calls used, all confirmed in the 4.14 docs: `PUT /logtest` (body fields `log_format`, `location`, `event`; returns a session token that `DELETE /logtest/sessions/{token}` ends), `PUT /rules/files/{filename}`, `PUT /lists/files/{filename}`, `GET` file endpoints for rollback, and `PUT /manager/restart`. The API does validate rule XML on upload, but it reports the failure **inside an HTTP 200 response** (`total_failed_items` greater than zero, error code 1113), so the adapter inspects the response body and not only the status code (S2). Tokens issued in the same second as an RBAC change are invalidated, so the adapter waits a few seconds after any role change before authenticating.
 - The adapter contains a **hard-coded allowlist** of method/path pairs and filename patterns (for example rule files `atidep_*.xml` and the pre-declared `atidep-*` lists); any other call raises an error. Credentials come from the environment; TLS to the API is verified (self-signed lab certificate pinned).
 - Dry-run uses only `PUT /logtest`. Lab deployment additionally uploads the approved file after recomputing and checking the content hash against the approval record, then restarts the manager and re-tests. Rollback re-uploads the stored previous version and re-tests.
 - Delete is never used for rollback of a live file; a retired rule is replaced by a version that omits it.
 
-### 20.6 Testing tiers
+### 20.6 Testing tiers (revised after spike S1; see ADR-001)
 
 | Tier | What runs | Depends on Wazuh? | Used for |
 |---|---|---|---|
 | **0** | YAML, schema, pySigma parse, lint | no | G1, G2 |
-| **1** | A small Python matcher that implements the subset's semantics against JSON events; cross-validated against an independent engine (Chainsaw or Zircolite) on a sample of events **[verify: S4]** | no | G8–G11 for all evaluation runs; **minimum functional evidence for H2, H4, H5, H6** |
-| **2** | Wazuh `PUT /logtest` with the converted rule on the same events | yes | G8–G10 where event simulation works; conversion-fidelity metric |
-| **3 (optional)** | Windows agent VM with Sysmon sending real events to the manager | yes | Only if S1 shows Tier 2 cannot simulate Windows events |
+| **1** | A small Python matcher that implements the subset's semantics against JSON events; cross-validated against an independent engine (Chainsaw or Zircolite) on a sample of events **[verify: S4]** | no | G8-G11 for all evaluation runs; **minimum functional evidence for H2, H4, H5, H6** |
+| **2a** | `PUT /logtest` on pre-decoded JSON events, with a **test-only stand-in parent rule** replacing Wazuh's own Sysmon parent | yes (API) | A cheap check of the rule body only; it cannot see parent-chain or shadowing problems |
+| **2** | **Real-pipeline replay**: raw event-channel datagrams written to the manager's analysis socket, so the real decoder and rule chain run; alerts read back from `alerts.json` | yes (host access to the lab manager) | **Authoritative G8-G10 and the conversion-fidelity metric**; runs the production rule with its real `if_sid` parent |
 
-**Why Tier 1 exists.** The Wazuh docs show `PUT /logtest` taking `log_format`, `location` and `event`, but their examples use only `syslog`. Whether Windows Event Channel events decode in logtest as they do from a live agent is not documented, and one forum report says they may not. **[verify: S1]** If they do not, Tier 2 for the flagship PowerShell scenario would be blocked. Tier 1 keeps the evaluation independent of that risk, and Tier 2 then becomes a fidelity check rather than a prerequisite.
+**Why Tier 2 is a replay, not logtest.** Spike S1 showed from the v4.14.8 source and by experiment that `wazuh-logtest` never runs the `windows_eventchannel` decoder (that decoder is called only for messages on the analysis engine's Windows queue, marker `f`), so Wazuh's own Sysmon rules cannot fire in logtest. The forum report that raised this risk was correct. Writing raw agent-format events to the manager's input socket runs the real chain, and positives fire, negatives do not (ADR-001, F1-F3).
 
-**Fallback ladder (decided in S1, recorded as ADR-001):**
+**What Tier 2 needs.** Host-level access to the lab manager (for example `docker exec`). This is a **test harness**, kept separate from the API-only deployment adapter of §20.5, with its own fixed allowlist, and used only against the lab manager with inert, synthetic events.
 
-1. `logtest` accepts Windows-style events in a supported format → Tier 2 as designed.
-2. `logtest` works on pre-decoded JSON events with a custom decoder → Tier 2 on JSON event representations.
-3. Live Windows agent with Sysmon (Tier 3) for a small set of end-to-end checks.
-4. If none works within the spike budget, re-scope the demonstration behaviours to a log source `logtest` handles reliably (for example Linux auditd/syslog) and keep Windows behaviours at Tier 1 only, documenting the limitation.
+**What the tiers cannot cover.** Parent scoping and sibling shadowing are properties of the specific Wazuh version's shipped ruleset (ADR-001, F6) and must be re-checked on any other version. A live Windows agent (the former Tier 3) is not needed.
 
 ---
 
@@ -1004,6 +1002,8 @@ Each spike has a time box, pass criteria, and a recorded decision (ADR). Results
 | **S2** | Manager-only Wazuh install: memory footprint idle and under logtest load; API reachable from the host; RBAC user with least privilege can run `logtest`, upload a rule file, and nothing else. | 1 day (parallel with S1) | VM memory ≤ the budget in §24 (target 4 GB or less; measure); RBAC restricts as designed; rule upload and rollback work. | Re-plan VM sizing and staged modes; consider a leaner test harness. |
 | **S3** | Which LLM (local small model versus limited cloud model) gives schema-valid extraction and Sigma output on 5 pilot items within cost and RAM limits? | 2 days | ≥ 90% schema-valid JSON on the pilot items; latency and memory acceptable; a model/version is pinned and its training cutoff recorded. | Switch model class; reduce chunk size; use cloud with redaction. |
 | **S4** | Event corpora: can public attack samples be converted to JSON events the Tier 1 matcher and `logtest` accept? Does the Tier 1 matcher agree with an independent engine on a sample? Is there enough benign background, and are licences acceptable? | 2 days | At least 3 attack techniques with ≥ 10 positive events each; a benign baseline source identified; matcher agrees with the reference engine on the sample. | Generate events in the lab under Sysmon; reduce technique count. |
+
+**Outcome of S1 and S2 (2 October 2026).** Both passed; the detailed findings, decisions and evidence are in ADR-001 (`docs/adr/0001-wazuh-lab-and-test-strategy.md`) and the scripts are in `spikes/`. In brief: logtest cannot run the Windows decoder, so Tier 2 became a real-pipeline replay; sibling shadowing, doubled backslashes and rule-ID collisions were found and now shape the converter; CDB behaviour is measured; a least-privilege API user works; a manager-only install uses about 0.8 GB. S3 and S4 remain.
 
 **Go/no-go at the end of week 2:** S1 and S2 must pass or have an approved fallback. If S1 forces fallback 4, the scenario list and the Windows-specific dataset items are revised before ground-truth labelling continues.
 
@@ -1120,7 +1120,7 @@ A visible **start/stop timer** with an activity category per item and condition.
 ### Recommended environment
 
 - Windows 10/11 host; Python natively or in WSL; SQLite; Streamlit.
-- **One Ubuntu VM running the Wazuh manager only** (no indexer, no dashboard). The all-in-one Wazuh quickstart recommends about 8 GB of RAM, which leaves too little on a 12 GB host. ATIDEP needs only the rule engine, `logtest`, the API, and alert output, so a manager-only install should fit in a much smaller VM. **[verify: S2]** target 4 GB or less; measure and record.
+- **One Ubuntu VM running the Wazuh manager only** (no indexer, no dashboard). The all-in-one Wazuh quickstart recommends about 8 GB of RAM, which leaves too little on a 12 GB host. ATIDEP needs only the rule engine, `logtest`, the API, and alert output, so a manager-only install fits in a much smaller VM: measured at about 0.8 GB in S2 (ADR-001, F11), against a 4 GB budget.
 - A small local Ollama model *or* a cloud API, not both at once; no OpenCTI; remote MISP only as future work.
 
 ### Staged execution
@@ -1204,7 +1204,7 @@ Experiments and writing are protected; the build freezes at the end of week 12. 
 | 15 | none | **Set Y manual** (≥ 14 days after its agentic review); blinded rubric rating; analysis; export cost records | All data collected |
 | 16 | none | Analysis including the cost chapter, report, demo, defence preparation | Final deliverables |
 
-Writing of Chapters 1–5 proceeds from week 8 onward so that weeks 15–16 are analysis and finishing.
+The paper is written after the build is complete and the experiments have run (§34.4). Chapters 1 and 2 exist as early drafts and are rewritten from the results; no other chapter is drafted before then. Analysis scripts regenerate every table and figure from the exported data, so weeks 15–16 are analysis and writing, not data wrangling.
 
 ### 26.2 Cut line (fixed in advance)
 
@@ -1472,6 +1472,17 @@ The minimum viable project is successful when all of the following hold (each is
 10. **Threats to Validity:** internal (carry-over, single analyst, builder bias), construct (rubric, active-time definition), external (synthetic org, small n, one model), conclusion validity (power, multiplicity), and the sensitivity of the cost verdict to its assumptions.
 11. **Conclusion and Future Work:** answers to research questions, contributions, limitations, STIX/TAXII and MISP connectors, wider Sigma subset, production hardening.
 
+### 34.4 Writing sequence (paper written after the build)
+
+The project is built and evaluated first. The paper is then written from what was actually done and found, in the conventional form for an empirical systems paper (introduction, related work, design and method, evaluation, discussion, threats to validity, conclusion).
+
+1. Build the platform, freeze it (`freeze-v1`) and run the pre-registered experiments.
+2. Generate every table and figure from the exported data with scripts. Fix their content before writing prose.
+3. Write **results first**, then the method and design chapters so that they describe what was done, not what was planned, then the discussion and threats to validity.
+4. Write the introduction, related work, abstract and conclusion **last**, so that they match the findings and claim only what the data support. The early drafts of Chapters 1 and 2 are inputs, not final text.
+5. Complete the literature verification: read the closest works in full, fill every V2 bibliography entry from the publisher record, and repeat the literature search.
+6. Release the reproducibility package: pinned versions, hashes, seeds, prompts and the scripts that regenerate every number.
+
 ### 34.3 Separation rule
 
 The software records, enforces its budget cap, and shows concise totals only. The cost model, scenario and sensitivity analysis, hidden-cost register and break-even projection live in Chapter 8 of the paper and in the analysis files, so the security solution does not become a financial calculator. The interface between the two is defined in §2.4.
@@ -1705,7 +1716,7 @@ deployment:
     - "PUT /lists/files/*"
     - "GET /lists/files/*"
     - "PUT /manager/restart"
-  custom_rule_id_range: [100000, 120000]  # per Wazuh 4.14 custom-rules docs
+  custom_rule_id_range: [110000, 120000]  # ATIDEP block; default local_rules.xml uses 100001-100002 (ADR-001)
   max_sibling_rules_per_sigma_rule: 20
 ```
 
@@ -1759,13 +1770,16 @@ sources:
 
 ```yaml
 level_map: {informational: 3, low: 5, medium: 8, high: 10, critical: 12}
-field_map:                                 # [verify: S1]
+field_map:                                 # confirmed on Wazuh 4.14.8 (ADR-001)
   CommandLine: win.eventdata.commandLine
   Image: win.eventdata.image
   ParentImage: win.eventdata.parentImage
   DestinationIp: win.eventdata.destinationIp
   QueryName: win.eventdata.queryName
-parent_sids: {}                            # filled from the manager's ruleset in S1
+parent_sids:                               # see knowledge/wazuh_parent_sids.json
+  process_creation: 61603
+  network_connection: 61605
+  dns_query: 61650
 ```
 
 ### `experiment.yaml` (frozen at tag `prereg-v1`)
@@ -1824,13 +1838,13 @@ These could not be confirmed from primary documentation while v3 was written. Do
 | # | Statement | Basis and status | Closed by |
 |---|---|---|---|
 | A1 | No maintained, official pySigma backend for Wazuh exists; community converters do (Tyrian detection pack, `theflakes/sigma_to_wazuh`, and an LLM-assisted `wrg-sigma-rules` tool that wraps pySigma for several backends including Wazuh). | Repository READMEs read for Tyrian and `sigma_to_wazuh`; both converters exist and both document limits (Tyrian: OR logic becomes sibling rules, unsupported constructs are refused; `sigma_to_wazuh`: OR conversion partly broken, no `near`/timeframe/aggregation, Python version no longer maintained). The absence of an *official* pySigma Wazuh backend is not confirmed. Neither converter has been run. | S1 (check the pySigma backend index; run one converter on the PowerShell rule) |
-| A2 | pySigma-style conversions do not emit `if_sid`, so converted rules would evaluate against all events. | Community discussion thread; unverified. | S1 |
-| A3 | `wazuh-logtest` may not simulate Windows Event Channel decoding, so `win.eventdata.*` rules might not fire in simulation. | The 4.14 docs show `PUT /logtest` with `log_format`, `location`, `event` and only `syslog` examples; nothing documents Windows Event Channel behaviour. One forum report says it may not work. Still open. | S1 |
-| A4 | `PUT /logtest`, `DELETE /logtest/sessions/{token}`, `PUT /rules/files/{filename}`, `PUT /lists/files/{filename}` and `PUT /manager/restart` exist and map to RBAC actions `logtest:run`, `rules:update`, `lists:update`, `manager:restart`; `PUT` file actions have resource `*:*` (no per-file scoping). | **Confirmed** in the Wazuh 4.14 RBAC reference and `testing.rst` (docs commit `617f407`). Whether upload rejects invalid XML is still open. | S2 (upload validation only) |
-| A5 | CDB list format, declaration in `ossec.conf`, lookup modes, restart-to-load behaviour. | **Confirmed** in `cdb-list.rst` (identical on stable 4.14 and `main`). Open only: hash-field format on Sysmon events. | S1 (hash field) |
+| A2 | pySigma-style conversions do not emit `if_sid`, so converted rules would evaluate against all events. | Community discussion thread. Not tested: ATIDEP's own converter takes the parent from `knowledge/wazuh_parent_sids.json` (ADR-001, decision 5), so the claim about other tools no longer affects the design. | closed (not needed) |
+| A3 | `wazuh-logtest` may not simulate Windows Event Channel decoding, so `win.eventdata.*` rules might not fire in simulation. | **Confirmed** from the v4.14.8 source and by experiment (ADR-001, F1). | closed (S1) |
+| A4 | `PUT /logtest`, `DELETE /logtest/sessions/{token}`, `PUT /rules/files/{filename}`, `PUT /lists/files/{filename}` and `PUT /manager/restart` exist and map to RBAC actions `logtest:run`, `rules:update`, `lists:update`, `manager:restart`; `PUT` file actions have resource `*:*` (no per-file scoping). | **Confirmed** in the Wazuh 4.14 RBAC reference and `testing.rst` (docs commit `617f407`). The API validates XML on upload and reports failure inside an HTTP 200 body (ADR-001, F9). | closed (S2) |
+| A5 | CDB list format, declaration in `ossec.conf`, lookup modes, restart-to-load behaviour. | **Confirmed** in the docs and measured in S1: exact case-sensitive keys, address lookups with prefix keys, no CDB match on Sysmon's combined hashes field, restart required. | closed (S1) |
 | A6 | Custom rule IDs: use 100000–120000. | **Confirmed** in `rules/custom.rst` (4.14 docs). | closed |
-| A7 | Sysmon events decode to `win.eventdata.*` fields with the names used in `wazuh_mapping.yaml`. | Provisional; not yet checked against the Wazuh Sysmon ruleset or real events. | S1 |
-| A8 | A manager-only Wazuh install runs comfortably in about 4 GB or less. | Inference from the all-in-one quickstart guidance (8 GB); not measured. | S2 |
+| A7 | Sysmon events decode to `win.eventdata.*` fields with the names used in `wazuh_mapping.yaml`. | **Confirmed** on Wazuh 4.14.8 for Events 1, 3 and 22 (ADR-001, F4); note the doubled backslashes (F5). | closed (S1) |
+| A8 | A manager-only Wazuh install runs comfortably in about 4 GB or less. | **Confirmed**: about 464 MiB after start and 816 MiB at steady state in the 4.14.8 container, including an unused Filebeat (ADR-001, F11). | closed (S2) |
 | A9 | Public attack datasets can be converted to events that Tier 1 and Tier 2 accept; licence terms permit the intended use; benign background is available. | Not checked. | S4 |
 | A10 | A small local or limited cloud model can reach ≥ 90% schema-valid extraction/rule output on the pilot items. | Not measured. | S3 |
 | A11 | Whether timing other people (optional independent-analyst subset) requires departmental approval. | Institutional rule not known. | Resolved by design: the subset is optional and off by default; run only if permitted |

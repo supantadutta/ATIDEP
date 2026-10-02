@@ -1,0 +1,11 @@
+<!-- Spike S1: hand-written Wazuh form of the Sigma "encoded PowerShell" rule.
+     Production form (parent = Wazuh's own Sysmon event 1 rule 61603). -->
+<group name="atidep,sigma,">
+  <rule id="110001" level="8">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)\s[-/](enc|ec|encodedcommand)\s+[A-Za-z0-9+/=]{20,}</field>
+    <description>ATIDEP S1: encoded PowerShell command line</description>
+    <mitre><id>T1059.001</id></mitre>
+    <group>atidep,</group>
+  </rule>
+</group>

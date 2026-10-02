@@ -1,8 +1,11 @@
 level_map: {informational: 3, low: 5, medium: 8, high: 10, critical: 12}
-field_map:                                 # [verify: S1]
+field_map:                                 # confirmed on Wazuh 4.14.8 (spike S1)
   CommandLine: win.eventdata.commandLine
   Image: win.eventdata.image
   ParentImage: win.eventdata.parentImage
   DestinationIp: win.eventdata.destinationIp
   QueryName: win.eventdata.queryName
-parent_sids: {}                            # filled from the manager's ruleset in S1
+parent_sids:                               # see knowledge/wazuh_parent_sids.json
+  process_creation: 61603
+  network_connection: 61605
+  dns_query: 61650
