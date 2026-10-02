@@ -862,6 +862,7 @@ Deployed / Monitored → Approved        (a rollback restores the previous files
 - **Deterministic statistics first:** false-positive clusters by command line, parent process, user, and host; alert volume per rule. The Improvement Agent receives these aggregates and the rule, not raw logs.
 - **Recommendations** (structured diffs, not free text): add or narrow an exclusion, add parent-process context, change severity, replace an expired IOC, convert IOC logic to behaviour, request telemetry, merge duplicates, retire a rule.
 - Every recommendation becomes a new rule version and goes back through all gates and approval.
+- **Implemented constraints.** Alerts are stored with only the features the statistics need (rule, time, host, image, parent image, command line, user). False-positive *clusters* are exact (identical raw values; usable for an exclusion) or pattern (command lines with numbers, GUIDs and long encoded blobs replaced; descriptive only). The agent may only recommend an exclusion for an excludable cluster, using that cluster's field and value unchanged, and only if the cluster holds no true positive and the value is at least four characters; anything else is rejected with a reason and recorded. `add_exclusion` and `change_level` are applied automatically as one new version (`origin = improvement`); each exclusion adds a named selection, an `and not` in the condition, and a declared assumption covering the value, so gate G4 traces it to the observed false positives. The other actions are recorded for a person. No call is made when there are no alerts.
 - Effect is measured on the held-out benign and positive corpora (H6).
 
 ---
@@ -1588,7 +1589,7 @@ In every case, report the order-effect and first-exposure analyses, the independ
 - `validation_results` (per gate)
 - `approvals`
 - `deployments` (packages, dry-runs, rollbacks)
-- `detection_results` (alerts and analyst dispositions)
+- `detection_results` (alerts and analyst dispositions; the Wazuh rule that fired and the alert features kept for the statistics)
 - `model_runs`
 - `effort_cost_records` (timers, resources, tokens)
 - `audit_events` (hash-chained)

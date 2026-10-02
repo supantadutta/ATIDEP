@@ -246,6 +246,8 @@ class DetectionResult(Base):
     disposition: Mapped[str] = mapped_column(String, default="unknown")
     analyst: Mapped[str | None] = mapped_column(String)
     notes: Mapped[str] = mapped_column(Text, default="")
+    rule_id_fired: Mapped[int | None] = mapped_column(Integer)         # the Wazuh rule ID
+    features: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     __table_args__ = (CheckConstraint(
         _in("disposition", ["true_positive", "false_positive", "benign_true_positive",
