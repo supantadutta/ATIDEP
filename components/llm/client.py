@@ -1,6 +1,10 @@
 """Provider-neutral LLM client interface and implementations (blueprint §13, §18, §22.7).
 
 * ``OllamaClient``: a local model. Refuses any non-loopback address, so inference stays local.
+* ``CloudChatClient``: a paid hosted model through an OpenAI-style or Anthropic-style chat API.
+  It exists so that the same pipeline can be run on a paid backend and the usage the provider
+  reports (tokens) can be priced offline (blueprint §22). It sends no tools and follows no
+  redirects, and its key never leaves the request header.
 * ``ReplayClient``: records every call and replays it later, so an experiment is deterministic,
   never paid for twice, and can be re-run without a model.
 * ``ScriptedClient``: returns prepared outputs, for tests.
@@ -15,13 +19,17 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import json
+import math
 import os
+import ssl
 import time
+import urllib.error
+import urllib.request
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
+from typing import Literal, Protocol
 from urllib.parse import urlsplit
 
 
@@ -49,8 +57,18 @@ class LLMRequest:
     json_mode: bool = True
 
 
+# Where a response's token counts came from. Cost analysis uses them, so it must know.
+USAGE_SOURCES = ("provider", "provider_partial", "estimated", "unknown")
+
+
 @dataclass
 class LLMResponse:
+    """One model reply. ``latency_ms`` is the caller's wall-clock wait. ``compute_ms`` is the
+    time the provider says it spent computing (local models only; ``None`` when not reported)
+    and is what a local model's energy and hardware use are estimated from. ``usage_source``
+    says whether the token counts were reported by the provider, only partly reported (a local
+    server may omit the prompt count for a cached prompt), or estimated here."""
+
     text: str
     provider: str
     model: str
@@ -59,6 +77,8 @@ class LLMResponse:
     latency_ms: int = 0
     cost: float = 0.0
     replayed: bool = False
+    usage_source: str = "unknown"
+    compute_ms: int | None = None
 
 
 class LLMClient(Protocol):
@@ -66,6 +86,17 @@ class LLMClient(Protocol):
     model: str
 
     def complete(self, request: LLMRequest) -> LLMResponse: ...
+
+
+def estimate_tokens(text: str) -> int:
+    """A rough count (about four characters per token) for providers that report none. It is
+    only a fallback and the response is then marked ``estimated``."""
+    return max(1, math.ceil(len(text) / 4)) if text else 0
+
+
+def is_cloud_provider(provider: str) -> bool:
+    """Cloud (paid, hosted) providers are named ``cloud-...``; everything else is local."""
+    return provider.startswith("cloud-")
 
 
 def request_key(request: LLMRequest, provider: str, model: str) -> str:
@@ -86,8 +117,6 @@ class OllamaClient:
         self.model, self.base_url, self.timeout = model, base_url.rstrip("/"), timeout
 
     def complete(self, request: LLMRequest) -> LLMResponse:
-        import urllib.request
-
         options: dict = {"temperature": request.temperature, "num_predict": request.max_tokens}
         if request.seed is not None:
             options["seed"] = request.seed
@@ -104,11 +133,16 @@ class OllamaClient:
                 data = json.loads(resp.read())
         except OSError as exc:
             raise LLMError(f"model endpoint unreachable: {exc}") from exc
+        has_in, has_out = "prompt_eval_count" in data, "eval_count" in data
+        total_ns = data.get("total_duration")
         return LLMResponse(
             text=data.get("message", {}).get("content", ""), provider=self.provider,
             model=self.model, input_tokens=int(data.get("prompt_eval_count", 0)),
             output_tokens=int(data.get("eval_count", 0)),
-            latency_ms=int((time.monotonic() - t0) * 1000), cost=0.0)
+            latency_ms=int((time.monotonic() - t0) * 1000), cost=0.0,
+            usage_source="provider" if has_in and has_out else (
+                "provider_partial" if has_in or has_out else "unknown"),
+            compute_ms=int(total_ns / 1e6) if isinstance(total_ns, (int, float)) else None)
 
 
 def _is_loopback(host: str) -> bool:
@@ -118,6 +152,97 @@ def _is_loopback(host: str) -> bool:
         return ipaddress.ip_address(host).is_loopback
     except ValueError:
         return False
+
+
+# ---- paid hosted model --------------------------------------------------------------------
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """A redirect would carry the key to another host, so none is followed."""
+
+    def redirect_request(self, *a, **kw):  # noqa: ANN002, ANN003
+        return None
+
+
+class CloudChatClient:
+    """A hosted chat model. ``api_style`` is ``openai`` (``POST {base_url}/chat/completions``)
+    or ``anthropic`` (``POST {base_url}/v1/messages``). ``https`` is required except on the
+    loopback address (a test stub). Usage is read from the reply; when the provider reports
+    none, an estimate is used and marked as one. A failed call is never retried here, because
+    a retry is a second charge."""
+
+    def __init__(self, api_style: Literal["openai", "anthropic"], base_url: str, model: str,
+                 api_key: str, *, timeout: float = 120.0, ca_file: str | None = None) -> None:
+        if api_style not in ("openai", "anthropic"):
+            raise LLMError("api_style must be 'openai' or 'anthropic'")
+        parts = urlsplit(base_url)
+        host = parts.hostname or ""
+        if parts.scheme != "https" and not (parts.scheme == "http" and _is_loopback(host)):
+            raise LLMError("a cloud model endpoint must use https")
+        if not api_key:
+            raise LLMError("a cloud model needs an API key")
+        self.provider = f"cloud-{api_style}"
+        self.api_style, self.model = api_style, model
+        self.base_url, self.timeout = base_url.rstrip("/"), timeout
+        self._key = api_key
+        self._opener = urllib.request.build_opener(
+            _NoRedirect, urllib.request.HTTPSHandler(
+                context=ssl.create_default_context(cafile=ca_file)))
+
+    def __repr__(self) -> str:  # the key must never reach a log line
+        return f"CloudChatClient({self.api_style}, {self.base_url}, {self.model})"
+
+    def _prepare(self, request: LLMRequest) -> tuple[str, dict, dict]:
+        if self.api_style == "openai":
+            body: dict = {"model": self.model, "temperature": request.temperature,
+                          "max_tokens": request.max_tokens,
+                          "messages": [{"role": "system", "content": request.system},
+                                       {"role": "user", "content": request.user}]}
+            if request.seed is not None:
+                body["seed"] = request.seed
+            if request.json_mode:
+                body["response_format"] = {"type": "json_object"}
+            return (self.base_url + "/chat/completions", body,
+                    {"Authorization": f"Bearer {self._key}"})
+        body = {"model": self.model, "temperature": request.temperature,
+                "max_tokens": request.max_tokens, "system": request.system,
+                "messages": [{"role": "user", "content": request.user}]}
+        return (self.base_url + "/v1/messages", body,
+                {"x-api-key": self._key, "anthropic-version": "2023-06-01"})
+
+    def complete(self, request: LLMRequest) -> LLMResponse:
+        url, body, auth = self._prepare(request)
+        req = urllib.request.Request(
+            url, data=json.dumps(body).encode(), method="POST",
+            headers={"Content-Type": "application/json", **auth})
+        t0 = time.monotonic()
+        try:
+            with self._opener.open(req, timeout=self.timeout) as resp:
+                data = json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            raise LLMError(f"model endpoint answered HTTP {exc.code}") from exc
+        except (OSError, ValueError) as exc:
+            raise LLMError(f"model endpoint unreachable: {exc}") from exc
+        latency = int((time.monotonic() - t0) * 1000)
+        try:
+            if self.api_style == "openai":
+                text = data["choices"][0]["message"]["content"] or ""
+                usage = data.get("usage") or {}
+                tin, tout = usage.get("prompt_tokens"), usage.get("completion_tokens")
+            else:
+                text = "".join(b.get("text", "") for b in data["content"]
+                               if b.get("type") == "text")
+                usage = data.get("usage") or {}
+                tin, tout = usage.get("input_tokens"), usage.get("output_tokens")
+        except (KeyError, IndexError, TypeError, AttributeError) as exc:
+            raise LLMError("model endpoint returned an unexpected reply") from exc
+        if isinstance(tin, int) and isinstance(tout, int):
+            source = "provider"
+        else:
+            tin = tin if isinstance(tin, int) else estimate_tokens(request.system + request.user)
+            tout = tout if isinstance(tout, int) else estimate_tokens(text)
+            source = "estimated"
+        return LLMResponse(text=text, provider=self.provider, model=self.model,
+                           input_tokens=tin, output_tokens=tout, latency_ms=latency,
+                           usage_source=source)
 
 
 # ---- scripted (tests) ---------------------------------------------------------------------
@@ -138,7 +263,7 @@ class ScriptedClient:
         text = out(request) if callable(out) else out
         return LLMResponse(text=text, provider=self.provider, model=self.model,
                            input_tokens=len(request.user.split()),
-                           output_tokens=len(text.split()))
+                           output_tokens=len(text.split()), usage_source="estimated")
 
 
 # ---- record / replay ----------------------------------------------------------------------

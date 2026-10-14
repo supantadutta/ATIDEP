@@ -1,11 +1,16 @@
 """Analyst timer (blueprint §23): the primary efficiency endpoint of H1.
 
 Rules for *active time*: the timer runs only while the analyst works on the item; every
-heartbeat the interface sends while the analyst is active extends it; after
-``IDLE_SECONDS`` without one it auto-pauses (so a gap counts for at most that long);
-explicit pauses are excluded; every start, pause, resume and stop is logged. Wall-clock time is
-the span from start to stop and is kept separately. The same protocol serves the manual
-condition (A) and the review of ATIDEP output (B).
+heartbeat the interface sends while a timer is running extends it (the interface sends one every
+``HEARTBEAT_SECONDS``, a quarter of the idle limit, so a throttled browser tab still keeps it
+alive); after ``IDLE_SECONDS`` without one it auto-pauses (so a gap counts for at most that
+long); explicit pauses are excluded; every start, pause, resume and stop is logged. Wall-clock
+time is the span from start to stop and is kept separately.
+
+The gaps the idle limit cut short, and the time lost to them, are counted and stored with every
+session, so a session that was under-measured is visible rather than silent. The same protocol
+serves the manual condition (A) and the review of ATIDEP output (B); ``operations`` time (upkeep
+of the platform, with no item) is timed under B so that the maintenance cost has a measured floor.
 """
 
 from __future__ import annotations
@@ -19,11 +24,12 @@ from sqlalchemy.orm import Session
 
 from app.db import models as m
 from app.db.audit import append_audit_event
-from schemas.effort_cost_record import Component, Condition, ResultStatus
+from schemas.effort_cost_record import Component, Condition, Disposition, ResultStatus
 
 IDLE_SECONDS = 120.0
+HEARTBEAT_SECONDS = IDLE_SECONDS / 4
 ACTIVITIES = ("reading", "extraction", "opportunity_decision", "rule_writing", "validation",
-              "testing", "review_approval", "editing", "packaging", "other")
+              "testing", "review_approval", "editing", "packaging", "operations", "other")
 TIMED_CONDITIONS = (Condition.MANUAL.value, Condition.ATIDEP.value)
 
 
@@ -40,6 +46,8 @@ class Totals:
     active_seconds: float
     wall_seconds: float
     state: str                 # running | paused | stopped
+    capped_gaps: int = 0       # gaps the idle limit shortened
+    capped_seconds: float = 0.0  # the time those gaps lost
 
 
 def _events(session: Session, session_id: str) -> list[m.TimerEvent]:
@@ -54,17 +62,22 @@ def compute_totals(events: list[m.TimerEvent], idle: float = IDLE_SECONDS) -> To
     if not events:
         return Totals(0.0, 0.0, "stopped")
     active, running = 0.0, False
+    capped_gaps, capped_seconds = 0, 0.0
     prev: datetime | None = None
     for e in events:
         ts = _aware(e.ts)
         if running and prev is not None:
-            active += min((ts - prev).total_seconds(), idle)
+            gap = (ts - prev).total_seconds()
+            active += min(gap, idle)
+            if gap > idle:
+                capped_gaps += 1
+                capped_seconds += gap - idle
         running = e.kind in ("start", "heartbeat", "resume")
         prev = ts
     last = events[-1]
     state = "stopped" if last.kind == "stop" else "paused" if last.kind == "pause" else "running"
     wall = (_aware(last.ts) - _aware(events[0].ts)).total_seconds()
-    return Totals(active, wall, state)
+    return Totals(active, wall, state, capped_gaps, capped_seconds)
 
 
 def _log(session: Session, base: m.TimerEvent, kind: str, now: datetime) -> m.TimerEvent:
@@ -147,8 +160,10 @@ def resume(session: Session, session_id: str, now: datetime | None = None) -> To
     return compute_totals(_events(session, session_id))
 
 
-def stop(session: Session, session_id: str, now: datetime | None = None
-         ) -> m.EffortCostRecord:
+def stop(session: Session, session_id: str, now: datetime | None = None,
+         disposition: str | None = None) -> m.EffortCostRecord:
+    if disposition is not None and disposition not in {d.value for d in Disposition}:
+        raise TimerError(f"disposition must be one of {[d.value for d in Disposition]}")
     events, _ = _open(session, session_id)
     base = events[0]
     _log(session, base, "stop", _aware(now or datetime.now(UTC)))
@@ -158,13 +173,17 @@ def stop(session: Session, session_id: str, now: datetime | None = None
         component=Component.ANALYST.value, activity=base.activity,
         started_at=_aware(base.ts), ended_at=_aware(base.ts) + _delta(totals.wall_seconds),
         analyst_active_seconds=min(totals.active_seconds, totals.wall_seconds),
-        result_status=ResultStatus.OK.value)
+        idle_capped_seconds=totals.capped_seconds, idle_capped_gaps=totals.capped_gaps,
+        disposition=disposition, result_status=ResultStatus.OK.value)
     session.add(rec)
     session.flush()
     append_audit_event(session, actor=base.analyst, action="timer.stop", entity_type="timer",
                        entity_id=session_id,
                        details={"active_seconds": round(totals.active_seconds, 1),
-                                "wall_seconds": round(totals.wall_seconds, 1)})
+                                "wall_seconds": round(totals.wall_seconds, 1),
+                                "idle_capped_gaps": totals.capped_gaps,
+                                "idle_capped_seconds": round(totals.capped_seconds, 1),
+                                "disposition": disposition})
     return rec
 
 

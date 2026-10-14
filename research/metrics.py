@@ -127,7 +127,14 @@ def rule_metrics(run: PipelineRun) -> dict[str, Any]:
 
 # ---- cost ------------------------------------------------------------------------------------
 def cost_metrics(session: Session) -> dict[str, Any]:
+    """Measured model usage for one run, kept as raw quantities (no prices). Money is computed
+    offline from these and the price register (``research.economics``)."""
     by_agent: dict[str, dict[str, float]] = {}
+    sources: dict[str, int] = {}
+    providers: set[str] = set()
+    models: set[str] = set()
+    compute_ms = 0
+    compute_reported = replayed = 0
     for r in session.scalars(select(m.ModelRun)):
         a = by_agent.setdefault(r.agent, {"calls": 0, "input_tokens": 0, "output_tokens": 0,
                                           "latency_ms": 0, "schema_invalid": 0, "cost": 0.0})
@@ -137,9 +144,35 @@ def cost_metrics(session: Session) -> dict[str, Any]:
         a["latency_ms"] += r.latency_ms or 0
         a["schema_invalid"] += 0 if r.schema_valid else 1
         a["cost"] += r.estimated_cost or 0.0
+        sources[r.usage_source] = sources.get(r.usage_source, 0) + 1
+        providers.add(r.provider)
+        models.add(r.model)
+        replayed += 1 if r.replayed else 0
+        if r.compute_ms is not None:
+            compute_ms += r.compute_ms
+            compute_reported += 1
+    calls = int(sum(a["calls"] for a in by_agent.values()))
     return {"agents": by_agent,
             "input_tokens": int(sum(a["input_tokens"] for a in by_agent.values())),
             "output_tokens": int(sum(a["output_tokens"] for a in by_agent.values())),
-            "model_calls": int(sum(a["calls"] for a in by_agent.values())),
+            "model_calls": calls,
             "model_latency_ms": int(sum(a["latency_ms"] for a in by_agent.values())),
+            # None, not 0, when the provider reported no compute time for any call
+            "model_compute_ms": compute_ms if compute_reported else None,
+            "calls_with_compute_time": compute_reported, "replayed_calls": replayed,
+            "usage_sources": dict(sorted(sources.items())),
+            "providers": sorted(providers), "models": sorted(models),
             "estimated_cost": round(sum(a["cost"] for a in by_agent.values()), 6)}
+
+
+def time_kinds(stage_seconds: dict[str, float], model_latency_ms: int, wall_seconds: float
+               ) -> dict[str, float]:
+    """The machine side of the four kinds of time (blueprint §22.2). Analyst active time comes
+    from the timer, not from here. ``model_wait_seconds`` is what the pipeline spent waiting for
+    the model; ``automated_seconds`` is the rest of the stage time (deterministic code, I/O,
+    validation); ``wall_seconds`` is the whole run, including anything outside the stages."""
+    stages = float(sum(stage_seconds.values()))
+    wait = model_latency_ms / 1000.0
+    return {"wall_seconds": round(wall_seconds, 3), "stage_seconds": round(stages, 3),
+            "model_wait_seconds": round(wait, 3),
+            "automated_seconds": round(max(0.0, stages - wait), 3)}

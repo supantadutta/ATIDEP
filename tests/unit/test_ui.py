@@ -111,6 +111,10 @@ class Fake:
 
     def post(self, path, json=None, **params):
         self.sent.append(("POST", path, json))
+        if path.startswith("/timers/") and path.endswith("/stop"):
+            return {"active_seconds": 300.0, "wall_seconds": 900.0, "activity": "rule_writing",
+                    "condition": "A", "idle_capped_gaps": 2, "idle_capped_seconds": 600.0,
+                    "disposition": (json or {}).get("disposition")}
         return {"ok": True}
 
     put = post
@@ -182,3 +186,74 @@ def test_the_results_page_shows_cost_detections_and_the_audit_chain():
     assert not at.exception
     assert any("Hash chain intact" in s.value for s in at.success)
     assert at.dataframe and at.selectbox
+
+
+# ---- the analyst timer's heartbeat ---------------------------------------------------------------------
+def test_the_heartbeat_is_much_shorter_than_the_idle_limit():
+    from app.services.timers import IDLE_SECONDS
+    from ui.pages import HEARTBEAT_SECONDS
+    # a background browser tab can slow timers to about once a minute; that must still count
+    assert HEARTBEAT_SECONDS * 2 <= IDLE_SECONDS
+
+
+def test_send_heartbeat_reports_whether_the_server_still_has_a_running_timer():
+    from ui.pages import send_heartbeat
+
+    class Api:
+        def __init__(self, fail):
+            self.fail, self.sent = fail, []
+
+        def post(self, path, json=None, **params):
+            self.sent.append(path)
+            if self.fail:
+                raise ApiError(409, "no open timer")
+            return {"state": "running"}
+
+    ok, gone = Api(False), Api(True)
+    assert send_heartbeat(ok, "TI-2026-0001") and ok.sent == ["/timers/TI-2026-0001/heartbeat"]
+    assert not send_heartbeat(gone, "TI-2026-0001")
+
+
+def _timer_page(flag_on):
+    script = f"""
+import streamlit as st
+from tests.unit.test_ui import Fake
+from ui.pages import timer_panel
+fake = st.session_state.setdefault("fake", Fake())
+if {flag_on!r}:
+    st.session_state["timer_on_q"] = True
+timer_panel(fake, "TI-2026-0001", "q")
+"""
+    return AppTest.from_string(script).run(timeout=30)
+
+
+def test_a_running_timer_sends_heartbeats_and_an_idle_page_sends_none():
+    running = _timer_page(True)
+    assert not running.exception
+    assert ("POST", "/timers/TI-2026-0001/heartbeat", None) in running.session_state["fake"].sent
+    idle = _timer_page(False)
+    assert all("heartbeat" not in str(x) for x in idle.session_state["fake"].sent)
+
+
+def test_start_and_stop_send_the_condition_activity_and_how_the_session_ended():
+    at = _timer_page(False)
+    next(s for s in at.selectbox if s.label == "Condition").select("A")
+    next(s for s in at.selectbox if s.label == "Activity").select("rule_writing").run()
+    next(b for b in at.button if b.label == "Start").click().run()
+    assert at.session_state["timer_on_q"] is True
+    next(s for s in at.selectbox if s.label == "How it ended").select("accepted").run()
+    next(b for b in at.button if b.label == "Stop").click().run()
+    sent = at.session_state["fake"].sent
+    assert ("POST", "/timers/TI-2026-0001/start",
+            {"condition": "A", "activity": "rule_writing"}) in sent
+    assert ("POST", "/timers/TI-2026-0001/stop", {"disposition": "accepted"}) in sent
+    assert at.session_state["timer_on_q"] is False and not at.exception
+    shown = " ".join(x.value for x in at.success)
+    assert "5.0 active minutes" in shown and "2 gap(s)" in shown       # under-measurement is shown
+
+
+def test_the_overview_page_offers_the_timer_for_manual_work_and_for_upkeep():
+    at = render("overview_page")
+    captions = " ".join(c.value for c in at.caption)
+    assert "Analyst timer" in captions
+    assert any(b.label == "Start" for b in at.button)

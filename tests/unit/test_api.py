@@ -257,6 +257,29 @@ def test_the_timer_and_cost_endpoints(http):
     assert cost["tokens"]["input"] > 0
 
 
+def test_stopping_a_timer_records_how_it_ended_and_reports_cut_gaps(http):
+    iid, _ = processed(http)
+    http.post(f"/timers/{iid}/start", json={"condition": "A", "activity": "rule_writing"},
+              headers=AUTH)
+    bad = http.post(f"/timers/{iid}/stop", json={"disposition": "maybe"}, headers=AUTH)
+    assert bad.status_code == 409
+    done = http.post(f"/timers/{iid}/stop", json={"disposition": "accepted"}, headers=AUTH).json()
+    assert done["disposition"] == "accepted" and done["idle_capped_gaps"] == 0
+    assert http.post(f"/timers/{iid}/stop", json={"verdict": "x"}, headers=AUTH
+                     ).status_code == 422                       # unknown fields are refused
+
+
+def test_platform_upkeep_is_timed_through_the_dash_item(http):
+    start = http.post("/timers/-/start", json={"condition": "B", "activity": "operations"},
+                      headers=AUTH)
+    assert start.status_code == 200
+    assert http.post("/timers/-/heartbeat", headers=AUTH).json()["state"] == "running"
+    done = http.post("/timers/-/stop", headers=AUTH).json()
+    assert done["activity"] == "operations"
+    assert http.post("/timers/-/start", json={"condition": "B", "activity": "napping"},
+                     headers=AUTH).status_code == 409
+
+
 def test_a_missing_model_is_reported_not_crashed(http):
     iid = upload(http).json()["intel_id"]
     http.router.q.pop("extraction")

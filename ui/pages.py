@@ -64,11 +64,16 @@ def overview_page(api: ApiClient) -> None:
                        "band": i["priority_band"], "score": i["priority_score"]} for i in items],
                      use_container_width=True, hide_index=True)
         pick = st.selectbox("Open an item", [i["intel_id"] for i in items], key="queue_pick")
+        with st.expander("Analyst timer for this item (use it for manual work too)"):
+            timer_panel(api, pick, "queue")
         if st.button("Process with the models (extract, score, find opportunities)"):
             with st.spinner("Working…"):
                 _guard(lambda: st.json(api.post(f"/intelligence/{pick}/process", json={})))()
     else:
         st.info("Nothing in the queue yet. Upload a report or run the collectors.")
+
+    with st.expander("Platform upkeep timer (no item)"):
+        timer_panel(api, "-", "upkeep", upkeep=True)
 
     with st.expander("Add intelligence"):
         up = st.file_uploader("Report (HTML, PDF, text, RSS, JSON)", key="upload")
@@ -83,24 +88,66 @@ def overview_page(api: ApiClient) -> None:
 
 
 # ---- page 2 ----------------------------------------------------------------------
-def _timer_controls(api: ApiClient, intel_id: str) -> None:
-    st.caption("Analyst timer: runs only while you work on this item; it auto-pauses after two "
-               "minutes without activity.")
+HEARTBEAT_SECONDS = 30       # a quarter of the idle limit (app.services.timers.IDLE_SECONDS)
+TIMER_ACTIVITIES = ["review_approval", "reading", "extraction", "opportunity_decision",
+                    "rule_writing", "validation", "testing", "editing", "packaging", "other"]
+
+
+def send_heartbeat(api: ApiClient, item: str) -> bool:
+    """One heartbeat for the open timer. False means the server has no running timer for this
+    item (it was stopped, paused elsewhere, or timed out), so the page stops sending."""
+    try:
+        api.post(f"/timers/{item}/heartbeat")
+        return True
+    except ApiError:
+        return False
+
+
+@st.fragment(run_every=f"{HEARTBEAT_SECONDS}s")
+def _heartbeat(api: ApiClient, item: str, key: str) -> None:
+    flag = f"timer_on_{key}"
+    if st.session_state.get(flag) and not send_heartbeat(api, item):
+        st.session_state[flag] = False
+
+
+def timer_panel(api: ApiClient, item: str, key: str, *, upkeep: bool = False) -> None:
+    """Start, pause, resume and stop the analyst timer. While it runs, this page sends a
+    heartbeat every ``HEARTBEAT_SECONDS``, so long uninterrupted work is counted; pause for any
+    break, because the server also counts nothing after two minutes without a heartbeat (a
+    closed browser). Use the same panel for the manual condition (A) and for reviewing output
+    (B)."""
+    flag = f"timer_on_{key}"
+    st.caption("Analyst timer: counts only while it is running. Pause it for any break. If this "
+               "page is closed, the server stops counting after two minutes.")
     cols = st.columns(5)
-    cond = cols[0].selectbox("Condition", ["B", "A"], key=f"cond_{intel_id}")
-    act = cols[1].selectbox("Activity", ["review_approval", "reading", "editing", "validation",
-                                         "testing", "packaging", "other"], key=f"act_{intel_id}")
-    if cols[2].button("Start", key=f"ts_{intel_id}"):
-        _guard(lambda: api.post(f"/timers/{intel_id}/start",
-                                json={"condition": cond, "activity": act}))()
-    if cols[3].button("Pause / resume", key=f"tp_{intel_id}"):
-        res = _guard(lambda: api.post(f"/timers/{intel_id}/pause"))()
-        if res is None:
-            _guard(lambda: api.post(f"/timers/{intel_id}/resume"))()
-    if cols[4].button("Stop", key=f"tx_{intel_id}"):
-        res = _guard(lambda: api.post(f"/timers/{intel_id}/stop"))()
+    if upkeep:
+        cond, act = "B", "operations"
+        cols[0].write("Platform upkeep (condition B, no item)")
+    else:
+        cond = cols[0].selectbox("Condition", ["B", "A"], key=f"cond_{key}")
+        act = cols[1].selectbox("Activity", TIMER_ACTIVITIES, key=f"act_{key}")
+    if cols[2].button("Start", key=f"ts_{key}"):
+        if _guard(lambda: api.post(f"/timers/{item}/start",
+                                   json={"condition": cond, "activity": act}))() is not None:
+            st.session_state[flag] = True
+    if cols[3].button("Pause / resume", key=f"tp_{key}"):
+        if _guard(lambda: api.post(f"/timers/{item}/pause"))() is not None:
+            st.session_state[flag] = False
+        elif _guard(lambda: api.post(f"/timers/{item}/resume"))() is not None:
+            st.session_state[flag] = True
+    outcome = cols[4].selectbox("How it ended", ["in_progress", "accepted", "rejected"],
+                                key=f"disp_{key}", help="Choose accepted or rejected on the "
+                                "session that finishes the item.")
+    if st.button("Stop", key=f"tx_{key}"):
+        res = _guard(lambda: api.post(f"/timers/{item}/stop", json={"disposition": outcome}))()
+        st.session_state[flag] = False
         if res:
-            st.success(f"Recorded {res['active_seconds'] / 60:.1f} active minutes")
+            msg = f"Recorded {res['active_seconds'] / 60:.1f} active minutes"
+            if res["idle_capped_gaps"]:
+                msg += (f". {res['idle_capped_gaps']} gap(s) over the idle limit were cut short "
+                        f"({res['idle_capped_seconds'] / 60:.1f} min not counted)")
+            st.success(msg)
+    _heartbeat(api, item, key)
 
 
 def _evidence_tab(api: ApiClient, intel_id: str) -> None:
@@ -147,7 +194,7 @@ def workbench_page(api: ApiClient) -> None:
         f"{x} · {r['kind']} · {r['state']} · score {r['quality_score']}" for r in rules
         if r["rule_id"] == x))
     rule = api.get(f"/rules/{rid}")
-    _timer_controls(api, rule["intel_id"])
+    timer_panel(api, rule["intel_id"], "workbench")
     st.markdown(f"**State:** `{rule['state']}` · **version** {rule['version']} · **content "
                 f"hash** `{rule['content_sha256'][:16]}…`")
     tabs = st.tabs(["Rule", "Gates", "Evidence", "History", "Actions"])

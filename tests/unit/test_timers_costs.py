@@ -50,6 +50,27 @@ def test_a_long_silence_counts_for_at_most_the_idle_limit(engine):
         assert (rec.ended_at - rec.started_at).total_seconds() == 720    # wall clock is separate
 
 
+def test_gaps_cut_short_by_the_idle_limit_are_counted_and_stored(engine):
+    with session_scope(engine) as s:
+        _, rec = run_timer(s, [60, 600, 660], stop_at=1200)   # a 540 s and a 540 s gap, both cut
+        assert rec.idle_capped_gaps == 2
+        assert rec.idle_capped_seconds == (540 - 120) + (540 - 120)
+        assert rec.analyst_active_seconds == 60 + 120 + 60 + 120
+        stop = s.scalars(select(m.AuditEvent).where(m.AuditEvent.action == "timer.stop")).one()
+        assert stop.details["idle_capped_gaps"] == 2
+
+
+def test_regular_heartbeats_keep_a_long_block_whole(engine):
+    """The failure the review found: with no heartbeat, 20 uninterrupted minutes counted 2."""
+    with session_scope(engine) as s:
+        beats = list(range(30, 1200, 30))
+        _, rec = run_timer(s, beats, stop_at=1200)
+        assert rec.analyst_active_seconds == 1200 and rec.idle_capped_gaps == 0
+    with session_scope(engine) as s:
+        _, rec = run_timer(s, [], stop_at=1200)
+        assert rec.analyst_active_seconds == 120 and rec.idle_capped_gaps == 1   # the old result
+
+
 def test_a_pause_is_excluded_until_the_resume(engine):
     with session_scope(engine) as s:
         _, rec = run_timer(s, [60], pauses=[100], resumes=[1000], stop_at=1060)
@@ -89,6 +110,27 @@ def test_the_rules_of_the_protocol(engine):
         assert timers.running_session(s, "alice") is None
         with pytest.raises(TimerError, match="unknown timer"):
             timers.heartbeat(s, "nope")
+
+
+def test_how_a_session_ended_is_recorded_and_validated(engine):
+    with session_scope(engine) as s:
+        sid = timers.start(s, analyst="alice", intel_id=None, condition="A", activity="reading",
+                           now=at(0))
+        with pytest.raises(TimerError, match="disposition"):
+            timers.stop(s, sid, at(10), "maybe")
+        assert timers.stop(s, sid, at(10), "accepted").disposition == "accepted"
+        sid2 = timers.start(s, analyst="alice", intel_id=None, condition="A", activity="reading",
+                            now=at(20))
+        assert timers.stop(s, sid2, at(30)).disposition is None
+
+
+def test_platform_upkeep_can_be_timed_without_an_item_under_condition_b(engine):
+    with session_scope(engine) as s:
+        sid = timers.start(s, analyst="alice", intel_id=None, condition="B",
+                           activity="operations", now=at(0))
+        rec = timers.stop(s, sid, at(90))
+        assert rec.activity == "operations" and rec.intel_id is None
+        assert rec.analyst_active_seconds == 90
 
 
 @pytest.mark.parametrize("kw,msg", [

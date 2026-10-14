@@ -119,6 +119,11 @@ class TimerBody(BaseModel):
     activity: str = "review_approval"
 
 
+class StopBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    disposition: str | None = None       # accepted | rejected | in_progress
+
+
 def _iso(dt: datetime | None) -> str | None:
     return dt.isoformat() if dt else None
 
@@ -537,11 +542,14 @@ def create_app(ctx: AppContext) -> FastAPI:
         return {"id": result_id, "disposition": body.disposition}
 
     # ---- timers, costs, audit -------------------------------------------------------------------
+    def _item(item_id: str) -> str | None:
+        return None if item_id == "-" else item_id          # "-": platform upkeep, no item
+
     @app.post("/timers/{item_id}/start", dependencies=guarded)
     def timer_start(item_id: str, body: TimerBody = Body(default_factory=TimerBody),
                     who: str = Depends(analyst)) -> dict[str, Any]:
         with session_scope(ctx.engine) as s:
-            sid = timers.start(s, analyst=who, intel_id=item_id, condition=body.condition,
+            sid = timers.start(s, analyst=who, intel_id=_item(item_id), condition=body.condition,
                                activity=body.activity, now=ctx.now())
         return {"timer": sid}
 
@@ -549,7 +557,7 @@ def create_app(ctx: AppContext) -> FastAPI:
         sid = timers.running_session(s, who)
         first = s.scalars(select(m.TimerEvent).where(m.TimerEvent.session_id == sid)).first() \
             if sid else None
-        if sid is None or first is None or first.intel_id != item_id:
+        if sid is None or first is None or first.intel_id != _item(item_id):
             raise timers.TimerError("you have no open timer for this item")
         return sid
 
@@ -573,12 +581,16 @@ def create_app(ctx: AppContext) -> FastAPI:
             return {"active_seconds": t.active_seconds, "state": t.state}
 
     @app.post("/timers/{item_id}/stop", dependencies=guarded)
-    def timer_stop(item_id: str, who: str = Depends(analyst)) -> dict[str, Any]:
+    def timer_stop(item_id: str, body: StopBody = Body(default_factory=StopBody),
+                   who: str = Depends(analyst)) -> dict[str, Any]:
         with session_scope(ctx.engine) as s:
-            rec = timers.stop(s, _mine(s, item_id, who), ctx.now())
+            rec = timers.stop(s, _mine(s, item_id, who), ctx.now(), body.disposition)
             return {"active_seconds": rec.analyst_active_seconds,
                     "wall_seconds": (rec.ended_at - rec.started_at).total_seconds(),
-                    "activity": rec.activity, "condition": rec.condition}
+                    "activity": rec.activity, "condition": rec.condition,
+                    "idle_capped_gaps": rec.idle_capped_gaps,
+                    "idle_capped_seconds": rec.idle_capped_seconds,
+                    "disposition": rec.disposition}
 
     @app.get("/costs/summary", dependencies=guarded)
     def costs_summary() -> dict[str, Any]:

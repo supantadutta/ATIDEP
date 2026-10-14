@@ -18,6 +18,7 @@ def log_calls(session: Session, *, run_id: str, agent: str, intel_id: str | None
             provider=r.provider, model=r.model, temperature=req.temperature, seed=req.seed,
             prompt_version=prompt.version, prompt_sha256=prompt.sha256,
             input_tokens=r.input_tokens, output_tokens=r.output_tokens, latency_ms=r.latency_ms,
-            estimated_cost=r.cost, schema_valid=rec.schema_valid, retry_count=rec.attempt))
+            estimated_cost=r.cost, usage_source=r.usage_source, compute_ms=r.compute_ms,
+            replayed=r.replayed, schema_valid=rec.schema_valid, retry_count=rec.attempt))
     session.flush()
     return len(calls)

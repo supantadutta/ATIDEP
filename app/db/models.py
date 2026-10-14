@@ -27,7 +27,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from schemas.claim import ClaimKind, IndicatorContext
 from schemas.common import Band, ProcessingStatus, RuleKind, RuleState
 from schemas.detection_opportunity import Decision
-from schemas.effort_cost_record import Component, Condition, ResultStatus
+from schemas.effort_cost_record import Component, Condition, Disposition, ResultStatus
 from schemas.validation_result import GateId, GateStatus
 
 
@@ -283,12 +283,19 @@ class ModelRun(Base):
     output_tokens: Mapped[int] = mapped_column(Integer, default=0)
     latency_ms: Mapped[int | None] = mapped_column(Integer)
     estimated_cost: Mapped[float | None] = mapped_column(Float)
+    # Where the token counts came from, the provider's own compute time (local models), and
+    # whether this reply was served from a recording rather than a fresh, charged call.
+    usage_source: Mapped[str] = mapped_column(String, default="unknown")
+    compute_ms: Mapped[int | None] = mapped_column(Integer)
+    replayed: Mapped[bool] = mapped_column(Boolean, default=False)
     schema_valid: Mapped[bool] = mapped_column(Boolean)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     __table_args__ = (
         CheckConstraint(_in("agent", ["extraction", "opportunity", "rule", "improvement",
                                       "single_prompt_baseline"])),
+        CheckConstraint(_in("usage_source", ["provider", "provider_partial", "estimated",
+                                             "unknown"])),
         CheckConstraint("repair_attempt >= 0"),
     )
 
@@ -323,6 +330,9 @@ class EffortCostRecord(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     ended_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     analyst_active_seconds: Mapped[float] = mapped_column(Float, default=0.0)
+    idle_capped_seconds: Mapped[float] = mapped_column(Float, default=0.0)
+    idle_capped_gaps: Mapped[int] = mapped_column(Integer, default=0)
+    disposition: Mapped[str | None] = mapped_column(String)
     cpu_pct_avg: Mapped[float | None] = mapped_column(Float)
     mem_mb_peak: Mapped[float | None] = mapped_column(Float)
     api_calls: Mapped[int] = mapped_column(Integer, default=0)
@@ -336,6 +346,8 @@ class EffortCostRecord(Base):
         CheckConstraint(_in("result_status", ResultStatus)),
         CheckConstraint("ended_at >= started_at"),
         CheckConstraint("analyst_active_seconds >= 0"),
+        CheckConstraint("idle_capped_seconds >= 0 AND idle_capped_gaps >= 0"),
+        CheckConstraint("disposition IS NULL OR " + _in("disposition", Disposition)),
     )
 
 

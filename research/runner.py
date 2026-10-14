@@ -156,6 +156,8 @@ class ExperimentRunner:
             metrics, cost = {"failed": True}, {}
         rec.metrics = metrics
         rec.seconds = round(time.monotonic() - t0, 3)
+        if cost:
+            cost["time"] = mt.time_kinds(stages, cost.get("model_latency_ms", 0), rec.seconds)
         out_path.write_text(json.dumps({
             "item": item.id, "condition": condition, "run": run_number, "seed": seed,
             "order_set": order, "model": self.model_id, "prompt_set_sha256": self.prompts.sha256,

@@ -33,6 +33,16 @@ class Component(StrEnum):
     ANALYST = "analyst"  # human time in any condition
 
 
+class Disposition(StrEnum):
+    """How an analyst's work on an item ended: ``accepted`` (a rule the analyst stands behind),
+    ``rejected`` (a documented decision that no detection should be made), or ``in_progress``
+    (more sessions on the item will follow). The final session of an item carries its outcome."""
+
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    IN_PROGRESS = "in_progress"
+
+
 class ResultStatus(StrEnum):
     OK = "ok"
     FAILED = "failed"
@@ -48,6 +58,11 @@ class EffortCostRecord(Strict):
     started_at: UtcDatetime
     ended_at: UtcDatetime
     analyst_active_seconds: float = Field(default=0.0, ge=0.0)
+    # Time the idle rule did not count (gaps longer than the limit) and how many gaps that was.
+    # A high count means the session was under-measured (blueprint §23).
+    idle_capped_seconds: float = Field(default=0.0, ge=0.0)
+    idle_capped_gaps: int = Field(default=0, ge=0)
+    disposition: Disposition | None = None
     cpu_pct_avg: float | None = Field(default=None, ge=0.0, le=100.0)
     mem_mb_peak: float | None = Field(default=None, ge=0.0)
     api_calls: int = Field(default=0, ge=0)

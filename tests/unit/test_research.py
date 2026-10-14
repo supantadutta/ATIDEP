@@ -368,3 +368,39 @@ def test_exports_are_plain_csv_with_a_manifest_of_hashes(runner, tmp_path):
     # exporting again gives byte-identical files
     again = export_results(runner.results_engine, tmp_path / "export2")
     assert again["sha256"] == manifest["sha256"]
+
+
+def test_analyst_time_is_exported_with_active_and_wall_time_apart_and_a_content_key(
+        runner, tmp_path):
+    """Analyst timers live in the live application database; they join to the dataset by the
+    item's raw-content hash, and machine effort never contains analyst rows."""
+    from app.db.session import init_db
+    from app.services import timers
+    from tests.unit.test_timers_costs import at
+    runner.run_all(conditions=("B",), runs=1)
+    live = make_engine("sqlite:///:memory:")
+    init_db(live)
+    with session_scope(runner.results_engine) as s:
+        demo = s.scalars(select(m.IntelligenceItem).where(m.IntelligenceItem.title == "DEMO-01")
+                         ).one()
+        key, title, raw = demo.intel_id, demo.title, demo.raw_sha256
+    with session_scope(live) as s:
+        s.add(m.Source(name="Demo Vendor A", source_type="report", reliability_rating="A"))
+        s.flush()
+        s.add(m.IntelligenceItem(intel_id=key, source_id=1, title=title, raw_sha256=raw,
+                                 sanitised_sha256=raw, retrieved_at=at(0)))
+        s.flush()
+        sid = timers.start(s, analyst="alice", intel_id=key, condition="B",
+                           activity="review_approval", now=at(0))
+        timers.heartbeat(s, sid, at(60))
+        timers.stop(s, sid, at(1000), "accepted")   # 60 s active, then at most 120 s of silence
+    manifest = export_results(runner.results_engine, tmp_path / "x", analyst_engines=(live,))
+    rows = list(csv.DictReader((tmp_path / "x" / "analyst_effort.csv").open()))
+    assert manifest["rows"]["analyst_effort"] == 1 and len(rows) == 1
+    row = rows[0]
+    assert row["item_key"] == raw and row["analyst"] == "alice" and row["condition"] == "B"
+    assert float(row["active_seconds"]) == 180.0 and float(row["wall_seconds"]) == 1000.0
+    assert row["disposition"] == "accepted" and row["idle_capped_gaps"] == "1"
+    assert float(row["idle_capped_seconds"]) == 820.0
+    effort = list(csv.DictReader((tmp_path / "x" / "effort.csv").open()))
+    assert effort and all(r["condition"] == "B" and r["component"] != "analyst" for r in effort)
