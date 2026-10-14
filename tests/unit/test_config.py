@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from app.config import (
     DEFAULT_CONFIG_DIR,
-    CostCriteria,
+    EconomicConfig,
     PoliciesConfig,
     ScoringConfig,
     load_config,
@@ -85,9 +85,19 @@ def test_cloud_is_off_by_default_and_needs_a_cap_to_enable():
     PoliciesConfig(**p)  # allowed once a positive cap exists
 
 
-def test_cost_criteria_are_preregistered_and_consistent():
+def test_the_economic_evaluation_is_preregistered_and_consistent():
     cfg = load_config()
-    assert cfg.experiment.cost_criteria.primary_view == "adopt"
-    with pytest.raises(ValidationError):
-        CostCriteria(primary_view="build", views=["adopt"],
-                     inference_modes_reported_separately=["local"])
+    eco = cfg.experiment.economics
+    assert (eco.primary_view, eco.primary_price_case) == ("adopt", "base")
+    # the coordinator's decisions are not made by the authors
+    assert eco.primary_workload is None and eco.delta_c_pct is None
+    base = dict(primary_view="adopt", views=["adopt"],
+                primary_price_case="base", price_cases=["base"],
+                inference_modes_reported_separately=["local"])
+    EconomicConfig(**base)
+    for bad in (dict(primary_view="build"), dict(primary_price_case="upper"),
+                dict(delta_c_pct=30),
+                dict(delta_c_pct=0), dict(delta_c_pct=101, delta_c_rationale="x")):
+        with pytest.raises(ValidationError):
+            EconomicConfig(**{**base, **bad})
+    EconomicConfig(**{**base, "delta_c_pct": 30, "delta_c_rationale": "a stated reason"})

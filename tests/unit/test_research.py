@@ -404,3 +404,87 @@ def test_analyst_time_is_exported_with_active_and_wall_time_apart_and_a_content_
     assert float(row["idle_capped_seconds"]) == 820.0
     effort = list(csv.DictReader((tmp_path / "x" / "effort.csv").open()))
     assert effort and all(r["condition"] == "B" and r["component"] != "analyst" for r in effort)
+
+
+class FailAfter:
+    """A model that serves ``n`` calls and then raises ``exc``."""
+
+    def __init__(self, inner, n, exc):
+        self.inner, self.n, self.exc = inner, n, exc
+        self.provider, self.model = inner.provider, inner.model
+
+    def complete(self, request):
+        if self.n <= 0:
+            raise self.exc
+        self.n -= 1
+        return self.inner.complete(request)
+
+
+def test_what_a_run_spent_before_it_crashed_is_still_counted(runner):
+    runner.client_factory = lambda c, i, k: FailAfter(b_model(i), 1, RuntimeError("disk full"))
+    rec = runner.run_item(item(runner, "DEMO-01"), "B", 1)
+    assert rec.error and "disk full" in rec.error and rec.metrics == {"failed": True}
+    saved = json.loads(Path(rec.output_ref).read_text())
+    assert saved["cost"]["model_calls"] == 1 and saved["cost"]["input_tokens"] > 0
+
+
+def test_hitting_the_spend_cap_is_missing_data_not_a_model_failure(runner):
+    from components.llm.client import BudgetExceeded
+    runner.client_factory = lambda c, i, k: FailAfter(b_model(i), 0, BudgetExceeded(
+        "daily cost limit 5.0 reached"))
+    rec = runner.run_item(item(runner, "DEMO-01"), "B", 1)
+    assert rec.metrics["budget_exceeded"] is True and rec.metrics["failed"] is True
+    runner.client_factory = runner.factory                       # an ordinary run, no cap hit
+    ordinary = runner.run_item(item(runner, "DEMO-02"), "B", 1)
+    assert "budget_exceeded" not in ordinary.metrics
+
+
+def test_run_costs_separate_demand_spend_and_the_four_kinds_of_time(runner):
+    rec = runner.run_item(item(runner, "DEMO-01"), "B", 1)
+    cost = json.loads(Path(rec.output_ref).read_text())["cost"]
+    assert cost["model_calls"] == cost["fresh_calls"] and cost["replayed_calls"] == 0
+    assert set(cost["time"]) == {"wall_seconds", "stage_seconds", "model_wait_seconds",
+                                 "automated_seconds", "harness_seconds"}
+    saved = json.loads(Path(rec.output_ref).read_text())
+    assert "ingest" in saved["stages"] and saved["stages"]["ingest"] >= 0
+    assert cost["tokens_reliable"] is False            # the scripted model reports no real usage
+    assert cost["usage_sources"] == {"unknown": cost["model_calls"]}
+
+
+def test_manual_rules_are_registered_and_judged_by_the_same_gates(runner, tmp_path):
+    folder = tmp_path / "manual" / "DEMO-01"
+    folder.mkdir(parents=True)
+    (folder / "encoded_powershell.yml").write_text(C_OUTPUTS["DEMO-01"]["sigma_rules"][0])
+    (folder / "bad.yml").write_text("title: [unterminated")
+    (folder / "iocs.list").write_text("update.example.net:\n")
+    rec = runner.register_manual(item(runner, "DEMO-01"), folder, disposition="accepted")
+    rules = rec.metrics["rules"]
+    assert rec.condition == "A" and rec.metrics["manual_rule_files"] == 2
+    assert rules["sigma_rules"] == 2 and rules["assessed"] == 2
+    # the good file is statically fine but fires on the SCCM look-alike (G10), exactly as the
+    # single-prompt rule does; the broken file fails G1. Neither is validated.
+    assert rules["first_pass_valid"] == 1 and rules["validated"] == 0
+    assert {"G1", "G10"} <= set(rules["failed_gates"])
+    assert rec.metrics["unjudged_files"] == ["iocs.list"]
+    assert rec.metrics["disposition"] == "accepted"
+    with session_scope(runner.results_engine) as s:
+        row = s.scalars(select(m.ExperimentRun).where(m.ExperimentRun.condition == "A")).one()
+        assert row.run_number == 1 and row.output_ref == rec.output_ref
+    manifest = export_results(runner.results_engine, tmp_path / "out")
+    runs = list(csv.DictReader((tmp_path / "out" / "runs.csv").open()))
+    assert manifest["rows"]["runs"] == 1 and runs[0]["condition"] == "A"
+    assert runs[0]["rules.assessed"] == "2" and runs[0]["rules.sigma_rules"] == "2"
+
+
+def test_a_rule_without_test_events_is_unassessed_not_a_gate_failure():
+    from app.services.pipeline import PipelineRun, RuleRun
+    from research.metrics import rule_metrics
+    run = PipelineRun("TI-2026-0001", "B")
+    base = dict(opportunity_id=1, decision="behavioral", kind="sigma", loop_status="passed",
+                first_pass_valid=True, repairs_used=0, attempts=1, failed_gates=[],
+                first_attempt_codes=[])
+    run.rules = [RuleRun(rule_id="R1", outcome="validated", **base),
+                 RuleRun(rule_id="R2", outcome=None, skipped="no test events", **base),
+                 RuleRun(rule_id="R3", outcome="blocked", **{**base, "failed_gates": ["G6"]})]
+    r = rule_metrics(run)
+    assert (r["rules"], r["assessed"], r["validated"], r["blocked"]) == (3, 2, 1, 1)

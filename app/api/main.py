@@ -595,7 +595,7 @@ def create_app(ctx: AppContext) -> FastAPI:
     @app.get("/costs/summary", dependencies=guarded)
     def costs_summary() -> dict[str, Any]:
         with session_scope(ctx.engine) as s:
-            return costs.summary(s, ctx.cfg)
+            return costs.summary(s)
 
     @app.get("/audit", dependencies=guarded)
     def audit(limit: int = Query(default=100, ge=1, le=1000), entity_id: str | None = None

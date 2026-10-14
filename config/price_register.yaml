@@ -1,0 +1,66 @@
+# Register of commercial prices (blueprint §22.3). It holds candidate products for the priced
+# functions of the paid counterfactual scenario S-PAID. THE AUTHORS HAVE NOT ENTERED ANY PRICE.
+# Every group below starts with one `quote_required` category placeholder (no vendor named); the coordinator replaces it with
+# real candidates.
+#
+# The selection rule (frozen before any price is looked up):
+#   1. Per group, write down the functional requirement and the adequacy criteria first. The
+#      candidate list is every product that meets them, whether or not it publishes a price. Log
+#      each exclusion with its reason in `inclusion_note`. Candidates found unpriced stay in the
+#      list as `quote_required`.
+#   2. A price is recorded only from the vendor's own page or quotation, with the retrieval date,
+#      the date the price is valid as of, an archived copy (hash or archive URL), and the price
+#      basis (list | quote | academic | negotiated). List prices usually exceed prices paid; that
+#      biases the comparison towards the open-source side and is stated in the paper.
+#   3. The cost of each candidate is calculated at each named workload, including included
+#      usage, overage, fixed fees and any minimum commitment. The BASE case is the lowest
+#      calculated cost among adequate priced candidates (conservative against ATIDEP). The UPPER
+#      case is the highest, an upper tail and not a typical price.
+#   4. An unpriced candidate never counts as free. A group with no priced adequate candidate makes
+#      the paid total a lower bound (the paid side is then reported as "at least").
+#   5. Prices are those of the retrieval dates; the register file's hash is frozen with prereg-v1
+#      and any later change is a logged revision.
+#
+# A priced entry needs: vendor, product, tier, currency, components (unit kind, price, the vendor's
+# billing unit, included quantity), pricing_source, pricing_url, checked_on, price_basis,
+# archive_ref and workload_assumption. A quotation-only entry says exactly:
+# "Vendor quote required / public price unavailable".
+
+selection_rule: >-
+  Lowest calculated cost at the named workload among adequate, priced candidates (base case);
+  highest among them (upper case); candidate list and adequacy criteria frozen before any price
+  is looked up; every exclusion logged; unpriced candidates stay listed and never count as free.
+
+entries:
+  - id: llm_api.placeholder
+    group: llm_api
+    status: quote_required
+    notes: >-
+      Vendor quote required / public price unavailable. No candidate has been selected yet.
+      Requirement (function FN3): a hosted chat model that returns schema-valid JSON for the
+      extraction, opportunity and rule tasks, with provider-reported token usage and no tool use,
+      whose technical adequacy has been MEASURED by running the pipeline on it (arm S-OSS-API).
+      A model that has not been run is not an adequate candidate. Units: input and output tokens.
+  - id: cloud_compute.placeholder
+    group: cloud_compute
+    status: quote_required
+    notes: >-
+      Vendor quote required / public price unavailable. No candidate has been selected yet.
+      Requirement (function FN7): pay-per-use compute able to run the automated, non-model part
+      of the pipeline (Python, SQLite, validation) at the named workload. Unit: hours.
+  - id: cloud_storage.placeholder
+    group: cloud_storage
+    status: quote_required
+    notes: >-
+      Vendor quote required / public price unavailable. No candidate has been selected yet.
+      Requirement (function FN7): block or object storage for evidence, databases and audit
+      logs at the named workload. Unit: gigabyte-months.
+  - id: siem_platform.placeholder
+    group: siem_platform
+    status: quote_required
+    notes: >-
+      Vendor quote required / public price unavailable. No candidate has been selected yet.
+      Requirement (function FN5, platform perimeter only, no verdict): a commercial SIEM or
+      managed detection service that can run the generated detections at the stated ingest volume
+      and endpoint count (the same on both sides). Pricing metric differs by product (per
+      gigabyte ingested, per endpoint, or flat); each is entered as its own component.

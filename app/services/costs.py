@@ -1,10 +1,14 @@
-"""Measured effort and cost (blueprint §22.2, §22.7). The application measures; the paper
-analyses (TCO, break-even and sensitivity are computed offline from these numbers and
-``config/cost_rates.yaml``).
+"""Measured quantities for the cost analysis (blueprint §2.4, §22.2). **The application records
+quantities and prices nothing.** Money is computed offline from the exported quantities, the rates,
+the price register and the scenarios (``research.economics``), because a figure shown here would
+need a rate or a price that the application does not have, and an unsourced figure is worse than
+none.
 
-Reported: tokens, calls and model latency per agent; analyst active time per condition; machine
-time per component; labour cost at the configured hourly rate; token cost for models that
-charge (local inference is recorded as zero); cost per item and per accepted rule.
+Reported: tokens and calls per agent (with how many calls were served from a recording), whether
+the token counts came from the provider, model latency of fresh calls, analyst time per condition
+(active, wall-clock, and the time the idle rule did not count), machine time per component, and
+the distinct rules that were approved or deployed. Platform upkeep ('operations') is reported
+apart from per-item analyst time.
 """
 
 from __future__ import annotations
@@ -12,65 +16,77 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import distinct, func, select
 from sqlalchemy.orm import Session
 
-from app.config import AppConfig
 from app.db import models as m
+from components.llm.client import is_cloud_provider
+from schemas.common import RuleState
 from schemas.effort_cost_record import Component
 
-LOCAL_PROVIDERS = frozenset({"ollama", "scripted", "replay"})
+APPROVED_STATES = (RuleState.APPROVED.value, RuleState.DEPLOYED.value, RuleState.MONITORED.value)
 
 
-def summary(session: Session, cfg: AppConfig) -> dict[str, Any]:
-    rates = cfg.cost_rates
-    currency = rates.get("currency", "")
-    hourly = float(rates.get("labor", {}).get("analyst_hourly_rate", 0))
-    cloud = rates.get("cloud_ai", {})
-    per_in = float(cloud.get("input_cost_per_million_tokens", 0))
-    per_out = float(cloud.get("output_cost_per_million_tokens", 0))
-
+def summary(session: Session) -> dict[str, Any]:
     agents: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
-    token_cost = 0.0
+    by_locality: dict[str, dict[str, float]] = {"local": defaultdict(float),
+                                                "cloud": defaultdict(float)}
+    sources: dict[str, int] = defaultdict(int)
     for r in session.scalars(select(m.ModelRun)):
         a = agents[r.agent]
         a["calls"] += 1
         a["input_tokens"] += r.input_tokens
         a["output_tokens"] += r.output_tokens
-        a["latency_ms"] += r.latency_ms or 0
         a["schema_invalid"] += 0 if r.schema_valid else 1
         a["retries"] += r.retry_count
-        if r.provider not in LOCAL_PROVIDERS:
-            token_cost += (r.input_tokens * per_in + r.output_tokens * per_out) / 1e6
+        a["replayed_calls"] += 1 if r.replayed else 0
+        if not r.replayed:
+            a["latency_ms"] += r.latency_ms or 0          # a replayed call waited for nothing
+        loc = by_locality["cloud" if is_cloud_provider(r.provider) else "local"]
+        loc["calls"] += 1
+        loc["input_tokens"] += r.input_tokens
+        loc["output_tokens"] += r.output_tokens
+        sources[r.usage_source] += 1
     tokens = {"input": int(sum(a["input_tokens"] for a in agents.values())),
               "output": int(sum(a["output_tokens"] for a in agents.values()))}
 
-    by_condition: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    analyst: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
+    upkeep = defaultdict(float)
     machine: dict[str, float] = defaultdict(float)
     for e in session.scalars(select(m.EffortCostRecord)):
         wall = (e.ended_at - e.started_at).total_seconds()
-        if e.component == Component.ANALYST.value:
-            by_condition[e.condition]["analyst_active_seconds"] += e.analyst_active_seconds
-            by_condition[e.condition]["analyst_wall_seconds"] += wall
-        else:
+        if e.component != Component.ANALYST.value:
             machine[e.component] += wall
-    analyst_seconds = sum(c["analyst_active_seconds"] for c in by_condition.values())
-    labour = analyst_seconds / 3600.0 * hourly
+        elif e.activity == "operations":
+            upkeep["active_seconds"] += e.analyst_active_seconds
+            upkeep["wall_seconds"] += wall
+        else:
+            c = analyst[e.condition]
+            c["active_seconds"] += e.analyst_active_seconds
+            c["wall_seconds"] += wall
+            c["idle_capped_gaps"] += e.idle_capped_gaps
+            c["idle_capped_seconds"] += e.idle_capped_seconds
+            c["sessions"] += 1
+    item_minutes = sum(c["active_seconds"] for c in analyst.values()) / 60.0
 
     items = session.scalar(select(func.count()).select_from(m.IntelligenceItem)) or 0
-    accepted = session.scalar(select(func.count()).select_from(m.Approval)
-                              .where(m.Approval.decision == "approved")) or 0
-    total = labour + token_cost
+    processed = session.scalar(select(func.count(distinct(m.ModelRun.intel_id)))
+                               .where(m.ModelRun.intel_id.is_not(None))) or 0
+    approved = session.scalar(select(func.count()).select_from(m.Rule)
+                              .where(m.Rule.state.in_(APPROVED_STATES))) or 0
+    deployed = session.scalar(
+        select(func.count(distinct(m.RuleVersion.rule_id))).select_from(m.Deployment)
+        .join(m.RuleVersion, m.RuleVersion.id == m.Deployment.rule_version_id)
+        .where(m.Deployment.mode == "lab", m.Deployment.status == "ok")) or 0
     return {
-        "currency": currency,
         "agents": {k: dict(v) for k, v in sorted(agents.items())}, "tokens": tokens,
-        "analyst": {c: dict(v) for c, v in sorted(by_condition.items())},
-        "analyst_active_minutes": round(analyst_seconds / 60.0, 2),
+        "by_locality": {k: dict(v) for k, v in by_locality.items()},
+        "usage_sources": dict(sorted(sources.items())),
+        "analyst": {c: dict(v) for c, v in sorted(analyst.items())},
+        "analyst_active_minutes": round(item_minutes, 2),
+        "platform_upkeep": dict(upkeep),
         "machine_seconds": dict(machine),
-        "cost": {"labour": round(labour, 2), "tokens": round(token_cost, 4),
-                 "total": round(total, 2),
-                 "per_item": round(total / items, 2) if items else None,
-                 "per_accepted_rule": round(total / accepted, 2) if accepted else None},
-        "items": items, "accepted_rules": accepted,
-        "note": "local inference is recorded with zero token cost; infrastructure is allocated "
-                "offline (blueprint §22.3)"}
+        "items": items, "items_processed": processed,
+        "approved_rules": approved, "deployed_rules": deployed,
+        "note": "Quantities only. Money is computed offline from the price register and rates "
+                "(research.economics); the application prices nothing."}

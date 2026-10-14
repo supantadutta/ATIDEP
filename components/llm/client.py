@@ -37,8 +37,16 @@ class LLMError(Exception):
     pass
 
 
+BUDGET_PREFIX = "daily cost limit"
+
+
 class BudgetExceeded(LLMError):
-    pass
+    """The daily spend cap was reached. It is a stop, not a model failure: an experiment must
+    record it as missing data, never as a failed run of the model."""
+
+
+def is_budget_error(text: str | None) -> bool:
+    return text is not None and BUDGET_PREFIX in text
 
 
 class ReplayMiss(LLMError):
@@ -79,6 +87,10 @@ class LLMResponse:
     replayed: bool = False
     usage_source: str = "unknown"
     compute_ms: int | None = None
+    # The provider's own usage object and run details (Ollama's durations and stop reason, a
+    # hosted model's resolved snapshot, response id and stop reason), kept raw so that nothing the
+    # cost analysis may need later is thrown away. ``None`` for recordings made before this field.
+    usage_detail: dict | None = None
 
 
 class LLMClient(Protocol):
@@ -135,6 +147,11 @@ class OllamaClient:
             raise LLMError(f"model endpoint unreachable: {exc}") from exc
         has_in, has_out = "prompt_eval_count" in data, "eval_count" in data
         total_ns = data.get("total_duration")
+        detail = {"request_chars": len(request.system) + len(request.user),
+                  "resolved_model": data.get("model"), "done_reason": data.get("done_reason"),
+                  **{k: data[k] for k in ("total_duration", "load_duration",
+                                          "prompt_eval_count", "prompt_eval_duration",
+                                          "eval_count", "eval_duration") if k in data}}
         return LLMResponse(
             text=data.get("message", {}).get("content", ""), provider=self.provider,
             model=self.model, input_tokens=int(data.get("prompt_eval_count", 0)),
@@ -142,7 +159,8 @@ class OllamaClient:
             latency_ms=int((time.monotonic() - t0) * 1000), cost=0.0,
             usage_source="provider" if has_in and has_out else (
                 "provider_partial" if has_in or has_out else "unknown"),
-            compute_ms=int(total_ns / 1e6) if isinstance(total_ns, (int, float)) else None)
+            compute_ms=int(total_ns / 1e6) if isinstance(total_ns, (int, float)) else None,
+            usage_detail=detail)
 
 
 def _is_loopback(host: str) -> bool:
@@ -240,9 +258,14 @@ class CloudChatClient:
             tin = tin if isinstance(tin, int) else estimate_tokens(request.system + request.user)
             tout = tout if isinstance(tout, int) else estimate_tokens(text)
             source = "estimated"
+        stop = (data["choices"][0].get("finish_reason") if self.api_style == "openai"
+                else data.get("stop_reason"))
+        detail = {"request_chars": len(request.system) + len(request.user),
+                  "resolved_model": data.get("model"), "response_id": data.get("id"),
+                  "stop_reason": stop, "usage": usage}
         return LLMResponse(text=text, provider=self.provider, model=self.model,
                            input_tokens=tin, output_tokens=tout, latency_ms=latency,
-                           usage_source=source)
+                           usage_source=source, usage_detail=detail)
 
 
 # ---- scripted (tests) ---------------------------------------------------------------------
@@ -336,6 +359,12 @@ class CostGuard:
     spent: float = 0.0
     day: str = field(default_factory=lambda: datetime.now(UTC).date().isoformat())
 
+    def __post_init__(self) -> None:
+        # A cap that cannot see any price can never trip: spending would be uncapped, silently.
+        if self.daily_limit > 0 and self.price_in_per_mtok == 0 and self.price_out_per_mtok == 0:
+            raise ValueError("a positive spend cap needs the model's token prices; with none "
+                             "set it could never stop anything")
+
     def _roll(self) -> None:
         today = datetime.now(UTC).date().isoformat()
         if today != self.day:
@@ -344,7 +373,7 @@ class CostGuard:
     def check(self) -> None:
         self._roll()
         if self.spent >= self.daily_limit:
-            raise BudgetExceeded(f"daily cost limit {self.daily_limit} reached")
+            raise BudgetExceeded(f"{BUDGET_PREFIX} {self.daily_limit} reached")
 
     def charge(self, response: LLMResponse) -> float:
         cost = (response.input_tokens * self.price_in_per_mtok
@@ -364,3 +393,12 @@ class GuardedClient:
         if not resp.replayed:
             resp.cost = self.guard.charge(resp)
         return resp
+
+
+def probe_usage_stability(client: LLMClient, request: LLMRequest) -> tuple[int, int, bool]:
+    """Send the same request twice and compare the reported input-token counts. A local server that
+    caches the prompt may report only the newly evaluated tokens on the second call; if the counts
+    differ, input tokens from that server are a lower bound and must be recounted before they are
+    priced. Costs two model calls, so it is run once before an experiment, not per run."""
+    first, second = client.complete(request), client.complete(request)
+    return first.input_tokens, second.input_tokens, first.input_tokens == second.input_tokens

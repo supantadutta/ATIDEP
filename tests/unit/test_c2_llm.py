@@ -153,7 +153,7 @@ def test_cost_guard_with_a_zero_cap_blocks_everything_and_resets_on_a_new_day():
     g = GuardedClient(ScriptedClient(["x"]), CostGuard(daily_limit=0.0))
     with pytest.raises(BudgetExceeded):
         g.complete(req())
-    guard = CostGuard(daily_limit=1.0, spent=5.0, day="2000-01-01")
+    guard = CostGuard(daily_limit=1.0, price_in_per_mtok=1.0, spent=5.0, day="2000-01-01")
     guard.check()                                     # new day: counter resets
     assert guard.spent == 0.0
 
@@ -253,3 +253,18 @@ def test_replay_only_client_needs_to_know_which_model_it_stands_in_for(tmp_path)
         ReplayClient(path)
     only_m2 = ReplayClient(path, provider="scripted", model="m2")
     assert only_m2.complete(req()).text == "b"
+
+
+def test_a_spend_cap_without_prices_is_refused_because_it_could_never_trip():
+    with pytest.raises(ValueError, match="could never stop"):
+        CostGuard(daily_limit=5.0)
+    assert CostGuard(daily_limit=0.0).daily_limit == 0.0            # a zero cap blocks everything
+    assert CostGuard(daily_limit=5.0, price_in_per_mtok=1.0).daily_limit == 5.0
+
+
+def test_a_budget_stop_is_recognisable_as_a_stop_not_a_model_failure():
+    from components.llm.client import is_budget_error
+    with pytest.raises(BudgetExceeded) as ei:
+        GuardedClient(ScriptedClient(["x"]), CostGuard(daily_limit=0.0)).complete(req())
+    assert is_budget_error(str(ei.value)) and not is_budget_error("model endpoint unreachable")
+    assert not is_budget_error(None)

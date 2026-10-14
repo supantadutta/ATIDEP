@@ -277,5 +277,61 @@ def test_replayed_calls_are_flagged_so_cash_spent_can_exclude_them(tmp_path):
 def test_time_kinds_keep_model_waiting_apart_from_automated_work():
     t = time_kinds({"processing": 4.0, "rules": 6.0}, model_latency_ms=7500, wall_seconds=11.2)
     assert t == {"wall_seconds": 11.2, "stage_seconds": 10.0, "model_wait_seconds": 7.5,
-                 "automated_seconds": 2.5}
+                 "automated_seconds": 2.5, "harness_seconds": 1.2}
     assert time_kinds({"x": 1.0}, 5000, 1.5)["automated_seconds"] == 0.0     # never negative
+
+
+# ---- raw usage detail -------------------------------------------------------------------------------
+def test_ollama_keeps_its_durations_and_stop_reason(stub_factory):
+    s = stub_factory({"message": {"content": "{}"}, "model": "q:latest", "done_reason": "length",
+                      "prompt_eval_count": 11, "eval_count": 5, "total_duration": 2_000_000_000,
+                      "load_duration": 900_000_000, "prompt_eval_duration": 300_000_000,
+                      "eval_duration": 700_000_000})
+    r = OllamaClient("q", s.url, timeout=5).complete(req(system="ab", user="cdef"))
+    d = r.usage_detail
+    assert d["load_duration"] == 900_000_000 and d["eval_duration"] == 700_000_000
+    assert d["done_reason"] == "length" and d["request_chars"] == 6
+    assert d["resolved_model"] == "q:latest"
+
+
+def test_a_hosted_reply_keeps_its_snapshot_id_stop_reason_and_raw_usage(stub_factory):
+    reply = {**OPENAI, "model": "m-1-2026-09-01", "id": "resp_1"}
+    reply["choices"][0]["finish_reason"] = "stop"
+    s = stub_factory(reply)
+    r = CloudChatClient("openai", s.url + "/v1", "m-1", "k", timeout=5).complete(req())
+    assert r.usage_detail["resolved_model"] == "m-1-2026-09-01"
+    assert r.usage_detail["response_id"] == "resp_1" and r.usage_detail["stop_reason"] == "stop"
+    assert r.usage_detail["usage"] == {"prompt_tokens": 120, "completion_tokens": 30}
+    a = stub_factory({**ANTHROPIC, "model": "m-2-snap", "id": "msg_1", "stop_reason": "end_turn"})
+    r2 = CloudChatClient("anthropic", a.url, "m-2", "k", timeout=5).complete(req())
+    assert r2.usage_detail["stop_reason"] == "end_turn"
+    assert r2.usage_detail["response_id"] == "msg_1"
+
+
+def test_the_resolved_model_is_written_to_the_run_record(stub_factory):
+    engine = make_engine("sqlite:///:memory:")
+    init_db(engine)
+    s = stub_factory({**OPENAI, "model": "m-1-snap"})
+    with session_scope(engine) as sess:
+        log_calls(sess, run_id="r", agent="extraction", intel_id=None,
+                  prompt=load_prompt("extraction_v1"),
+                  calls=_calls(CloudChatClient("openai", s.url + "/v1", "m-1", "k", timeout=5), 1))
+        row = sess.query(m.ModelRun).one()
+        assert row.model_version == "m-1-snap" and row.usage_detail["usage"]["prompt_tokens"] == 120
+
+
+def test_the_stability_probe_flags_a_server_that_reports_fewer_tokens_for_a_cached_prompt():
+    from components.llm.client import LLMResponse, probe_usage_stability
+
+    class Caching:
+        provider, model = "ollama", "q"
+
+        def __init__(self, counts):
+            self.counts = list(counts)
+
+        def complete(self, request):
+            return LLMResponse(text="{}", provider="ollama", model="q",
+                               input_tokens=self.counts.pop(0))
+
+    assert probe_usage_stability(Caching([300, 300]), req()) == (300, 300, True)
+    assert probe_usage_stability(Caching([300, 12]), req()) == (300, 12, False)

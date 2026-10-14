@@ -62,12 +62,13 @@ class Fake:
             "/overview": {"items": 2, "duplicates_seen": 1, "high_priority": 1,
                           "opportunities": 3, "alerts": 4, "items_by_status": {},
                           "rules_by_state": {"validated": 1}},
-            "/costs/summary": {"currency": "BDT", "tokens": {"input": 1200, "output": 300},
-                               "analyst_active_minutes": 12.5,
-                               "cost": {"total": 166.67, "labour": 166.67, "tokens": 0.0},
-                               "items": 2, "accepted_rules": 1, "agents": {
+            "/costs/summary": {"tokens": {"input": 1200, "output": 300},
+                               "analyst_active_minutes": 12.5, "analyst": {},
+                               "platform_upkeep": {}, "usage_sources": {"provider": 2},
+                               "by_locality": {}, "items": 2, "items_processed": 2,
+                               "approved_rules": 1, "deployed_rules": 0, "agents": {
                                    "extraction": {"calls": 2, "input_tokens": 1200}},
-                               "note": "local inference is recorded with zero token cost"},
+                               "note": "Quantities only."},
             "/intelligence": [{"intel_id": "TI-2026-0001", "title": "APT Example",
                                "status": "assessed", "priority_band": "high",
                                "priority_score": 71.2}],
@@ -138,7 +139,8 @@ def test_the_overview_page_shows_counts_cost_and_the_queue():
     assert not at.exception
     assert [m.value for m in at.metric][:3] == ["2", "1", "3"]
     labels = [m.label for m in at.metric]
-    assert "Analyst minutes" in labels and any(label.startswith("Cost") for label in labels)
+    assert "Analyst minutes" in labels and "Approved rules" in labels
+    assert not any("Cost" in label or "BDT" in label for label in labels)   # the app prices nothing
     assert at.dataframe and at.selectbox[0].options == ["TI-2026-0001"]
 
 
@@ -181,7 +183,7 @@ def test_deploying_needs_an_explicit_confirmation():
         at.session_state["fake"].sent
 
 
-def test_the_results_page_shows_cost_detections_and_the_audit_chain():
+def test_the_results_page_shows_quantities_detections_and_the_audit_chain():
     at = render("results_page")
     assert not at.exception
     assert any("Hash chain intact" in s.value for s in at.success)

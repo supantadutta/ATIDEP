@@ -1,0 +1,167 @@
+# Cost scenarios (blueprint §22): what each configuration is made of, so that the open-source and
+# the paid configuration are functionally comparable rather than unrelated product lists.
+#
+# S-PAID is a COMPONENT-SUBSTITUTION COUNTERFACTUAL: ATIDEP's functions rebuilt with paid
+# components where a paid product exists. It is not something anyone sells and it is never run.
+# Its technical performance is ASSUMED equal to the open-source scenario (or to S-OSS-API where
+# that arm is run), and every claim made from it says so.
+#
+# Every function must be accounted for in S-OSS-LOCAL and S-PAID, either by a cost line or by a
+# reasoned `not_required` entry; the loader refuses a scenario that silently omits one.
+# Things a paid product offers that ATIDEP does not claim to (vendor support and SLAs, curated
+# content, certifications, liability) are NOT priced: they are listed in the non-monetised
+# differences table of the paper, with the direction in which each biases the comparison.
+
+functions:
+  FN1:
+    name: Intelligence sources
+    open_source: Public reports and feeds (RSS/JSON, upload, allow-listed URL)
+    paid_counterpart: A curated commercial feed is a different capability, not a substitute (see the non-monetised differences)
+    treatment: same_component
+    equivalence: identical
+  FN2:
+    name: Ingest and processing
+    open_source: C1 ingest and C2 processing (Python, SQLite; own code)
+    treatment: common_custom_code
+    equivalence: identical
+  FN3:
+    name: Language-model reasoning
+    open_source: Local open-weight model served by Ollama
+    paid_counterpart: Hosted language-model API billed per token
+    treatment: paid_substitute
+    equivalence: assumed_equal      # measured when arm S-OSS-API is run
+  FN4:
+    name: Validation and conversion
+    open_source: C4 gates, pySigma conversion, Tier-1 matcher (own code and open libraries)
+    treatment: same_component
+    equivalence: identical
+  FN5:
+    name: Detection platform
+    open_source: Wazuh manager (laboratory target)
+    paid_counterpart: Commercial SIEM or managed detection service (platform perimeter only)
+    treatment: paid_substitute
+    equivalence: assumed_equal
+  FN6:
+    name: Orchestration, interface and audit
+    open_source: FastAPI, Streamlit, SQLite (own code)
+    treatment: common_custom_code
+    equivalence: identical
+  FN7:
+    name: Infrastructure
+    open_source: Owned host (hardware allocation, electricity, local disk)
+    paid_counterpart: Pay-per-use cloud compute and storage
+    treatment: paid_substitute
+    equivalence: identical          # where it runs does not change what it computes
+  FN8:
+    name: Analyst review and approval
+    open_source: Analyst time measured by the timer
+    treatment: common_labour
+    equivalence: assumed_equal      # a paid build is assumed to need the same review minutes
+  FN9:
+    name: Maintenance and operations
+    open_source: Connector upkeep, rule tuning, platform administration, setup, development
+    paid_counterpart: A vendor-managed service may move some hours into the licence; hours are assumed equal and the analysis reports the break-even hours
+    treatment: common_labour
+    equivalence: assumed_equal
+
+scenarios:
+  - id: S-OSS-LOCAL
+    name: ATIDEP as built (open-source stack, local open-weight model)
+    description: Experimental condition B. Measured.
+    backend: local
+    review_condition: B
+    lines:
+      - {id: public_sources, function: FN1, category: threat_intel_data, price: {source: free, licence: "public sources; each source's terms are recorded in config/sources.yaml"}}
+      - {id: open_stack, function: FN2, covers: [FN4, FN6], category: software_licence, price: {source: free, licence: "permissive open-source licences per each component's upstream licence; the list is produced by tools/licence_audit.py (not yet built)"}}
+      - {id: model_weights, function: FN3, category: software_licence, price: {source: free, licence: "pending: the model is not pinned yet (spike S3); its licence and OSI classification are recorded then"}}
+      - {id: wazuh, function: FN5, category: software_licence, perimeter: platform, price: {source: free, licence: "GPL-2.0 per the upstream licence; verification pending tools/licence_audit.py (not yet built)"}}
+      - {id: hardware, function: FN7, category: hardware, price: {source: rate, ref: derived.hardware_monthly}, driver: monthly}
+      - {id: electricity, function: FN7, category: energy, price: {source: rate, ref: host.electricity_per_kwh}, driver: energy_kwh}
+      - {id: local_storage, function: FN7, category: storage, price: {source: rate, ref: host.storage_per_gb_month}, driver: storage_gb}
+      - {id: analyst_review, function: FN8, category: analyst_labour, price: {source: rate, ref: labour.analyst_hourly}, driver: analyst_hours}
+      - {id: upkeep_connectors, function: FN9, category: maintenance_operations, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: maintenance.monthly_connector_hours}
+      - {id: upkeep_rule_tuning, function: FN9, category: maintenance_operations, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: maintenance.monthly_rule_tuning_hours}
+      - {id: upkeep_platform_admin, function: FN9, category: maintenance_operations, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: maintenance.monthly_platform_admin_hours}
+      - {id: adoption_setup, function: FN9, category: onboarding, recurrence: one_off, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: build.adoption_setup_hours}
+      - {id: development, function: FN2, category: development, recurrence: one_off, views: [build], price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: build.development_hours}
+
+  - id: S-OSS-API
+    name: ATIDEP's pipeline on a paid hosted model
+    description: Experimental condition B run on a paid model. Measured only if that arm is run; otherwise not costed.
+    backend: cloud
+    review_condition: B
+    lines:
+      - {id: public_sources, function: FN1, category: threat_intel_data, price: {source: free, licence: "public sources; each source's terms are recorded in config/sources.yaml"}}
+      - {id: open_stack, function: FN2, covers: [FN4, FN6], category: software_licence, price: {source: free, licence: "permissive open-source licences per each component's upstream licence; the list is produced by tools/licence_audit.py (not yet built)"}}
+      - {id: llm_api, function: FN3, category: model_inference, price: {source: register, ref: llm_api}}
+      - {id: wazuh, function: FN5, category: software_licence, perimeter: platform, price: {source: free, licence: "GPL-2.0 per the upstream licence; verification pending tools/licence_audit.py (not yet built)"}}
+      - {id: hardware, function: FN7, category: hardware, price: {source: rate, ref: derived.hardware_monthly}, driver: monthly}
+      - {id: electricity, function: FN7, category: energy, price: {source: rate, ref: host.electricity_per_kwh}, driver: energy_kwh}
+      - {id: local_storage, function: FN7, category: storage, price: {source: rate, ref: host.storage_per_gb_month}, driver: storage_gb}
+      - {id: analyst_review, function: FN8, category: analyst_labour, price: {source: rate, ref: labour.analyst_hourly}, driver: analyst_hours}
+      - {id: upkeep_connectors, function: FN9, category: maintenance_operations, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: maintenance.monthly_connector_hours}
+      - {id: upkeep_rule_tuning, function: FN9, category: maintenance_operations, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: maintenance.monthly_rule_tuning_hours}
+      - {id: upkeep_platform_admin, function: FN9, category: maintenance_operations, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: maintenance.monthly_platform_admin_hours}
+      - {id: adoption_setup, function: FN9, category: onboarding, recurrence: one_off, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: build.adoption_setup_hours}
+      - {id: development, function: FN2, category: development, recurrence: one_off, views: [build], price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: build.development_hours}
+
+  - id: S-PAID
+    name: Paid counterpart (component-substitution counterfactual)
+    description: >-
+      The same functions with a hosted model API, pay-per-use cloud infrastructure and, in the
+      platform perimeter, a commercial detection platform. Free open components that a buyer would
+      reuse unchanged stay free. Never run; technical performance assumed equal.
+    backend: cloud
+    review_condition: B
+    lines:
+      - {id: public_sources, function: FN1, category: threat_intel_data, price: {source: free, licence: "public sources; each source's terms are recorded in config/sources.yaml"}}
+      - {id: open_stack, function: FN2, covers: [FN4, FN6], category: software_licence, price: {source: free, licence: "permissive open-source licences per each component's upstream licence; the list is produced by tools/licence_audit.py (not yet built)"}}
+      - {id: llm_api, function: FN3, category: model_inference, price: {source: register, ref: llm_api}}
+      - {id: siem, function: FN5, category: software_licence, perimeter: platform, price: {source: register, ref: siem_platform}}
+      - {id: cloud_compute, function: FN7, category: compute_infrastructure, price: {source: register, ref: cloud_compute}}
+      - {id: cloud_storage, function: FN7, category: storage, price: {source: register, ref: cloud_storage}}
+      - {id: analyst_review, function: FN8, category: analyst_labour, price: {source: rate, ref: labour.analyst_hourly}, driver: analyst_hours}
+      - {id: upkeep_connectors, function: FN9, category: maintenance_operations, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: maintenance.monthly_connector_hours}
+      - {id: upkeep_rule_tuning, function: FN9, category: maintenance_operations, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: maintenance.monthly_rule_tuning_hours}
+      - {id: upkeep_platform_admin, function: FN9, category: maintenance_operations, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: maintenance.monthly_platform_admin_hours}
+      - {id: adoption_setup, function: FN9, category: onboarding, recurrence: one_off, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: build.adoption_setup_hours}
+      - {id: integration, function: FN9, category: onboarding, recurrence: one_off, price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: build.integration_hours, note: "wiring the paid components together; the converter, gates and catalog are Wazuh-specific, so a different platform also needs porting (a stated scope limit)"}
+      - {id: development, function: FN2, category: development, recurrence: one_off, views: [build], price: {source: rate, ref: labour.engineer_hourly}, driver: fixed_hours, quantity_ref: build.development_hours}
+
+  - id: S-MANUAL
+    name: Manual workflow (no language model)
+    description: Experimental condition A. Analyst time measured; ordinary tools only.
+    backend: manual
+    review_condition: A
+    lines:
+      - {id: public_sources, function: FN1, category: threat_intel_data, price: {source: free, licence: "public sources; each source's terms are recorded in config/sources.yaml"}}
+      - {id: manual_tools, function: FN4, category: software_licence, price: {source: free, licence: "open-source tools (SigmaHQ rules, sigma-cli, ATT&CK Navigator) per their upstream licences; verification pending tools/licence_audit.py (not yet built)"}}
+      - {id: wazuh, function: FN5, category: software_licence, perimeter: platform, price: {source: free, licence: "GPL-2.0 per the upstream licence; verification pending tools/licence_audit.py (not yet built)"}}
+      - {id: analyst_work, function: FN8, category: analyst_labour, price: {source: rate, ref: labour.analyst_hourly}, driver: analyst_hours}
+    not_required:
+      - {function: FN2, reason: "No automated ingest or processing; the analyst reads the report directly."}
+      - {function: FN3, reason: "No language model is used in the manual condition."}
+      - {function: FN6, reason: "No orchestration; the timer is the only instrument and has no cost line."}
+      - {function: FN7, reason: "The analyst's own workstation is common to every scenario and is outside the perimeter."}
+      - {function: FN9, reason: "No software to maintain beyond the reference tools; upkeep is not measured for this condition."}
+
+workloads:
+  # Volumes are scenario points chosen by the project, not estimates of any real organisation.
+  # They are 'assumed' until the coordinator replaces them with a sourced figure.
+  - id: scale_50
+    description: Small team
+    basis: "Scenario point: about one and a half items a day; the lowest scale at which a recurring workflow is plausible. Composition of the stream: the 30-item test set, a designed mix and not a feed base rate."
+    items_per_month: {value: 50, basis: assumed, source: "scenario point chosen by the project (blueprint §22.5); not an estimate of any real volume"}
+  - id: scale_200
+    description: Medium team
+    basis: "Scenario point: about seven items a day. Composition of the stream: the 30-item test set, a designed mix and not a feed base rate."
+    items_per_month: {value: 200, basis: assumed, source: "scenario point chosen by the project (blueprint §22.5); not an estimate of any real volume"}
+  - id: scale_1000
+    description: Large team
+    basis: "Scenario point: about thirty-three items a day; tests whether one host can keep up. Composition of the stream: the 30-item test set, a designed mix and not a feed base rate."
+    items_per_month: {value: 1000, basis: assumed, source: "scenario point chosen by the project (blueprint §22.5); not an estimate of any real volume"}
+
+oss_local: S-OSS-LOCAL
+oss_api: S-OSS-API
+paid: S-PAID
+manual: S-MANUAL

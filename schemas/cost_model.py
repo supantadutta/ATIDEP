@@ -12,6 +12,7 @@ says so with the fixed wording ``QUOTE_REQUIRED``.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from enum import StrEnum
 from typing import Literal, Self
@@ -21,7 +22,6 @@ from pydantic import Field, field_validator, model_validator
 from schemas.common import Strict
 
 QUOTE_REQUIRED = "Vendor quote required / public price unavailable"
-NOT_SELECTED = "No vendor selected yet"
 
 
 class Basis(StrEnum):
@@ -42,6 +42,8 @@ class CostCategory(StrEnum):
     MODEL_INFERENCE = "model_inference"
     ANALYST_LABOUR = "analyst_labour"
     MAINTENANCE_OPERATIONS = "maintenance_operations"
+    DEVELOPMENT = "development"          # one-off build effort; the build view only
+    ONBOARDING = "onboarding"            # one-off setup for an adopting organisation
     OTHER = "other"
 
 
@@ -59,28 +61,24 @@ class UnitKind(StrEnum):
     ITEM = "item"                        # per report processed
 
 
+# Hours in an average month (8,760 / 12): a physical constant, used for host capacity.
+HOURS_PER_MONTH = 730.0
+
+
 class Driver(StrEnum):
-    """How many units a line uses per month at a given workload."""
+    """How many units a *rate* line uses per month at a given workload. (A register line is
+    driven by the units its chosen product bills in; see ``UnitKind``.)"""
 
     MONTHLY = "monthly"                  # 1 unit per month
-    PER_ITEM = "per_item"                # items per month
-    TOKENS_IN = "tokens_in"              # measured tokens per item x items / 1e6
-    TOKENS_OUT = "tokens_out"
-    ANALYST_HOURS = "analyst_hours"      # measured active hours per item x items
-    MACHINE_HOURS = "machine_hours"      # measured automated + model-compute hours x items
-    ENERGY_KWH = "energy_kwh"            # machine hours x average power / 1000
+    ANALYST_HOURS = "analyst_hours"      # measured active review hours per item x items
+    ENERGY_KWH = "energy_kwh"            # machine hours x loaded wall-socket draw / 1000
     STORAGE_GB = "storage_gb"            # workload assumption
-    INGEST_GB = "ingest_gb"              # workload assumption
-    ENDPOINTS = "endpoints"              # workload assumption
-    FIXED_HOURS = "fixed_hours"          # maintenance hours per month (rates)
+    FIXED_HOURS = "fixed_hours"          # hours per month, or one-off hours (rates / build)
 
 
 DRIVER_UNIT: dict[Driver, UnitKind] = {
-    Driver.MONTHLY: UnitKind.MONTH, Driver.PER_ITEM: UnitKind.ITEM,
-    Driver.TOKENS_IN: UnitKind.MTOK_IN, Driver.TOKENS_OUT: UnitKind.MTOK_OUT,
-    Driver.ANALYST_HOURS: UnitKind.HOUR, Driver.MACHINE_HOURS: UnitKind.HOUR,
+    Driver.MONTHLY: UnitKind.MONTH, Driver.ANALYST_HOURS: UnitKind.HOUR,
     Driver.ENERGY_KWH: UnitKind.KWH, Driver.STORAGE_GB: UnitKind.GB_MONTH,
-    Driver.INGEST_GB: UnitKind.GB_INGESTED, Driver.ENDPOINTS: UnitKind.ENDPOINT_MONTH,
     Driver.FIXED_HOURS: UnitKind.HOUR,
 }
 
@@ -90,9 +88,21 @@ class Perimeter(StrEnum):
     PLATFORM = "platform"    # plus the detection platform that runs the rules
 
 
-class Tier(StrEnum):
-    REQUIRED = "required"    # needed for functional parity; in the base case
-    UPGRADE = "upgrade"      # adds capability beyond parity; only in a labelled variant
+class Recurrence(StrEnum):
+    MONTHLY = "monthly"
+    ONE_OFF = "one_off"      # spread straight-line over the horizon, no discounting
+
+
+class View(StrEnum):
+    ADOPT = "adopt"          # an organisation adopting the finished artifact (primary)
+    BUILD = "build"          # also counts the one-off development effort
+
+
+class PriceBasis(StrEnum):
+    LIST = "list"
+    QUOTE = "quote"
+    ACADEMIC = "academic"
+    NEGOTIATED = "negotiated"
 
 
 class Sourced(Strict):
@@ -140,6 +150,8 @@ class Host(Strict):
     purchase_price: Sourced = Field(default_factory=Sourced)
     useful_life_months: Sourced = Field(default_factory=Sourced)
     project_usage_share: Sourced = Field(default_factory=Sourced)      # 0..1
+    # Wall-socket draw under load, measured once with a plug-in meter. The whole loaded draw is
+    # attributed to the work (idle draw is not subtracted), which errs against ATIDEP.
     power_active_watts: Sourced = Field(default_factory=Sourced)
     electricity_per_kwh: Sourced = Field(default_factory=Sourced)
     storage_per_gb_month: Sourced = Field(default_factory=Sourced)
@@ -163,6 +175,7 @@ class Build(Strict):
 
     development_hours: Sourced = Field(default_factory=Sourced)
     adoption_setup_hours: Sourced = Field(default_factory=Sourced)
+    integration_hours: Sourced = Field(default_factory=Sourced)   # a paid build's integration
 
 
 class CostRates(Strict):
@@ -238,9 +251,9 @@ class PriceEntry(Strict):
 
     id: str = Field(pattern=r"^[a-z0-9][a-z0-9_.-]{2,60}$")
     group: str = Field(pattern=r"^[a-z0-9_]{3,40}$")
-    status: Literal["priced", "quote_required", "not_selected"]
+    status: Literal["priced", "quote_required"]
     adequate: bool = True            # meets the group's functional requirement at the workload
-    adequacy_note: str | None = None
+    adequacy_note: str | None = None   # when not adequate: the logged reason for the exclusion
     vendor: str | None = None
     product: str | None = None
     tier: str | None = None
@@ -249,27 +262,27 @@ class PriceEntry(Strict):
     fixed_monthly_fee: float = Field(default=0.0, ge=0)
     pricing_source: str | None = None          # "vendor price page" | "vendor quotation" | ...
     pricing_url: str | None = None
-    checked_on: date | None = None
+    checked_on: date | None = None             # when the price was retrieved
+    price_basis: PriceBasis | None = None      # list | quote | academic | negotiated
+    archive_ref: str | None = None             # archived copy: a hash or an archive URL
     workload_assumption: str | None = None     # what usage the tier was chosen for
     notes: str | None = None
 
     @model_validator(mode="after")
     def _provenance(self) -> Self:
         named = bool((self.vendor or "").strip() and (self.product or "").strip())
-        if self.status == "not_selected":
-            if self.components or self.vendor or self.product or self.fixed_monthly_fee:
-                raise ValueError("a not_selected entry names no vendor and carries no price")
-            return self
-        if not named:
-            raise ValueError("an entry that is priced or quoted names its vendor and product")
         if self.status == "quote_required":
+            # No public price. With no vendor named it is a category placeholder: nothing has been
+            # chosen yet, and the requirement for the group is written in the notes.
             if self.components or self.fixed_monthly_fee:
                 raise ValueError("a quote_required entry carries no price")
             if QUOTE_REQUIRED not in (self.notes or ""):
                 raise ValueError(f"a quote_required entry says so in notes: {QUOTE_REQUIRED!r}")
             return self
-        missing = [f for f in ("tier", "currency", "pricing_source", "pricing_url",
-                               "checked_on", "workload_assumption") if not getattr(self, f)]
+        if not named:
+            raise ValueError("a priced entry names its vendor and product")
+        missing = [f for f in ("tier", "currency", "pricing_source", "pricing_url", "checked_on",
+                               "workload_assumption") if not getattr(self, f)]
         if not self.components:
             missing.append("components")
         if missing:
@@ -308,21 +321,29 @@ class PriceRegister(Strict):
 
 # ---- scenarios ---------------------------------------------------------------------------------
 class Function(Strict):
-    """A function of the ATIDEP workflow that any comparable solution must also perform."""
+    """A function of the ATIDEP workflow that any comparable build must also perform.
+
+    ``treatment`` says how the paid scenario handles it: ``paid_substitute`` (a paid product does
+    it, priced from the register), ``same_component`` (a free component is reused unchanged: a
+    rational buyer would use the same open library), ``common_custom_code`` (ATIDEP's own code, the
+    same on both sides and listed only so that nothing is silently omitted), ``common_labour``
+    (people's time, costed from measured hours) or ``not_applicable``.
+    ``equivalence`` says how the technical result is known to match: ``identical`` (same
+    component), ``assumed_equal`` (a different product; equal output is an assumption) or
+    ``measured`` (the swap's effect is measured)."""
 
     name: str
-    open_source: str                 # what performs it in ATIDEP
-    commercial: str                  # what would perform it in a paid build
+    open_source: str
+    paid_counterpart: str | None = None
+    treatment: Literal["paid_substitute", "same_component", "common_custom_code",
+                       "common_labour", "not_applicable"]
     equivalence: Literal["identical", "assumed_equal", "measured"]
-    # identical: same component in both; assumed_equal: different product, same technical
-    # output is an assumption; measured: the technical effect of the swap is measured.
 
 
 class PriceRef(Strict):
     source: Literal["register", "rate", "free"]
     ref: str | None = None           # register group, or a name from RATE_UNITS
     licence: str | None = None       # for "free": the licence that makes the charge zero
-    licence_verified: bool = False   # set once tools/licence_audit.py has confirmed it
 
 
 # Rates a line can name, and what each is quoted per.
@@ -334,15 +355,23 @@ RATE_UNITS: dict[str, UnitKind] = {
 # The quantity ``fixed_hours`` lines may name.
 FIXED_HOUR_QUANTITIES = ("maintenance.monthly_connector_hours",
                          "maintenance.monthly_rule_tuning_hours",
-                         "maintenance.monthly_platform_admin_hours")
+                         "maintenance.monthly_platform_admin_hours",
+                         "build.development_hours", "build.adoption_setup_hours",
+                         "build.integration_hours")
+# Categories whose hours are *operating* labour (differential between scenarios). Review labour
+# (analyst_labour) is common to the automated scenarios and is excluded from the comparison.
+OPERATING_CATEGORIES = (CostCategory.MAINTENANCE_OPERATIONS, CostCategory.DEVELOPMENT,
+                        CostCategory.ONBOARDING)
 
 
 class Line(Strict):
     id: str = Field(pattern=r"^[a-z0-9_]{3,40}$")
     function: str
+    covers: list[str] = Field(default_factory=list)    # other functions a bundled product covers
     category: CostCategory
     perimeter: Perimeter = Perimeter.WORKFLOW
-    tier: Tier = Tier.REQUIRED
+    recurrence: Recurrence = Recurrence.MONTHLY
+    views: list[View] = Field(default_factory=lambda: [View.ADOPT, View.BUILD], min_length=1)
     price: PriceRef
     # Only a rate line has a driver; a register line is driven by the units its chosen product
     # bills in, and a free line costs nothing.
@@ -373,7 +402,14 @@ class Line(Strict):
                 raise ValueError("only fixed_hours lines carry a quantity_ref, and they need one")
             if self.quantity_ref and self.quantity_ref not in FIXED_HOUR_QUANTITIES:
                 raise ValueError(f"unknown quantity {self.quantity_ref!r}")
+        if self.recurrence is Recurrence.ONE_OFF and self.category not in OPERATING_CATEGORIES \
+                and self.category is not CostCategory.OTHER:
+            raise ValueError("only development, onboarding and other costs are one-off")
         return self
+
+    @property
+    def functions(self) -> set[str]:
+        return {self.function, *self.covers}
 
 
 class NotRequired(Strict):
@@ -381,19 +417,17 @@ class NotRequired(Strict):
     reason: str = Field(min_length=10)
 
 
-class LabourBasis(Strict):
-    """Where a scenario's analyst minutes come from."""
-
-    condition: Literal["A", "B"]
-    equal_to_open_source: bool = True    # a paid build is assumed to need the same analyst time
-
-
 class Scenario(Strict):
-    id: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9-]{0,12}$")
+    """A configuration being costed. Names avoid the experimental conditions (A, B, C, B-V, B-R):
+    ``S-MANUAL`` is condition A, ``S-OSS-LOCAL`` is condition B, ``S-OSS-API`` is condition B on a
+    paid model (measured only if that arm is run), and ``S-PAID`` is a component-substitution
+    counterfactual with no condition."""
+
+    id: str = Field(pattern=r"^S-[A-Z0-9]+(-[A-Z0-9]+)*$")
     name: str
     description: str
     backend: Literal["local", "cloud", "manual"]
-    labour: LabourBasis
+    review_condition: Literal["A", "B"]      # whose analyst minutes are this scenario's review
     lines: list[Line]
     not_required: list[NotRequired] = Field(default_factory=list)
 
@@ -425,35 +459,56 @@ class CostScenarios(Strict):
     functions: dict[str, Function]
     scenarios: list[Scenario]
     workloads: list[Workload]
-    primary_scenario: str                  # the open-source ATIDEP scenario
-    comparator_scenario: str               # the paid counterpart
-    manual_scenario: str
+    oss_local: str                         # the ATIDEP scenario as built
+    oss_api: str                           # the same pipeline on a paid hosted model
+    paid: str                              # the paid counterpart (modelled)
+    manual: str                            # the manual workflow
 
     @model_validator(mode="after")
     def _consistent(self) -> Self:
+        for fid in self.functions:
+            if not re.fullmatch(r"FN[0-9]+", fid):
+                raise ValueError(f"function ids look like FN1, not {fid!r}")
         ids = [s.id for s in self.scenarios]
         if len(ids) != len(set(ids)):
             raise ValueError("scenario ids must be unique")
-        for ref in (self.primary_scenario, self.comparator_scenario, self.manual_scenario):
+        for ref in (self.oss_local, self.oss_api, self.paid, self.manual):
             if ref not in ids:
                 raise ValueError(f"unknown scenario {ref!r}")
         if len({w.id for w in self.workloads}) != len(self.workloads):
             raise ValueError("workload ids must be unique")
         for s in self.scenarios:
             for ln in s.lines:
-                if ln.function not in self.functions:
-                    raise ValueError(f"{s.id}/{ln.id}: unknown function {ln.function}")
+                unknown = ln.functions - set(self.functions)
+                if unknown:
+                    raise ValueError(f"{s.id}/{ln.id}: unknown function {sorted(unknown)}")
             for nr in s.not_required:
                 if nr.function not in self.functions:
                     raise ValueError(f"{s.id}: unknown function {nr.function}")
+        # Comparability: the two automated scenarios account for every function.
+        for sid in (self.oss_local, self.paid):
+            missing = self.uncovered(sid)
+            if missing:
+                raise ValueError(f"{sid} leaves functions unaccounted for: {missing}")
+        # A function priced as a paid substitute must have a register line in the paid scenario.
+        priced = {f for ln in self.scenario(self.paid).lines if ln.price.source == "register"
+                  for f in ln.functions}
+        for fid, fn in self.functions.items():
+            if fn.treatment == "paid_substitute" and fid not in priced:
+                raise ValueError(f"{fid} is a paid substitute but {self.paid} has no priced "
+                                 "line for it")
         return self
 
     def scenario(self, sid: str) -> Scenario:
         return next(s for s in self.scenarios if s.id == sid)
 
+    def workload(self, wid: str) -> Workload:
+        return next(w for w in self.workloads if w.id == wid)
+
     def uncovered(self, sid: str) -> list[str]:
         """Functions the scenario neither costs nor declares not required. A scenario with any
         is not comparable to the others (the comparability check)."""
         sc = self.scenario(sid)
-        covered = {ln.function for ln in sc.lines} | {n.function for n in sc.not_required}
+        covered = {f for ln in sc.lines for f in ln.functions} | {n.function
+                                                                  for n in sc.not_required}
         return sorted(set(self.functions) - covered)

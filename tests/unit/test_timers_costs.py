@@ -3,7 +3,6 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from sqlalchemy import select
 
-from app.config import load_config
 from app.db import models as m
 from app.db.audit import verify_audit_chain
 from app.db.session import init_db, make_engine, session_scope
@@ -155,34 +154,68 @@ def test_every_start_pause_resume_and_stop_is_logged_and_the_chain_holds(engine)
         assert verify_audit_chain(s).ok
 
 
-# ---- cost summary -----------------------------------------------------------------------------------
-def test_the_summary_reports_tokens_minutes_and_cost_per_accepted_rule(engine):
-    cfg = load_config()
+# ---- measured quantities ------------------------------------------------------------------------------
+def model_run(**kw):
+    base = dict(run_id="r", agent="extraction", provider="ollama", model="q", prompt_version="p",
+                prompt_sha256="a" * 64, schema_valid=True, retry_count=0, usage_source="provider")
+    return m.ModelRun(**{**base, **kw})
+
+
+def test_the_summary_reports_quantities_and_prices_nothing(engine):
     with session_scope(engine) as s:
         run_timer(s, [60, 120], stop_at=180)                 # 3 active minutes in condition A
         s.add(m.Source(name="V", source_type="report", reliability_rating="B"))
         s.flush()
-        s.add(m.ModelRun(run_id="r", agent="extraction", provider="ollama", model="q",
-                         prompt_version="p", prompt_sha256="a" * 64, input_tokens=1000,
-                         output_tokens=200, latency_ms=900, schema_valid=True, retry_count=0))
-        s.add(m.ModelRun(run_id="r", agent="extraction", provider="ollama", model="q",
-                         prompt_version="p", prompt_sha256="a" * 64, input_tokens=500,
-                         output_tokens=50, latency_ms=400, schema_valid=False, retry_count=1))
-        s.add(m.ModelRun(run_id="r", agent="rule", provider="cloudco", model="big",
-                         prompt_version="p", prompt_sha256="a" * 64, input_tokens=2_000_000,
-                         output_tokens=1_000_000, latency_ms=5000, schema_valid=True,
-                         retry_count=0))
+        s.add(model_run(input_tokens=1000, output_tokens=200, latency_ms=900))
+        s.add(model_run(input_tokens=500, output_tokens=50, latency_ms=400, schema_valid=False,
+                        retry_count=1))
+        s.add(model_run(agent="rule", provider="cloud-openai", model="big",
+                        input_tokens=2_000_000, output_tokens=1_000_000, latency_ms=5000))
+        s.add(model_run(input_tokens=700, output_tokens=70, latency_ms=800, replayed=True,
+                        usage_source="estimated"))
         s.flush()
-    cfg.cost_rates["cloud_ai"].update(input_cost_per_million_tokens=10,
-                                      output_cost_per_million_tokens=30)
     with session_scope(engine) as s:
-        out = summary(s, cfg)
-    assert out["currency"] == "BDT" and out["analyst_active_minutes"] == 3.0
+        out = summary(s)
+    assert out["analyst_active_minutes"] == 3.0
     ext = out["agents"]["extraction"]
-    assert ext["calls"] == 2 and ext["input_tokens"] == 1500 and ext["schema_invalid"] == 1
-    assert out["tokens"] == {"input": 2_001_500, "output": 1_000_250}
-    assert out["cost"]["tokens"] == pytest.approx(2 * 10 + 1 * 30)       # only the cloud call
-    assert out["cost"]["labour"] == pytest.approx(3 / 60 * 800)          # 3 minutes at 800/hour
-    assert out["analyst"]["A"]["analyst_active_seconds"] == 180
-    assert out["items"] == 0 and out["cost"]["per_item"] is None
-    assert out["cost"]["per_accepted_rule"] is None
+    assert ext["calls"] == 3 and ext["input_tokens"] == 2200 and ext["schema_invalid"] == 1
+    assert ext["replayed_calls"] == 1 and ext["latency_ms"] == 1300      # a replay waited for nothing
+    assert out["tokens"] == {"input": 2_002_200, "output": 1_000_320}
+    assert out["by_locality"]["cloud"]["calls"] == 1 and out["by_locality"]["local"]["calls"] == 3
+    assert out["usage_sources"] == {"estimated": 1, "provider": 3}
+    assert out["analyst"]["A"]["active_seconds"] == 180
+    assert out["items"] == 0 and out["approved_rules"] == 0 and out["deployed_rules"] == 0
+    # the application holds no rate and no price, so no money appears anywhere
+    flat = repr(out).lower()
+    assert "currency" not in flat and "labour" not in flat and "per_item" not in flat
+
+
+def test_platform_upkeep_is_reported_apart_from_per_item_analyst_time(engine):
+    with session_scope(engine) as s:
+        run_timer(s, [60], stop_at=100)                      # one item session in condition A
+        sid = timers.start(s, analyst="bob", intel_id=None, condition="B", activity="operations",
+                           now=at(0))
+        timers.stop(s, sid, at(90))
+        out = summary(s)
+    assert out["analyst_active_minutes"] == pytest.approx(100 / 60, abs=0.01)
+    assert out["platform_upkeep"]["active_seconds"] == 90 and "B" not in out["analyst"]
+
+
+def test_approved_rules_are_distinct_current_rules_not_approval_rows(engine):
+    from tests.unit.test_db import seed
+    with session_scope(engine) as s:
+        seed(s)
+        rule = s.get(m.Rule, "RULE-1")
+        v1 = s.query(m.RuleVersion).filter_by(rule_id="RULE-1").one()
+        for _ in range(2):               # re-approved after an edit: two rows, one rule
+            s.add(m.Approval(rule_version_id=v1.id, reviewer="r", author="a", decision="approved",
+                             content_sha256="b" * 64, validation_report_sha256="c" * 64))
+        rule.state = "approved"
+        s.flush()
+        assert summary(s)["approved_rules"] == 1
+        s.add(m.Deployment(rule_version_id=v1.id, approval_id=1, mode="lab", status="ok",
+                           package_sha256="d" * 64))
+        s.add(m.Deployment(rule_version_id=v1.id, approval_id=1, mode="dry_run", status="ok",
+                           package_sha256="d" * 64))
+        s.flush()
+        assert summary(s)["deployed_rules"] == 1

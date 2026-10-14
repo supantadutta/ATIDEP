@@ -12,7 +12,13 @@ alpha_familywise: 0.05
 bootstrap_resamples: 10000
 second_labeler_min_items: 10
 independent_analyst_min_items: 8          # only if the optional subset is run
-cost_criteria:                             # pre-registered, descriptive (blueprint §22.6)
+paid_model: {id: TBD, version: TBD, training_cutoff: TBD}   # only if arm S-OSS-API is run; items must post-date ITS cutoff too
+economics:                                  # pre-registered; frozen with the cost files at prereg-v1 (blueprint 22.6)
   primary_view: adopt
   views: [adopt, build]
+  primary_price_case: base                  # the lowest calculated cost among adequate priced candidates
+  price_cases: [base, upper]
+  primary_workload: null                    # the coordinator names ONE workload id from cost_scenarios.yaml before the freeze
+  delta_c_pct: null                         # the coordinator's threshold for "substantially cheaper", with a rationale
+  delta_c_rationale: null
   inference_modes_reported_separately: [local, cloud]

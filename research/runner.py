@@ -35,7 +35,7 @@ from components.c1_ingest.ssrf import host_allowed, is_public_address
 from components.c2_processing.attack import AttackRelease
 from components.c3_detection.baseline import posthoc_report, run_single_prompt
 from components.c4_validation.corpus import TestEvent
-from components.llm.client import LLMClient
+from components.llm.client import LLMClient, is_budget_error
 from components.llm.prompts import PromptSet
 from research import metrics as mt
 from research.dataset.model import DatasetItem, LoadedDataset, assign_order_sets
@@ -131,29 +131,38 @@ class ExperimentRunner:
         client = self.client_factory(condition, item.id, run_number)
         gt = item.ground_truth
         stages: dict[str, float] = {}
+        metrics: dict[str, Any] = {"failed": True}
+        cost: dict[str, Any] = {}
         try:
             with session_scope(engine) as s:
-                iid = self._ingest(s, item).intel_id
-                test_set = self.dataset.test_set(item)
-                if condition == "C":
-                    run, extra = self._run_c(s, iid, item, client, seed, test_set)
-                else:
-                    run = run_pipeline(
-                        s, self.store, iid, cfg=self.cfg, attack=self.attack, client=client,
-                        prompts=self.prompts,
-                        options=PipelineOptions(condition=condition, seed=seed,
-                                                allow_test_tlds=self.allow_test_tlds,
-                                                run_id=f"{condition}-{item.id}-{run_number}"),
-                        benign_domains=self.benign_domains, test_set=test_set,
-                        baseline=self.baseline, now=self.now)
-                    extra = {}
-                    rec.error = run.error
-                stages = dict(run.stage_seconds)
-                metrics = self._metrics(s, run, gt, extra)
+                try:
+                    t_ingest = time.monotonic()
+                    iid = self._ingest(s, item).intel_id
+                    ingest_seconds = time.monotonic() - t_ingest
+                    test_set = self.dataset.test_set(item)
+                    if condition == "C":
+                        run, extra = self._run_c(s, iid, item, client, seed, test_set)
+                    else:
+                        run = run_pipeline(
+                            s, self.store, iid, cfg=self.cfg, attack=self.attack, client=client,
+                            prompts=self.prompts,
+                            options=PipelineOptions(condition=condition, seed=seed,
+                                                    allow_test_tlds=self.allow_test_tlds,
+                                                    run_id=f"{condition}-{item.id}-{run_number}"),
+                            benign_domains=self.benign_domains, test_set=test_set,
+                            baseline=self.baseline, now=self.now)
+                        extra = {}
+                        rec.error = run.error
+                    stages = {"ingest": ingest_seconds, **run.stage_seconds}
+                    metrics = self._metrics(s, run, gt, extra)
+                except Exception as exc:  # noqa: BLE001 - one bad run must not stop the experiment
+                    rec.error = f"{type(exc).__name__}: {exc}"[:300]
+                # What a run spent before it failed is still spent, so it is always counted.
                 cost = mt.cost_metrics(s)
-        except Exception as exc:  # noqa: BLE001 - one bad run must not stop the experiment
-            rec.error = f"{type(exc).__name__}: {exc}"[:300]
-            metrics, cost = {"failed": True}, {}
+        except Exception as exc:  # noqa: BLE001 - the run database itself failed
+            rec.error = rec.error or f"{type(exc).__name__}: {exc}"[:300]
+        if is_budget_error(rec.error):
+            metrics = {**metrics, "failed": True, "budget_exceeded": True}   # missing, not a fail
         rec.metrics = metrics
         rec.seconds = round(time.monotonic() - t0, 3)
         if cost:
@@ -181,25 +190,8 @@ class ExperimentRunner:
             run.seconds = time.monotonic() - t0
             return run, extra
         out = res.output
-        counter = iter(range(110000, 119999))
-        ids: dict[str, int] = {}
-        for n, text_rule in enumerate(out.sigma_rules):
-            rep = posthoc_report(text_rule, text, self.cfg, self.attack,
-                                 claimed_techniques=out.attack_techniques,
-                                 allocate=lambda k, _i=ids: _i.setdefault(k, next(counter)),
-                                 test_set=test_set, baseline=self.baseline)
-            failed = rep.failed_gates
-            outcome = "blocked" if "G6" in failed else (
-                "validated" if rep.passed else "revision_required")
-            codes = [d.code for d in rep.static.defects]
-            run.rules.append(RuleRun(
-                opportunity_id=0, decision=out.decision.value, kind="sigma",
-                rule_id=f"C-{n + 1}", loop_status="single_shot",
-                first_pass_valid=rep.static.passed, repairs_used=0, attempts=1, outcome=outcome,
-                failed_gates=failed, first_attempt_codes=codes,
-                events=rep.events.details if rep.events else None,
-                skipped=None if (rep.events or not rep.static.passed or test_set is None)
-                else "no test events"))
+        run.rules.extend(self._judge_sigma(out.sigma_rules, text, out.attack_techniques,
+                                           out.decision.value, test_set, "C"))
         benign_in_list = 0
         for ioc in out.iocs:
             v = ioc.value.strip().lower()
@@ -212,6 +204,63 @@ class ExperimentRunner:
         run.seconds = time.monotonic() - t0
         run.stage_seconds["single_prompt"] = run.seconds
         return run, extra
+
+    def _judge_sigma(self, texts: list[str], report_text: str, claimed: list[str], decision: str,
+                     test_set, label: str) -> list[RuleRun]:
+        """Judge Sigma rules written outside the pipeline (a single prompt, or a person) with the
+        same gates the pipeline's rules face, applied afterwards."""
+        counter = iter(range(110000, 119999))
+        ids: dict[str, int] = {}
+        out: list[RuleRun] = []
+        for n, text_rule in enumerate(texts):
+            rep = posthoc_report(text_rule, report_text, self.cfg, self.attack,
+                                 claimed_techniques=claimed,
+                                 allocate=lambda k, _i=ids: _i.setdefault(k, next(counter)),
+                                 test_set=test_set, baseline=self.baseline)
+            failed = rep.failed_gates
+            outcome = "blocked" if "G6" in failed else (
+                "validated" if rep.passed else "revision_required")
+            out.append(RuleRun(
+                opportunity_id=0, decision=decision, kind="sigma", rule_id=f"{label}-{n + 1}",
+                loop_status="single_shot", first_pass_valid=rep.static.passed, repairs_used=0,
+                attempts=1, outcome=outcome, failed_gates=failed,
+                first_attempt_codes=[d.code for d in rep.static.defects],
+                events=rep.events.details if rep.events else None,
+                skipped=None if (rep.events or not rep.static.passed or test_set is None)
+                else "no test events"))
+        return out
+
+    def register_manual(self, item: DatasetItem, rules_dir: Path | str, *,
+                        disposition: str | None = None) -> RunRecord:
+        """Record the rules an analyst wrote by hand for an item (condition A) so that the
+        manual condition has detections to count and to judge with the same gates. Analyst time
+        is not here: it comes from the timer. Only Sigma files (``*.yml``, ``*.yaml``) are
+        judged; any other file is counted as an unjudged detection."""
+        folder = Path(rules_dir)
+        sigma = sorted([*folder.glob("*.yml"), *folder.glob("*.yaml")])
+        other = sorted(p for p in folder.iterdir() if p.is_file() and p not in sigma)
+        run_dir = self._run_dir(item.id, "A", 1)
+        out_path = run_dir / "output.json"
+        rec = RunRecord(item.id, "A", 1, 0, self.order_sets.get(item.id, "X"), str(out_path))
+        with session_scope(self.results_engine) as s:
+            iid = self._ingest(s, item).intel_id
+            text = self.store.load_text(s.get(m.IntelligenceItem, iid).raw_sha256)
+        rules = self._judge_sigma([p.read_text(encoding="utf-8") for p in sigma], text, [],
+                                  "manual", self.dataset.test_set(item), "A")
+        run = PipelineRun(iid, "A")
+        run.rules.extend(rules)
+        metrics = {"rules": mt.rule_metrics(run), "manual_rule_files": len(sigma),
+                   "unjudged_files": [p.name for p in other], "disposition": disposition,
+                   "per_rule": [{"kind": r.kind, "outcome": r.outcome,
+                                 "first_pass_valid": r.first_pass_valid,
+                                 "failed_gates": r.failed_gates} for r in rules]}
+        rec.metrics = metrics
+        out_path.write_text(json.dumps({
+            "item": item.id, "condition": "A", "run": 1, "model": None,
+            "dataset_sha256": self.dataset.sha256(), "error": None, "seconds": 0.0, "stages": {},
+            "metrics": metrics, "cost": {}}, indent=1, sort_keys=True, default=str))
+        self._record(rec, item, {}, {})
+        return rec
 
     def _metrics(self, session, run: PipelineRun, gt, extra: dict[str, Any]) -> dict[str, Any]:
         if run.condition == "C":
@@ -270,9 +319,9 @@ class ExperimentRunner:
                 prompt_set_sha256=self.prompts.sha256, output_ref=rec.output_ref))
             t = self.now
             for stage, seconds in stages.items():
-                component = {"processing": "c2_processing", "opportunity": "c3_detection",
-                             "rules": "c3_detection", "single_prompt": "c3_detection"}.get(
-                    stage, "c3_detection")
+                component = {"ingest": "c1_ingest", "processing": "c2_processing",
+                             "opportunity": "c3_detection", "rules": "c3_detection",
+                             "single_prompt": "c3_detection"}.get(stage, "c3_detection")
                 agents = {"processing": ("extraction",), "opportunity": ("opportunity",),
                           "rules": ("rule",), "single_prompt": ("single_prompt_baseline",)
                           }.get(stage, ())

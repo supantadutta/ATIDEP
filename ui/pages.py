@@ -55,7 +55,7 @@ def overview_page(api: ApiClient) -> None:
     c = st.columns(3)
     c[0].metric("Tokens (in / out)", f"{cost['tokens']['input']:,} / {cost['tokens']['output']:,}")
     c[1].metric("Analyst minutes", cost["analyst_active_minutes"])
-    c[2].metric(f"Cost ({cost['currency']})", cost["cost"]["total"])
+    c[2].metric("Approved rules", cost["approved_rules"])
 
     st.subheader("Review queue (highest priority first)")
     items = api.get("/intelligence", limit=200)
@@ -276,11 +276,12 @@ def _generate_form(api: ApiClient) -> None:
 
 # ---- page 3 ----------------------------------------------------------------------
 def results_page(api: ApiClient) -> None:
-    st.header("Results and cost")
+    st.header("Results and measured effort")
     cost = api.get("/costs/summary")
-    st.subheader("Cost")
-    st.json({k: cost[k] for k in ("currency", "cost", "items", "accepted_rules",
-                                  "analyst_active_minutes")})
+    st.subheader("Measured quantities")
+    st.json({k: cost[k] for k in ("items", "items_processed", "approved_rules", "deployed_rules",
+                                  "analyst_active_minutes", "analyst", "platform_upkeep",
+                                  "usage_sources", "by_locality")})
     st.dataframe([{"agent": a, **v} for a, v in cost["agents"].items()],
                  use_container_width=True, hide_index=True)
     st.caption(cost["note"])

@@ -1,19 +1,43 @@
-currency: BDT
-labor:
-  analyst_hourly_rate: 800
-  engineer_hourly_rate: 1200
-  reviewer_hourly_rate: 1500
-infrastructure:
-  electricity_per_kwh: 15
-  hardware_monthly_allocation: 1500
-  storage_monthly_allocation: 300
-cloud_ai:
-  input_cost_per_million_tokens: 0
-  output_cost_per_million_tokens: 0
-maintenance:
-  monthly_connector_hours: 4
-  monthly_rule_tuning_hours: 6
-  monthly_platform_admin_hours: 4
-analysis:
-  amortisation_horizon_months: [12, 24, 36]
-  volume_scenarios_items_per_month: [50, 200, 1000]
+# Rates, hours and host facts for the cost model (blueprint §22).
+#
+# THERE ARE NO DEFAULT NUMBERS. Every value is null until the coordinator supplies it, together
+# with its basis (measured | supplied | assumed), where it came from, and, for a supplied value,
+# the date it was checked. The loader refuses a number without a basis and a source, so no figure
+# can enter the analysis unsourced. A cost that needs a missing value is reported as incomplete
+# (research.economics), never as zero.
+#
+# All amounts below are in `reporting_currency`. Commercial prices in other currencies live in
+# price_register.yaml and are converted only with a sourced, dated entry in `fx`.
+
+reporting_currency: null          # e.g. BDT or USD; set before any money is reported
+fx: []                            # - {from_currency: USD, to_currency: BDT, rate: .., source: .., checked_on: ..}
+
+labour:
+  # What an analyst's hour costs the organisation. Used for the review time measured by the
+  # analyst timer. Review time is common to the automated scenarios, so the comparison between
+  # them does not depend on this rate; the manual comparison and any total do.
+  analyst_hourly: {value: null, basis: null, source: null, checked_on: null}
+  # What an hour of operating work (connector upkeep, rule tuning, platform administration,
+  # setup, development) costs. The differential between scenarios depends on this rate; the
+  # analysis also reports the rate at which the verdict would flip.
+  engineer_hourly: {value: null, basis: null, source: null, checked_on: null}
+
+host:                              # the owned machine that runs ATIDEP's automated work
+  purchase_price: {value: null, basis: null, source: null, checked_on: null}        # receipt or dated reference
+  useful_life_months: {value: null, basis: null, source: null, checked_on: null}
+  project_usage_share: {value: null, basis: null, source: null, checked_on: null}   # fraction of the machine given to this work, in (0, 1]
+  power_active_watts: {value: null, basis: null, source: null, checked_on: null}    # wall-socket draw under load (plug-in meter); the whole loaded draw is attributed, which errs against ATIDEP
+  electricity_per_kwh: {value: null, basis: null, source: null, checked_on: null}
+  storage_per_gb_month: {value: null, basis: null, source: null, checked_on: null}
+
+maintenance:                       # hours per month of upkeep; a measured floor comes from the 'operations' timer
+  monthly_connector_hours: {value: null, basis: null, source: null, checked_on: null}
+  monthly_rule_tuning_hours: {value: null, basis: null, source: null, checked_on: null}
+  monthly_platform_admin_hours: {value: null, basis: null, source: null, checked_on: null}
+
+build:                             # one-off hours
+  development_hours: {value: null, basis: null, source: null, checked_on: null}       # build view only; reconstruct from a log, do not guess
+  adoption_setup_hours: {value: null, basis: null, source: null, checked_on: null}    # an adopter installing and configuring
+  integration_hours: {value: null, basis: null, source: null, checked_on: null}       # a paid build integrating its components
+
+amortisation_horizon_months: [12, 24, 36]   # one-off costs are spread straight-line over a horizon; no discounting

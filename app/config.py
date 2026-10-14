@@ -161,17 +161,32 @@ class PoliciesConfig(Strict):
         return self
 
 
-class CostCriteria(Strict):
-    """Pre-registered, descriptive cost-effectiveness settings (blueprint §22.6)."""
+class EconomicConfig(Strict):
+    """The pre-registered economic evaluation (blueprint §22.6): which single cell carries the
+    headline claim, the threshold for "substantially cheaper", and the grid reported around it.
+    Frozen with the price register, rates, scenarios and workloads at tag ``prereg-v1``.
+
+    ``primary_workload`` and ``delta_c_pct`` are the coordinator's decisions. They are ``null``
+    until made, and while they are null the verdict is reported as "not evaluable", never
+    guessed. ``delta_c_pct`` is a normative threshold, not an estimate, so it needs a rationale."""
 
     primary_view: Literal["adopt", "build"]
     views: list[Literal["adopt", "build"]]
+    primary_price_case: Literal["base", "upper"]
+    price_cases: list[Literal["base", "upper"]]
+    primary_workload: str | None = None
+    delta_c_pct: float | None = Field(default=None, gt=0, le=100)
+    delta_c_rationale: str | None = None
     inference_modes_reported_separately: list[Literal["local", "cloud"]]
 
     @model_validator(mode="after")
-    def _primary_in_views(self) -> Self:
+    def _consistent(self) -> Self:
         if self.primary_view not in self.views:
             raise ValueError("primary_view must be one of the reported views")
+        if self.primary_price_case not in self.price_cases:
+            raise ValueError("primary_price_case must be one of the reported price cases")
+        if self.delta_c_pct is not None and not (self.delta_c_rationale or "").strip():
+            raise ValueError("delta_c_pct is a normative threshold and needs a rationale")
         return self
 
 
@@ -181,6 +196,7 @@ class ExperimentConfig(Strict):
     set_assignment_seed: Any
     runs_per_item: int = Field(ge=3)
     model: dict[str, Any]
+    paid_model: dict[str, Any] | None = None
     primary_endpoint: str
     delta_t_pct: float = Field(gt=0, le=100)
     delta_q_rubric_points: float = Field(gt=0)
@@ -190,7 +206,7 @@ class ExperimentConfig(Strict):
     bootstrap_resamples: int = Field(ge=1000)
     second_labeler_min_items: int = Field(ge=10)
     independent_analyst_min_items: int = Field(ge=0)
-    cost_criteria: CostCriteria
+    economics: EconomicConfig
 
 
 class AppConfig(Strict):
@@ -202,7 +218,6 @@ class AppConfig(Strict):
     telemetry_catalog: dict[str, Any]
     sources: dict[str, Any]
     wazuh_mapping: dict[str, Any]
-    cost_rates: dict[str, Any]
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -224,5 +239,4 @@ def load_config(config_dir: Path | str = DEFAULT_CONFIG_DIR) -> AppConfig:
         telemetry_catalog=_load(d / "telemetry_catalog.yaml"),
         sources=_load(d / "sources.yaml"),
         wazuh_mapping=_load(d / "wazuh_mapping.yaml"),
-        cost_rates=_load(d / "cost_rates.yaml"),
     )

@@ -253,7 +253,7 @@ def test_the_timer_and_cost_endpoints(http):
     assert http.post(f"/timers/{iid}/stop", headers=AUTH).status_code == 409
     assert http.post(f"/timers/{iid}/start", json={"condition": "C"}, headers=AUTH).status_code == 409
     cost = http.get("/costs/summary", headers=AUTH).json()
-    assert cost["items"] == 1 and "extraction" in cost["agents"] and cost["currency"] == "BDT"
+    assert cost["items"] == 1 and "extraction" in cost["agents"] and "currency" not in cost
     assert cost["tokens"]["input"] > 0
 
 

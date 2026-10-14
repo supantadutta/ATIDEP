@@ -287,6 +287,7 @@ class ModelRun(Base):
     # whether this reply was served from a recording rather than a fresh, charged call.
     usage_source: Mapped[str] = mapped_column(String, default="unknown")
     compute_ms: Mapped[int | None] = mapped_column(Integer)
+    usage_detail: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     replayed: Mapped[bool] = mapped_column(Boolean, default=False)
     schema_valid: Mapped[bool] = mapped_column(Boolean)
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
