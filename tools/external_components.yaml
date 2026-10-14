@@ -1,0 +1,51 @@
+# Components that are not Python packages, for the bill of materials (blueprint §22.7, E1).
+# "licence_as_stated" is what the upstream project states; it has NOT been checked against the
+# licence text by the authors, so `verified` is false until someone has done that and written
+# who and when. Data sets are listed separately: their terms are not software licences.
+components:
+  - name: Wazuh manager
+    version: "4.14.8"
+    role: laboratory detection platform (manager only)
+    kind: software
+    licence_as_stated: GPL-2.0
+    source: https://github.com/wazuh/wazuh
+    verified: false
+    verified_by: null
+    verified_on: null
+  - name: Ollama
+    version: null
+    role: local model server (when a local model is used)
+    kind: software
+    licence_as_stated: MIT
+    source: https://github.com/ollama/ollama
+    verified: false
+    verified_by: null
+    verified_on: null
+  - name: Language model weights
+    version: null
+    role: the pinned local model (not selected yet, spike S3)
+    kind: model
+    licence_as_stated: null
+    osi_open_source_ai_definition: null    # classify against OSI's Open Source AI Definition 1.0
+    source: null
+    verified: false
+    verified_by: null
+    verified_on: null
+  - name: MITRE ATT&CK enterprise release (pinned)
+    version: "19.2"
+    role: technique lookup (knowledge/attack_release)
+    kind: data
+    licence_as_stated: MITRE ATT&CK terms of use
+    source: https://attack.mitre.org/resources/terms-of-use/
+    verified: false
+    verified_by: null
+    verified_on: null
+  - name: Public suffix list (bundled in tldextract)
+    version: null
+    role: domain validation
+    kind: data
+    licence_as_stated: MPL-2.0
+    source: https://publicsuffix.org/
+    verified: false
+    verified_by: null
+    verified_on: null

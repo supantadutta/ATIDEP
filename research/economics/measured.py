@@ -46,6 +46,7 @@ class ItemMeasure:
     item: str
     item_key: str | None
     category: str | None = None
+    order_set: str | None = None          # X: manual first; Y: ATIDEP first
     runs: int = 0
     tokens_in: float | None = None
     tokens_out: float | None = None
@@ -155,7 +156,8 @@ def load_measured(export_dir: Path | str, categories: dict[str, str] | None = No
     items: list[ItemMeasure] = []
     for name, rs in sorted(by_item.items()):
         key = rs[0].get("item_key") or None
-        im = ItemMeasure(name, key, (categories or {}).get(name), runs=len(rs))
+        im = ItemMeasure(name, key, (categories or {}).get(name), rs[0].get("order_set") or None,
+                         runs=len(rs))
         reliable = all(_b(r.get("cost.tokens_reliable")) for r in rs)
         if reliable:
             im.tokens_in = _mean([_f(r.get("cost.input_tokens")) for r in rs])

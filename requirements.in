@@ -1,0 +1,18 @@
+# Direct runtime dependencies (blueprint §12 principle 9, §13). `python tools/make_lock.py`
+# resolves them to the pinned `requirements.txt` from the installed environment, which is the
+# environment the tests were run in.
+pydantic
+SQLAlchemy
+PyYAML
+defusedxml
+pypdf
+tldextract
+pysigma            # gate G1: the Sigma ecosystem's own parser
+fastapi            # internal REST API (blueprint §40)
+uvicorn
+httpx              # the interface's client
+streamlit          # the three-page interface (blueprint §23)
+numpy              # analysis (research/)
+scipy
+pandas
+statsmodels        # the mixed model of the pre-registered crossover analysis
