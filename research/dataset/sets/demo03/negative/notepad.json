@@ -1,0 +1,40 @@
+{
+ "win": {
+  "eventdata": {
+   "commandLine": "notepad.exe notes.txt",
+   "currentDirectory": "C:\\Users\\alice\\",
+   "description": "notepad.exe",
+   "hashes": "SHA256=0000000000000000000000000000000000000000000000000000000000000000",
+   "image": "C:\\Windows\\notepad.exe",
+   "integrityLevel": "Medium",
+   "originalFileName": "notepad.exe",
+   "parentCommandLine": "C:\\Windows\\explorer.exe",
+   "parentImage": "C:\\Windows\\explorer.exe",
+   "parentProcessGuid": "{c3a9f1a2-0000-0000-0000-000000000001}",
+   "parentProcessId": "3120",
+   "processGuid": "{c3a9f1a2-0000-0000-0000-000000000000}",
+   "processId": "4568",
+   "ruleName": "-",
+   "user": "LAB\\alice",
+   "utcTime": "2026-10-02 10:00:00.000"
+  },
+  "system": {
+   "channel": "Microsoft-Windows-Sysmon/Operational",
+   "computer": "WIN10-LAB",
+   "eventID": "1",
+   "eventRecordID": "4102",
+   "keywords": "0x8000000000000000",
+   "level": "4",
+   "message": "Sysmon event",
+   "opcode": "0",
+   "processID": "2412",
+   "providerGuid": "{5770385f-c22a-43e0-bf4c-06f5698ffbd9}",
+   "providerName": "Microsoft-Windows-Sysmon",
+   "severityValue": "INFORMATION",
+   "systemTime": "2026-10-02T10:00:00.000000000Z",
+   "task": "1",
+   "threadID": "3524",
+   "version": "5"
+  }
+ }
+}

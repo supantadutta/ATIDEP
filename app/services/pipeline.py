@@ -62,6 +62,8 @@ class RuleRun:
     failed_gates: list[str] = field(default_factory=list)
     quality_score: int | None = None
     shadow_defects: list[list[dict[str, Any]]] = field(default_factory=list)
+    first_attempt_codes: list[str] = field(default_factory=list)
+    events: dict[str, Any] | None = None
     skipped: str | None = None
 
 
@@ -74,6 +76,7 @@ class PipelineRun:
     rules: list[RuleRun] = field(default_factory=list)
     error: str | None = None
     seconds: float = 0.0
+    stage_seconds: dict[str, float] = field(default_factory=dict)
 
 
 def _shadow(real, log: list[list[dict[str, Any]]]):
@@ -97,6 +100,7 @@ def run_pipeline(session: Session, store: EvidenceStore, intel_id: str, *, cfg: 
                         prompt=prompts.extraction, benign_domains=benign_domains,
                         allow_test_tlds=options.allow_test_tlds, seed=options.seed)
     run.processed = proc
+    run.stage_seconds["processing"] = time.monotonic() - t0
     if not proc.ok:
         run.error, run.seconds = proc.error, time.monotonic() - t0
         return run
@@ -107,6 +111,7 @@ def run_pipeline(session: Session, store: EvidenceStore, intel_id: str, *, cfg: 
     except DetectionError as exc:
         run.error, run.seconds = str(exc), time.monotonic() - t0
         return run
+    run.stage_seconds["opportunity"] = time.monotonic() - t0 - run.stage_seconds["processing"]
     for opp_id in run.opportunity_ids:
         row = session.get(m.DetectionOpportunity, opp_id)
         if Decision(row.decision) not in GENERATING_DECISIONS:
@@ -128,6 +133,10 @@ def run_pipeline(session: Session, store: EvidenceStore, intel_id: str, *, cfg: 
                 rr.rule_id, rr.loop_status = rule_id, res.status
                 rr.first_pass_valid, rr.repairs_used = res.first_pass_valid, res.repairs_used
                 rr.attempts = len(res.attempts)
+                first = res.attempts[0].check
+                rr.first_attempt_codes = [d.code for d in first.defects] if first else []
+                if options.condition == "B-V" and rr.shadow_defects:
+                    rr.first_attempt_codes = [d["code"] for d in rr.shadow_defects[0]]
                 if options.condition == "B-V" and rr.shadow_defects:
                     rr.first_pass_valid = not rr.shadow_defects[0]
             if rr.rule_id is None:
@@ -140,9 +149,12 @@ def run_pipeline(session: Session, store: EvidenceStore, intel_id: str, *, cfg: 
                                 baseline=baseline if baseline is not None else [])
             rr.outcome, rr.quality_score = out.outcome.value, out.quality_score
             rr.failed_gates = [g.value for g in out.failed]
+            rr.events = out.details.get("events")
         except (DetectionError, GovernanceError) as exc:
             rr.skipped = str(exc)[:200]
     run.seconds = time.monotonic() - t0
+    run.stage_seconds["rules"] = run.seconds - run.stage_seconds["processing"] \
+        - run.stage_seconds["opportunity"]
     return run
 
 

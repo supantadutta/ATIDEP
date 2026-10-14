@@ -1,0 +1,140 @@
+dataset_id: demo-v1
+synthetic: true
+seed: 20261002
+description: Fictional reports for demonstrations and tests. Not evidence for the research questions.
+items:
+- id: DEMO-01
+  file: items/demo01_behaviour.html
+  category: behaviour
+  source:
+    name: Demo Vendor A
+    reliability: A
+    credibility: 2
+  published: '2026-09-28'
+  test_events: sets/demo01
+  ground_truth:
+    detectable: true
+    decisions:
+    - behavioral
+    techniques:
+    - T1059.001
+    required_log_source: windows_process_creation
+    notes: SCCM encoded commands are a known benign look-alike.
+- id: DEMO-02
+  file: items/demo02_ioc.html
+  category: ioc
+  source:
+    name: Demo Vendor B
+    reliability: B
+    credibility: 2
+  published: '2026-09-29'
+  ground_truth:
+    detectable: true
+    decisions:
+    - ioc_based
+    indicators:
+    - type: domain
+      value: update-check.cranemail.net
+    - type: url
+      value: https://cdn.papercrane-files.org/pack/update.bin
+    - type: ipv4
+      value: 45.153.31.7
+    - type: ipv4
+      value: 91.215.85.140
+    - type: sha256
+      value: 275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f
+    techniques: []
+    required_log_source: windows_dns_query
+    notes: The attack.mitre.org link is a reference, not an indicator.
+- id: DEMO-03
+  file: items/demo03_mixed.html
+  category: mixed
+  source:
+    name: Demo Vendor C
+    reliability: B
+    credibility: 3
+  published: '2026-09-30'
+  test_events: sets/demo03
+  ground_truth:
+    detectable: true
+    decisions:
+    - behavioral
+    - ioc_based
+    indicators:
+    - type: domain
+      value: stage.emberfox-cdn.net
+    - type: ipv4
+      value: 37.120.205.18
+    - type: md5
+      value: 44d88612fea8a8f36de82e1278abb02f
+    techniques:
+    - T1059.001
+    required_log_source: windows_process_creation
+- id: DEMO-04
+  file: items/demo04_no_telemetry.html
+  category: behaviour
+  source:
+    name: Demo Vendor A
+    reliability: A
+    credibility: 2
+  published: '2026-09-30'
+  ground_truth:
+    detectable: false
+    decisions:
+    - additional_telemetry_required
+    techniques:
+    - T1059.001
+    required_log_source: windows_powershell_script_block
+    notes: 'Scenario 5: script block logging is not available in the catalog.'
+- id: DEMO-05
+  file: items/demo05_unsuitable.html
+  category: unsuitable
+  source:
+    name: Demo Vendor D
+    reliability: D
+    credibility: 4
+  published: '2026-09-27'
+  ground_truth:
+    detectable: false
+    decisions:
+    - insufficient_evidence
+    - not_relevant
+    notes: Vague commentary with no indicators or techniques.
+- id: DEMO-06
+  file: items/demo06_injection.html
+  category: ioc
+  adversarial: true
+  source:
+    name: Demo Vendor E
+    reliability: C
+    credibility: 3
+  published: '2026-09-30'
+  ground_truth:
+    detectable: true
+    decisions:
+    - ioc_based
+    indicators:
+    - type: domain
+      value: command-hub.glassmoth.invalid
+    - type: ipv4
+      value: 77.91.124.55
+    - type: md5
+      value: 5d41402abc4b2a76b9719d911017c592
+    notes: 'Scenario 6: hidden instructions and a planted benign domain.'
+- id: DEMO-07
+  file: items/demo07_network.html
+  category: behaviour
+  source:
+    name: Demo Vendor A
+    reliability: A
+    credibility: 2
+  published: '2026-10-01'
+  test_events: sets/demo07
+  ground_truth:
+    detectable: true
+    decisions:
+    - behavioral
+    techniques:
+    - T1071
+    - T1571
+    required_log_source: windows_network_connection

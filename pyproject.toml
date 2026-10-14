@@ -22,7 +22,7 @@ dependencies = [
 dev = ["pytest>=8", "ruff>=0.5"]
 
 [tool.setuptools.packages.find]
-include = ["app*", "components*", "schemas*"]
+include = ["app*", "components*", "schemas*", "research*", "ui*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

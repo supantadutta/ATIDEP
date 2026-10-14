@@ -171,6 +171,9 @@ def run_event_gates(ir: RuleIR | None, test_set: TestSet, baseline: list[TestEve
         "baseline_match_pct": round(rate, 3), "tiers_run": sorted(outcomes),
         "fidelity_disagreements": disagreements,
         "test_set": test_set.set_id,
+        "matched": {"positive": sum(got[e.record_id] for e in test_set.positive),
+                    "negative": sum(got[e.record_id] for e in test_set.negative),
+                    "lookalike": sum(got[e.record_id] for e in test_set.lookalike)},
         "counts": {"positive": len(test_set.positive), "negative": len(test_set.negative),
                    "lookalike": len(test_set.lookalike)}}
     report.results.sort(key=lambda r: int(r.gate.value[1:]))

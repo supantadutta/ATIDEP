@@ -1,0 +1,9 @@
+<!doctype html><html><head><title>Lantern Crew: encoded PowerShell loader</title></head><body><h1>Lantern Crew: encoded PowerShell loader</h1>
+<p>The Lantern Crew is a fictional intrusion set used here to exercise the platform. In the
+campaign described below, the operators gained a foothold through a phishing document and then
+ran powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBi
+to download a second stage from the staging server.</p>
+<p>The encoded command was started from a Microsoft Office process on the victim workstation.
+Defenders should watch for PowerShell launched with an encoded command, which maps to MITRE ATT&amp;CK
+T1059.001. Software deployment tools can legitimately run encoded commands, for example the
+SCCM client, so parent process context matters.</p></body></html>
