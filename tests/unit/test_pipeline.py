@@ -206,6 +206,38 @@ def test_a_model_outage_is_recorded_and_stops_only_that_item(tmp_path):
     assert run.error and "model" in run.error and run.rules == []
 
 
+def test_a_model_failure_at_the_rule_stage_does_not_stop_the_other_rules(tmp_path):
+    """Found by the adversarial harness: the error used to escape run_pipeline and kill the run."""
+    engine, store, iid = setup(tmp_path)
+    router = Router(extraction=EXTRACTION, opportunity=opportunity_from_request)   # no 'rule' agent
+    with session_scope(engine) as s:
+        run = run_pipeline(s, store, iid, cfg=CFG, attack=ATTACK, client=router, prompts=PROMPTS,
+                           options=PipelineOptions(seed=5, allow_test_tlds=True),
+                           benign_domains=BENIGN, test_set=TEST_SET, baseline=BASELINE, now=NOW)
+    r = rules_of(run)
+    assert r["sigma"].skipped.startswith("model:") and r["sigma"].rule_id is None
+    assert r["ioc_list"].outcome == "validated"                  # the other opportunity went on
+    assert run.error is None
+
+
+def test_hitting_the_spend_cap_at_the_rule_stage_is_passed_up_as_a_stop(tmp_path):
+    from components.llm.client import BudgetExceeded
+    engine, store, iid = setup(tmp_path)
+
+    class Capped(Router):
+        def complete(self, request):
+            if request.agent == "rule":
+                raise BudgetExceeded("daily cost limit 5.0 reached")
+            return super().complete(request)
+
+    router = Capped(extraction=EXTRACTION, opportunity=opportunity_from_request)
+    with session_scope(engine) as s:
+        run = run_pipeline(s, store, iid, cfg=CFG, attack=ATTACK, client=router, prompts=PROMPTS,
+                           options=PipelineOptions(seed=5, allow_test_tlds=True),
+                           benign_domains=BENIGN, test_set=TEST_SET, baseline=BASELINE, now=NOW)
+    assert run.error and "daily cost limit" in run.error
+
+
 def test_a_sigma_rule_without_test_events_is_skipped_not_guessed(tmp_path):
     engine, run, router = run_b(tmp_path, draft(), test_set=None)
     r = rules_of(run)

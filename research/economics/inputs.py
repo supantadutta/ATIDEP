@@ -58,6 +58,7 @@ class CostInputs:
     scenarios: CostScenarios
     economics: EconomicConfig
     hashes: dict[str, str] = field(default_factory=dict)
+    bootstrap_resamples: int = 10000
 
 
 @dataclass(frozen=True)
@@ -93,7 +94,8 @@ def load_cost_inputs(config_dir: Path | str = DEFAULT_CONFIG_DIR) -> CostInputs:
     if economics.primary_workload is not None and economics.primary_workload not in {
             w.id for w in scenarios.workloads}:
         raise ValueError(f"primary_workload {economics.primary_workload!r} is not a workload")
-    return CostInputs(rates, register, scenarios, economics, hashes)
+    return CostInputs(rates, register, scenarios, economics, hashes,
+                      cfg.experiment.bootstrap_resamples)
 
 
 def sourced(rates: CostRates, path: str) -> Sourced:

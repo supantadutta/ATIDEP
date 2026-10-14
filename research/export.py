@@ -1,9 +1,14 @@
-"""Flat analysis datasets from a results folder (blueprint §22, §29): ``runs.csv`` (one row per
-run, metrics flattened), ``rules.csv`` (one row per generated rule), ``effort.csv`` (machine
-effort records), ``analyst_effort.csv`` (analyst timer records from the live application
-database, keyed by the content hash of the item so they join to the dataset) and
-``manifest.json`` (what the files were made from). Plain CSV so the analysis can be redone in
-any tool."""
+"""Flat analysis datasets from a results folder (blueprint §22, §29):
+
+* ``runs.csv``: one row per run, metrics flattened, keyed by ``item_key`` (the SHA-256 of the
+  item's raw content, which is how rows from different databases join);
+* ``rules.csv``: one row per generated rule;
+* ``effort.csv``: machine effort records (never analyst time, never to be read as automated time);
+* ``analyst_effort.csv`` and ``live_rules.csv``: analyst timer sessions and approved or deployed
+  rules from the live application database;
+* ``manifest.json``: what the files were made from.
+
+Plain CSV, so the analysis can be redone in any tool."""
 
 from __future__ import annotations
 
@@ -68,6 +73,27 @@ def analyst_effort_rows(engine: Engine) -> list[dict[str, Any]]:
     return rows
 
 
+def live_rule_rows(engine: Engine) -> list[dict[str, Any]]:
+    """One row per rule in the live application database, keyed like the analyst rows: whether
+    the rule is currently approved (or beyond) and whether it has a successful lab deployment.
+    Re-approvals after an edit are one rule, not several."""
+    rows: list[dict[str, Any]] = []
+    with session_scope(engine) as s:
+        for r in s.scalars(select(m.Rule).order_by(m.Rule.rule_id)):
+            opp = s.get(m.DetectionOpportunity, r.opportunity_id)
+            item = s.get(m.IntelligenceItem, opp.intel_id) if opp else None
+            deployed = s.scalar(
+                select(m.Deployment.id).join(m.RuleVersion,
+                                             m.RuleVersion.id == m.Deployment.rule_version_id)
+                .where(m.RuleVersion.rule_id == r.rule_id, m.Deployment.mode == "lab",
+                       m.Deployment.status == "ok").limit(1))
+            rows.append({"item_key": item.raw_sha256 if item else None, "rule_id": r.rule_id,
+                         "kind": r.kind, "state": r.state,
+                         "approved": r.state in ("approved", "deployed", "monitored"),
+                         "deployed_lab": deployed is not None})
+    return rows
+
+
 def export_results(results_engine: Engine, out_dir: Path | str,
                    analyst_engines: tuple[Engine, ...] = ()) -> dict[str, Any]:
     out = Path(out_dir)
@@ -78,8 +104,10 @@ def export_results(results_engine: Engine, out_dir: Path | str,
         for er in s.scalars(select(m.ExperimentRun).order_by(
                 m.ExperimentRun.condition, m.ExperimentRun.intel_id, m.ExperimentRun.run_number)):
             doc = json.loads(Path(er.output_ref).read_text()) if er.output_ref else {}
-            title = s.get(m.IntelligenceItem, er.intel_id).title
-            base = {"item": doc.get("item", title), "condition": er.condition,
+            item_row = s.get(m.IntelligenceItem, er.intel_id)
+            title = item_row.title
+            base = {"item": doc.get("item", title), "item_key": item_row.raw_sha256,
+                    "condition": er.condition,
                     "run": er.run_number, "order_set": er.order_set, "seed": er.seed,
                     "model": er.model_id, "prompt_set_sha256": er.prompt_set_sha256,
                     "dataset_sha256": doc.get("dataset_sha256"), "error": doc.get("error"),
@@ -100,10 +128,12 @@ def export_results(results_engine: Engine, out_dir: Path | str,
                   for e in s.scalars(select(m.EffortCostRecord).where(
                       m.EffortCostRecord.component != "analyst").order_by(m.EffortCostRecord.id))]
     analyst = [r for e in (results_engine, *analyst_engines) for r in analyst_effort_rows(e)]
+    live = [r for e in analyst_engines for r in live_rule_rows(e)]
     hashes = {name: _write(out / name, rows) for name, rows in
               (("runs.csv", runs), ("rules.csv", rules), ("effort.csv", effort),
-               ("analyst_effort.csv", analyst))}
+               ("analyst_effort.csv", analyst), ("live_rules.csv", live))}
     manifest = {"rows": {"runs": len(runs), "rules": len(rules), "effort": len(effort),
-                         "analyst_effort": len(analyst)}, "sha256": hashes}
+                         "analyst_effort": len(analyst), "live_rules": len(live)},
+                "sha256": hashes}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1, sort_keys=True))
     return manifest

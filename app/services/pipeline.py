@@ -28,7 +28,7 @@ from components.c1_ingest.evidence import EvidenceStore
 from components.c2_processing.attack import AttackRelease
 from components.c3_detection.rule_agent import LoopCheck, RuleContext
 from components.c4_validation.corpus import TestEvent, TestSet
-from components.llm.client import LLMClient
+from components.llm.client import LLMClient, LLMError, is_budget_error
 from components.llm.prompts import PromptSet
 from schemas.detection_opportunity import GENERATING_DECISIONS, Decision
 from schemas.sigma_subset import Assumption
@@ -152,6 +152,13 @@ def run_pipeline(session: Session, store: EvidenceStore, intel_id: str, *, cfg: 
             rr.events = out.details.get("events")
         except (DetectionError, GovernanceError) as exc:
             rr.skipped = str(exc)[:200]
+        except LLMError as exc:
+            # a model failure at this rule must not stop the other opportunities; a spend-cap
+            # stop is passed up to the run so that it is recorded as a stop, not as a failure
+            rr.skipped = f"model: {exc}"[:200]
+            if is_budget_error(str(exc)):
+                run.error = f"model: {exc}"[:200]
+                break
     run.seconds = time.monotonic() - t0
     run.stage_seconds["rules"] = run.seconds - run.stage_seconds["processing"] \
         - run.stage_seconds["opportunity"]
