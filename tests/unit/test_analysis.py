@@ -283,3 +283,74 @@ def test_the_runner_says_not_evaluable_instead_of_inventing_missing_data(tmp_pat
     assert "not_evaluable" in res["H3"]
     tiny = run_analysis(make_export(tmp_path / "tiny", n=2), tmp_path / "o2")
     assert "not_evaluable" in tiny["H1"] and "not_evaluable" in tiny["crossover"]
+
+
+# ---- inter-rater reliability (blueprint §27.8) ---------------------------------------------
+def _write_csv(path, header, rows):
+    import csv as _csv
+    with path.open("w", newline="") as fh:
+        w = _csv.writer(fh)
+        w.writerow(header)
+        w.writerows(rows)
+
+
+def test_dimension_agreement_counts_gaps_of_more_than_one_point(tmp_path):
+    from research.analysis.raters import dimension_agreement
+    rows = []
+    # four rules, one dimension: r1 = 1,2,3,4 ; r2 = 1,2,3,4 except rule 4 where r2 gives 2
+    for k, (a, b) in enumerate([(1, 1), (2, 2), (3, 3), (4, 2)], 1):
+        rows += [[f"R{k}", "r1", "D-A", a], [f"R{k}", "r2", "D-A", b]]
+    p = tmp_path / "ratings_dimensions.csv"
+    _write_csv(p, ["rule_ref", "rater", "dimension", "score"], rows)
+    res = dimension_agreement(p)
+    pair = res["dimensions"]["D-A"]["pairs"]["r1|r2"]
+    assert pair["rules"] == 4 and pair["differ_by_more_than_one"] == 1
+    # quadratic weights on a 5-point scale: |4-2| = 2 steps -> weight (2/4)^2 = 0.25
+    exp_w = 0.25
+    # observed weighted disagreement = 0.25/4 ; chance from the marginals
+    import numpy as np
+    m = np.zeros((5, 5))
+    for a, b in [(1, 1), (2, 2), (3, 3), (4, 2)]:
+        m[a - 1, b - 1] += 1
+    i, j = np.indices((5, 5))
+    w = (np.abs(i - j) / 4) ** 2
+    expected = np.outer(m.sum(1), m.sum(0)) / 4
+    kappa = 1 - (w * m).sum() / (w * expected).sum()
+    assert pair["weighted_kappa"] == pytest.approx(kappa) and exp_w == w[3, 1]
+    assert 0 < pair["weighted_kappa"] < 1
+
+
+def test_dimension_agreement_refuses_non_integer_or_out_of_scale_scores(tmp_path):
+    from research.analysis.raters import dimension_agreement
+    p = tmp_path / "ratings_dimensions.csv"
+    _write_csv(p, ["rule_ref", "rater", "dimension", "score"], [["R1", "r1", "D-A", 3.5]])
+    with pytest.raises(ValueError):
+        dimension_agreement(p)
+    _write_csv(p, ["rule_ref", "rater", "dimension", "score"], [["R1", "r1", "D-A", 6]])
+    with pytest.raises(ValueError):
+        dimension_agreement(p)
+
+
+def test_rule_icc_uses_only_rules_every_rater_scored_and_needs_three(tmp_path):
+    import numpy as np
+
+    from research.analysis.agreement import icc_2_1
+    from research.analysis.raters import rule_icc
+    rows = []
+    scores = {"R1": (2.0, 2.2), "R2": (3.0, 3.4), "R3": (4.0, 3.8), "R4": (5.0, 4.6)}
+    for ref, (a, b) in scores.items():
+        rows += [["I1", "A", ref, "r1", a], ["I1", "A", ref, "r2", b]]
+    rows.append(["I2", "B", "R5", "r1", 3.0])                    # scored by one rater only
+    p = tmp_path / "ratings.csv"
+    _write_csv(p, ["item", "condition", "rule_ref", "rater", "score"], rows)
+    res = rule_icc(p)
+    assert res["rules_rated"] == 5 and res["rules_rated_by_all"] == 4
+    assert res["icc_2_1"] == pytest.approx(icc_2_1(np.array(list(scores.values()))))
+    _write_csv(p, ["item", "condition", "rule_ref", "rater", "score"], rows[:4])
+    assert rule_icc(p)["icc_2_1"] is None
+
+
+def test_rater_agreement_reports_missing_files_as_missing(tmp_path):
+    from research.analysis.raters import rater_agreement
+    res = rater_agreement(tmp_path)
+    assert "not_evaluable" in res["dimensions"] and "not_evaluable" in res["rules"]

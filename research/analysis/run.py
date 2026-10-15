@@ -26,6 +26,7 @@ import pandas as pd
 from app.config import DEFAULT_CONFIG_DIR, load_config
 from research.analysis import paired, proportions
 from research.analysis.crossover import first_exposure, mixed_model, sequence_balance
+from research.analysis.raters import rater_agreement
 from research.economics.measured import Measured, load_measured
 
 
@@ -114,6 +115,8 @@ def run_analysis(export_dir: Path | str, out_dir: Path | str, *,
     else:
         res["H4"] = {"not_evaluable": "no blinded ratings for at least three items in both "
                                       "conditions (ratings.csv)"}
+
+    res["rater_agreement"] = rater_agreement(exp)
 
     # Holm over the confirmatory family -------------------------------------------------------
     ps = {k: res[k]["p_for_holm"] for k in ("H1", "H4") if "p_for_holm" in res[k]}

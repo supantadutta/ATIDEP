@@ -25,8 +25,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PATTERNS = ("config/*.yaml", "prompts/*.md", "knowledge/*.json", "knowledge/*/*.json",
             "research/dataset/*/manifest.yaml", "research/dataset/manifest.yaml",
             "research/adversarial/PROTOCOL.md", "research/adversarial/cases/**/*.yaml",
-            "research/preregistration/*.md", "requirements.in", "requirements.txt",
-            "pyproject.toml", "docs/ATIDEP_Blueprint_v3.md")
+            "research/preregistration/*.md", "research/preregistration/*.csv",
+            "requirements.in", "requirements.txt", "pyproject.toml", "docs/ATIDEP_Blueprint_v3.md")
 
 
 def _sha(path: Path) -> str:
