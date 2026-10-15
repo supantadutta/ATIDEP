@@ -1,0 +1,107 @@
+id: D7-02
+role: defective
+defect_class: D7
+evasive: false
+why: The only condition is Image ending in \powershell.exe, which is a process name, so the rule has no
+  discriminating term at all; the baseline holds 25 benign powershell.exe launches (6.25 percent of 400
+  events), including the backup.ps1 script run and the Get-Service command, all of which match.
+expected_gate: G11
+report_text: Threat Brief TB-2207, CRANE-LOOM downloader stage. After the user opens the lure shortcut,
+  a hidden PowerShell session retrieves the second stage from a staging server. Analysts observed the
+  interpreter launched as powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand followed by a
+  long Base64 string, spawned by wscript.exe rather than by an interactive shell. The decoded script builds
+  a web client object, downloads a payload to the user profile and executes it in memory. The operators
+  prefer the built-in Windows PowerShell host over third-party interpreters because it is present on every
+  workstation in the victim environment. No script files were written to disk during this stage, so file-based
+  detection did not trigger. The group is assessed to be financially motivated.
+evidence:
+- powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand
+- a hidden PowerShell session retrieves the second stage from a staging server
+logsource: windows_process_creation
+techniques:
+- T1059.001
+sigma_yaml: |
+  title: PowerShell Host Process Started
+  id: 7b2e94a0-1c5d-4f38-a6e9-0d83c2f5b717
+  status: experimental
+  description: Detects creation of the Windows PowerShell host process, the interpreter used by the downloader stage of the campaign.
+  references:
+      - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+      - attack.execution
+      - attack.t1059.001
+  logsource:
+      category: process_creation
+      product: windows
+  detection:
+      selection:
+          Image|endswith: '\powershell.exe'
+      condition: selection
+  falsepositives:
+      - Administrative PowerShell scripts
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand JABjACAAPQAgAE4AZQB3AC0ATwBiAGoAZQBjAHQA
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe C:\Users\Public\invoice_view.js
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand JABkACAAPQAgAEcAZQB0AC0ASABvAHMAdAA=
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe C:\Users\Public\invoice_view.js
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\todo.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell_ise.exe
+    cmd: powershell_ise.exe C:\Scripts\backup.ps1
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Program Files\PowerShell\7\pwsh.exe
+    cmd: pwsh.exe -NoProfile -File C:\Scripts\report.ps1
+    parent: C:\Windows\System32\svchost.exe
+    parent_cmd: svchost.exe -k netsvcs -p -s Schedule
+    user: LAB\svc-report
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

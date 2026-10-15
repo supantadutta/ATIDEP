@@ -1,0 +1,108 @@
+id: D1-03
+role: defective
+defect_class: D1
+evasive: true
+why: The condition names selection_rundl32 but the only selection defined is selection_rundll32 (one 'l'
+  fewer), so the condition refers to an undefined identifier and a Sigma parser cannot compile the rule.
+  The YAML itself is well-formed and every other element is valid.
+expected_gate: G1
+report_text: Incident responders recovered a loader that executes as a DLL under rundll32.exe and calls
+  home without using any standard web port. In the three confirmed infections, rundll32.exe opened an
+  outbound TCP connection to 198.51.100.77 on port 4782 roughly every five minutes and then exchanged
+  short binary frames that resembled neither HTTP nor TLS. Port 4782 is not used by any approved application
+  in the victim network, and the egress firewall permitted the traffic only because its ruleset allowed
+  high ports outbound by default. The same loader build used port 4782 on every host, and it slept for
+  long, irregular intervals between connections. Responders recommend alerting on rundll32.exe network
+  activity toward non-standard ports.
+evidence:
+- rundll32.exe opened an outbound TCP connection to 198.51.100.77 on port 4782
+- Port 4782 is not used by any approved application in the victim network
+logsource: windows_network_connection
+techniques:
+- T1571
+sigma_yaml: |
+  title: Rundll32 Connecting Out On A Non-Standard Port
+  id: c9e8a1f7-52d4-4e3b-8a6c-1f0b7d93e248
+  status: experimental
+  description: Detects rundll32.exe opening an outbound connection to port 4782, a port no approved application uses, as seen with a DLL loader that avoids standard web ports.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection_rundll32:
+      Image|endswith: '\rundll32.exe'
+      DestinationPort: '4782'
+    condition: selection_rundl32
+  falsepositives:
+    - Vendor software that legitimately runs inside rundll32.exe and uses the same port
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.77
+    dest_port: '4782'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\SysWOW64\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.77
+    dest_port: '4782'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Mozilla Firefox\firefox.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.10
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.25
+    dest_port: '993'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.80
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\Northwind\Sync\nwsync.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.30
+    dest_port: '4782'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

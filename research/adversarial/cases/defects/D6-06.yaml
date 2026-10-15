@@ -1,0 +1,110 @@
+id: D6-06
+role: defective
+defect_class: D6
+evasive: false
+why: Image|fieldref compares the Image field to another field (ParentImage); fieldref is not in the accepted
+  modifier set. The rest of the rule uses valid fields, tags and metadata, and its values (including the
+  referenced field name and the command-line flag) are quoted in the evidence.
+expected_gate: G3
+report_text: 'Loader analysis for the SALTMARSH stager. When the malicious document macro runs, it starts
+  powershell.exe to execute the first stage in a visible console. The first stage then immediately relaunches
+  itself so that the visible window closes: in Sysmon process-creation events the child powershell.exe
+  has an Image identical to its ParentImage and is started with -WindowStyle Hidden followed by an encoded
+  second stage. This self-relaunch pattern was present in all five samples examined. Relaunching lets
+  the stager drop the parent console and reduces the chance that the user notices the window. Network
+  behaviour of the second stage is covered in a separate report. In the laboratory we did not see this
+  pattern in routine administrative PowerShell use, where a hidden window combined with a self-relaunch
+  is rare.'
+evidence:
+- the child powershell.exe has an Image identical to its ParentImage and is started with -WindowStyle
+  Hidden
+- This self-relaunch pattern was present in all five samples examined
+logsource: windows_process_creation
+techniques:
+- T1059.001
+sigma_yaml: |
+  title: PowerShell Self-Relaunch with Hidden Window
+  id: f4c92e05-7a1b-4b38-86d7-0e3a95c8d172
+  status: experimental
+  description: Detects a process whose image is identical to its parent image that is started with a hidden window style, matching the SALTMARSH stager self-relaunch.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|fieldref: ParentImage
+      CommandLine|contains: '-WindowStyle Hidden'
+    condition: selection
+  falsepositives:
+    - Administrative scripts that relaunch PowerShell with a hidden window
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand JABhAD0AMQA=
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe -NoProfile -File C:\Users\dana\AppData\Local\Temp\s1.ps1
+    user: LAB\dana
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand JABiAD0AMgA=
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe -ExecutionPolicy Bypass -File C:\Users\erin\AppData\Roaming\s1.ps1
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\dana\minutes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\Explorer.EXE
+    user: LAB\dana
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -File C:\Scripts\collect.ps1
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe -NoProfile -File C:\Scripts\nightly.ps1
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -WindowStyle Hidden -File C:\Scripts\backup.ps1
+    parent: C:\Windows\System32\svchost.exe
+    parent_cmd: C:\Windows\system32\svchost.exe -k netsvcs -p -s Schedule
+    user: LAB\svc-backup
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

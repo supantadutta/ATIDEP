@@ -1,0 +1,149 @@
+id: CTL2-10
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid rule using windash for the hidden-window flags, contains|all for the two cmdlets
+  and a not-filter for the endpoint management parent: all values (powershell.exe, -windowstyle hidden,
+  -w hidden, both cmdlets, ccmexec.exe) occur in the quoted evidence, T1053.005 and T1059.001 tags are
+  correct, and hidden backup scripts and SCCM-launched registrations are not matched. The baseline PowerShell
+  lines do not call these cmdlets (0 of 400).'
+expected_gate: none
+report_text: 'The second-stage script persisted by registering a scheduled task straight from a hidden
+  PowerShell session. The operator started powershell.exe -WindowStyle Hidden, shortened to -w hidden
+  in the later builds, and the one-liner called New-ScheduledTaskAction and then Register-ScheduledTask
+  with a logon trigger so that a payload under the Public profile ran at every sign-in. Legitimate use
+  of these cmdlets exists: our endpoint management client launched by ccmexec.exe registers tasks in this
+  way during software deployment and must be excluded. All other registrations from a hidden PowerShell
+  window should be reviewed. Scripts that run hidden without registering a task, such as the nightly backup,
+  are common and not in scope.'
+evidence:
+- The operator started powershell.exe -WindowStyle Hidden, shortened to -w hidden in the later builds
+- the one-liner called New-ScheduledTaskAction and then Register-ScheduledTask with a logon trigger
+- our endpoint management client launched by ccmexec.exe registers tasks in this way during software deployment
+  and must be excluded
+logsource: windows_process_creation
+techniques:
+- T1053.005
+- T1059.001
+sigma_yaml: |
+  title: Hidden PowerShell Registers Scheduled Task Outside Endpoint Management
+  id: 6ad2f938-0e5b-47c1-b9a4-c35e7d2081f0
+  status: experimental
+  description: Detects a hidden powershell.exe window that calls New-ScheduledTaskAction and Register-ScheduledTask to persist a payload, excluding tasks registered by the endpoint management client launched from ccmexec.exe.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1053.005
+    - attack.t1059.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\powershell.exe'
+    selection_hidden:
+      CommandLine|contains|windash:
+        - '-windowstyle hidden'
+        - '-w hidden'
+    selection_task:
+      CommandLine|contains|all:
+        - 'New-ScheduledTaskAction'
+        - 'Register-ScheduledTask'
+    filter_mgmt:
+      ParentImage|endswith: '\ccmexec.exe'
+    condition: all of selection* and not filter_mgmt
+  falsepositives:
+    - Administrator scripts that register tasks from a hidden PowerShell window outside the endpoint management client
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden -Command $a=New-ScheduledTaskAction -Execute C:\Users\Public\sync.exe;
+      $t=New-ScheduledTaskTrigger -AtLogOn; Register-ScheduledTask -TaskName Sync -Action $a -Trigger
+      $t
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe /w hidden -c $a=New-ScheduledTaskAction -Execute C:\Windows\Temp\svc.exe; Register-ScheduledTask
+      -TaskName Svc -Action $a -Trigger (New-ScheduledTaskTrigger -AtLogOn)
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -ep bypass -w hidden -Command Register-ScheduledTask -TaskName Upd -Action (New-ScheduledTaskAction
+      -Execute C:\Users\Public\upd.exe) -Trigger (New-ScheduledTaskTrigger -AtLogOn)
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Temp\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\msiexec.exe
+    cmd: msiexec.exe /i C:\Temp\app.msi /qn
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\admin
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden -File C:\Scripts\backup.ps1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\admin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden -Command $a=New-ScheduledTaskAction -Execute C:\Program
+      Files\Contoso\agent.exe; Register-ScheduledTask -TaskName AgentRefresh -Action $a -Trigger (New-ScheduledTaskTrigger
+      -AtLogOn)
+    parent: C:\Windows\CCM\ccmexec.exe
+    parent_cmd: ccmexec.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -Command Get-ScheduledTask | Where-Object State -eq Ready
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\admin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

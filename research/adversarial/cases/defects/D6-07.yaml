@@ -1,0 +1,103 @@
+id: D6-07
+role: defective
+defect_class: D6
+evasive: true
+why: 'The detection block contains a ''timeframe: 15m'' key, and timeframe is on the accepted subset''s
+  list of disallowed constructs. The condition itself is a plain ''selection'', so a check that only parses
+  the condition string would not see it. Everything else (fields, values, tags, metadata, log source)
+  is valid and evidence-backed.'
+expected_gate: G3
+report_text: 'Software-inventory review at a partner site found that an unapproved remote support program,
+  HelpBridge, had been installed on three workstations. The client binary hbclient.exe maintains an outbound
+  session to a vendor relay at 198.51.100.40 on TCP port 7070. Because the program is not on the approved
+  software list and gives full remote control of the desktop, its use is treated as a remote access tool
+  under the organisation''s policy. The vendor documentation states that the client falls back to ports
+  443 and 80 if port 7070 is blocked, but on the observed hosts only port 7070 was used. Connections began
+  shortly after user logon and persisted through the working day. Recommended detection: flag outbound
+  connections from hbclient.exe to TCP port 7070.'
+evidence:
+- The client binary hbclient.exe maintains an outbound session to a vendor relay at 198.51.100.40 on TCP
+  port 7070
+- flag outbound connections from hbclient.exe to TCP port 7070
+logsource: windows_network_connection
+techniques:
+- T1219
+sigma_yaml: |
+  title: Unapproved HelpBridge Remote Access Client Connection
+  id: 3a65d0c8-b2e9-4f17-a4c6-9d18e7f05b23
+  status: experimental
+  description: Detects outbound connections from the unapproved HelpBridge client hbclient.exe to its relay port 7070.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1219
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\hbclient.exe'
+      DestinationPort: '7070'
+      Initiated: 'true'
+    timeframe: 15m
+    condition: selection
+  falsepositives:
+    - Sanctioned use of HelpBridge by the IT help desk
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Program Files\HelpBridge\hbclient.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.40
+    dest_port: '7070'
+    name: null
+  - kind: network_connect
+    image: C:\Users\gina\AppData\Local\HelpBridge\hbclient.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.44
+    dest_port: '7070'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Fabrikam Browser\browser.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.10
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.53
+    dest_port: '53'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Program Files\Fabrikam Support\fsclient.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.60
+    dest_port: '7070'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

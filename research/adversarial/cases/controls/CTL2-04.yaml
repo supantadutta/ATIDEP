@@ -1,0 +1,135 @@
+id: CTL2-04
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid rule with an IP prefix selection, a port selection and a not-filter for browsers:
+  the prefix 198.51.100., ports 8080 and 8000 and the two browser names are all in the quoted evidence,
+  T1571 is correct, and the browser exclusion is justified by the report. The baseline has no connections
+  on 8080 or 8000 (0 of 400).'
+expected_gate: none
+report_text: 'The loader family stages modules from a small group of rented servers. The two observed
+  so far, 198.51.100.23 and 198.51.100.24, sit in the same 198.51.100.0/24 block, and the operator reached
+  them on ports 8080 and 8000 using a dropped binary and PowerShell. Our review found no sanctioned business
+  process that connects to that block on these ports, with one exception: browsers such as chrome.exe
+  and msedge.exe reach the provider''s customer portal in the same block on port 8080 and must be excluded
+  from any detection. Because the infrastructure is rented in bulk, further addresses in the block are
+  likely to be used, so the rule should cover the whole prefix instead of the two known hosts.'
+evidence:
+- The two observed so far, 198.51.100.23 and 198.51.100.24, sit in the same 198.51.100.0/24 block, and
+  the operator reached them on ports 8080 and 8000
+- browsers such as chrome.exe and msedge.exe reach the provider's customer portal in the same block on
+  port 8080 and must be excluded from any detection
+logsource: windows_network_connection
+techniques:
+- T1571
+sigma_yaml: |
+  title: Non-Browser Connection To Rented C2 Block On Alternate Web Ports
+  id: d29a0c75-3e18-47b6-a5f2-90c1e8b6f404
+  status: experimental
+  description: Detects a non-browser process connecting to the 198.51.100.0/24 block on TCP port 8080 or 8000, the rented infrastructure used to stage modules in the reported intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection_range:
+      DestinationIp|startswith: '198.51.100.'
+    selection_port:
+      DestinationPort:
+        - '8080'
+        - '8000'
+    filter_browser:
+      Image|endswith:
+        - '\chrome.exe'
+        - '\msedge.exe'
+    condition: all of selection* and not filter_browser
+  falsepositives:
+    - Staff running a custom internal agent that talks to the same hosting provider block on these ports
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\ProgramData\Updater\updsvc.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.24
+    dest_port: '8000'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.23
+    dest_port: '8080'
+    name: null
+  - kind: network_connect
+    image: C:\Users\Public\Libraries\sync.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.131
+    dest_port: '8080'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Users\alice\AppData\Local\Microsoft\Teams\current\Teams.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.9
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.5
+    dest_port: '80'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.30
+    dest_port: '8080'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.40
+    dest_port: '8000'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.50
+    dest_port: '8080'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

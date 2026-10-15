@@ -1,0 +1,105 @@
+id: D7-06
+role: defective
+defect_class: D7
+evasive: true
+why: The selection_create branch is narrow (schtasks, /create and the task name CraneSync), but the selection_verify
+  branch matches any command line containing 'schtasks /query'; the baseline has 13 schtasks.exe launches,
+  including the frequent benign 'schtasks /query /fo LIST', i.e. over 3 percent of 400 events, above the
+  2-event ceiling.
+expected_gate: G11
+report_text: 'Persistence Brief PB-72, scheduled task abuse. After establishing a foothold the operators
+  create a scheduled task named CraneSync so that the dropped binary re-launches every fifteen minutes.
+  Responders recovered the creation command from process telemetry: schtasks /create /tn CraneSync /sc
+  minute /mo 15 /tr C:\ProgramData\Crane\sync.exe /ru SYSTEM. After creating the task, the operators verified
+  it by running schtasks /query /fo LIST and looking for the task name in the listing. The task is created
+  from a command shell and is not hidden from the Task Scheduler interface. The behaviour was identical
+  on every compromised host, and cleanup consisted of deleting the task and the binary.'
+evidence:
+- schtasks /create /tn CraneSync /sc minute /mo 15 /tr C:\ProgramData\Crane\sync.exe /ru SYSTEM
+- the operators verified it by running schtasks /query /fo LIST and looking for the task name in the listing
+logsource: windows_process_creation
+techniques:
+- T1053.005
+sigma_yaml: |
+  title: Scheduled Task Creation and Verification via schtasks
+  id: 91c4b2e5-7d30-4a96-bf18-4c05a8e7d6b2
+  status: experimental
+  description: Detects creation of the CraneSync scheduled task and the follow-up query the operators used to verify it.
+  references:
+      - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+      - attack.execution
+      - attack.persistence
+      - attack.privilege_escalation
+      - attack.t1053.005
+  logsource:
+      category: process_creation
+      product: windows
+  detection:
+      selection_create:
+          CommandLine|contains|all:
+              - 'schtasks'
+              - '/create'
+              - 'CraneSync'
+      selection_verify:
+          CommandLine|contains: 'schtasks /query'
+      condition: selection_create or selection_verify
+  falsepositives:
+      - Administrators listing scheduled tasks
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /tn CraneSync /sc minute /mo 15 /tr C:\ProgramData\Crane\sync.exe /ru SYSTEM
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c C:\ProgramData\Crane\setup.bat
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /tn CraneSync /sc minute /mo 15 /tr C:\ProgramData\Crane\sync.exe /ru SYSTEM
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c C:\ProgramData\Crane\setup.bat
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /tn BackupNightly /sc daily /st 02:00 /tr C:\Scripts\backup.ps1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-backup
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

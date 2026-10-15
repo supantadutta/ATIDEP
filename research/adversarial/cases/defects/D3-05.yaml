@@ -1,0 +1,101 @@
+id: D3-05
+role: defective
+defect_class: D3
+evasive: true
+why: The rule uses DestinationIP, which differs from the allowed network_connection field DestinationIp
+  only in letter case; field names are case-sensitive exactly as written in the catalog, so DestinationIP
+  is not an allowed field.
+expected_gate: G5
+report_text: Network sensors at the fictional Marlowe Dairy Cooperative recorded a remote-access implant
+  calling back on a non-standard port. A process named powershell.exe opened outbound TCP sessions to
+  203.0.113.120 on port 4444 roughly every ninety seconds, a port that is not associated with any approved
+  service in the environment. The traffic carried no TLS handshake and the destination had no DNS name.
+  The implant was started by a run key entry created during initial access. Responders found no other
+  process on the affected hosts that contacted 203.0.113.120. They recommend alerting on powershell.exe
+  connecting to 203.0.113.120 on port 4444, noting that PowerShell on these servers only contacts internal
+  management hosts over port 5985. The same destination and port were seen on three other servers.
+evidence:
+- A process named powershell.exe opened outbound TCP sessions to 203.0.113.120 on port 4444 roughly every
+  ninety seconds
+- They recommend alerting on powershell.exe connecting to 203.0.113.120 on port 4444
+logsource: windows_network_connection
+techniques:
+- T1571
+sigma_yaml: |
+  title: PowerShell Callback To Implant Server On Port 4444
+  id: 9a47d3f1-62b8-4c05-9e7a-1f3d58b0c6a4
+  status: experimental
+  description: Detects powershell.exe connecting to the implant server on the non-standard port used for callbacks.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      DestinationIP: '203.0.113.120'
+      DestinationPort: '4444'
+    condition: selection
+  falsepositives:
+    - Approved administrative tools that listen on port 4444 in a lab segment
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.120
+    dest_port: '4444'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\SysWOW64\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.120
+    dest_port: '4444'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.7
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.8
+    dest_port: '443'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.30
+    dest_port: '5985'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

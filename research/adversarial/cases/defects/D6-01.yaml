@@ -1,0 +1,122 @@
+id: D6-01
+role: defective
+defect_class: D6
+evasive: false
+why: The condition 'selection | count() > 5' is a count aggregation introduced with '|', which the accepted
+  Sigma subset explicitly excludes (count, near, timeframe, aggregation with '|'). The log source, fields,
+  values, metadata and ATT&CK tags are otherwise valid and every value is quoted in the evidence.
+expected_gate: G3
+report_text: 'Incident summary for the intrusion cluster tracked as CRANEFALL. After gaining a foothold
+  on a file server at a regional logistics firm, the operator opened an interactive command shell and
+  enumerated local accounts in rapid succession. Responders recovered the shell history, which shows the
+  net.exe utility invoked repeatedly with the argument net user, and then net localgroup administrators
+  to identify privileged accounts. The activity was scripted: the same net.exe sequence ran more than
+  five times within one minute, which is not how an administrator normally works interactively. The operator
+  used no third-party enumeration tooling at this stage and relied only on built-in utilities. Account
+  names harvested this way were later used for password guessing against the file server. Analysts assess
+  the enumeration as preparation for privilege escalation and credential theft. No malware was dropped
+  during this phase.'
+evidence:
+- the net.exe utility invoked repeatedly with the argument net user, and then net localgroup administrators
+  to identify privileged accounts
+- the same net.exe sequence ran more than five times within one minute
+logsource: windows_process_creation
+techniques:
+- T1087.001
+sigma_yaml: |
+  title: Scripted Local Account Enumeration with net.exe
+  id: 7c1d4e2a-3b58-4f6e-9a0d-1e2f3a4b5c61
+  status: experimental
+  description: Detects repeated execution of net.exe to enumerate local accounts and the local administrators group in a short interval.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.discovery
+    - attack.t1087.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\net.exe'
+      CommandLine|contains:
+        - 'net user'
+        - 'localgroup administrators'
+    condition: selection | count() > 5
+  falsepositives:
+    - Administrators auditing local accounts by hand
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\net.exe
+    cmd: net user
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-backup
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\net.exe
+    cmd: net localgroup administrators
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-backup
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\net.exe
+    cmd: net user svc-backup
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-backup
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\Explorer.EXE
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\taskhostw.exe
+    cmd: taskhostw.exe
+    parent: C:\Windows\System32\svchost.exe
+    parent_cmd: C:\Windows\system32\svchost.exe -k netsvcs -p -s Schedule
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\net.exe
+    cmd: net localgroup "Remote Desktop Users"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\net.exe
+    cmd: 'net use Z: \\fs01.cranemail.test\share'
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

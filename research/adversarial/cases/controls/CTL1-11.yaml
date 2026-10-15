@@ -1,0 +1,129 @@
+id: CTL1-11
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tag T1218.003 is valid, cmstp.exe and the /s, /ns and .inf values are quoted in the
+  evidence, and it needs all three switches together, so a silent corporate VPN profile install (/s without
+  /ns) and a profile uninstall do not match.'
+expected_gate: none
+report_text: The intruder used the Connection Manager profile installer to execute a payload while bypassing
+  application control. Process telemetry showed cmstp.exe /s /ns C:\Users\Public\corp.inf, where the INF
+  file declared a UnRegisterOCXs section that loaded a remote scriptlet. The /s switch installs the profile
+  silently and /ns suppresses the desktop shortcut, so no dialog is displayed to the user. The cmstp.exe
+  binary is rarely used on normal corporate laptops because VPN profiles are deployed another way. Detection
+  should match cmstp.exe with the /s and /ns switches and an .inf file argument.
+evidence:
+- Process telemetry showed cmstp.exe /s /ns C:\Users\Public\corp.inf, where the INF file declared a UnRegisterOCXs
+  section that loaded a remote scriptlet
+- Detection should match cmstp.exe with the /s and /ns switches and an .inf file argument.
+logsource: windows_process_creation
+techniques:
+- T1218.003
+sigma_yaml: |
+  title: Cmstp Silent Install of INF Profile
+  id: 05a61418-d7ec-4305-a99b-c618e739b40b
+  status: experimental
+  description: 'Detects cmstp.exe run with the silent and no-shortcut switches and an INF file argument, a known proxy for code execution.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.003
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\cmstp.exe'
+    selection_cli:
+      CommandLine|contains|all:
+        - '/s'
+        - '/ns'
+        - '.inf'
+    condition: selection_img and selection_cli
+  falsepositives:
+    - 'Scripted deployment of connection profiles using both silent switches'
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\cmstp.exe
+    cmd: cmstp.exe /s /ns C:\Users\Public\corp.inf
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmstp.exe
+    cmd: cmstp.exe /au /s /ns C:\Windows\Temp\setup.inf
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\SysWOW64\cmstp.exe
+    cmd: cmstp.exe /ns /s \\files.cranemail.test\share\p.inf
+    parent: C:\Windows\System32\wbem\WmiPrvSE.exe
+    parent_cmd: C:\Windows\System32\wbem\WmiPrvSE.exe -secured -Embedding
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Users\alice\AppData\Local\Microsoft\OneDrive\OneDrive.exe
+    cmd: OneDrive.exe /background
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /query /fo LIST
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\cmstp.exe
+    cmd: cmstp.exe /u C:\Windows\System32\vpnprofile.inf
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmstp.exe
+    cmd: cmstp.exe /s C:\Program Files\Vendor\vpn.inf
+    parent: C:\Windows\System32\msiexec.exe
+    parent_cmd: msiexec.exe /i C:\Temp\app.msi /qn
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

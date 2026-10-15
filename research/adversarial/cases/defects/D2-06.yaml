@@ -1,0 +1,106 @@
+id: D2-06
+role: defective
+defect_class: D2
+evasive: true
+why: The references list is non-empty, but its only element is an empty string, so there is no URL or
+  urn reference. A check that only tests for a non-empty list would accept it; all other metadata and
+  the logic are valid.
+expected_gate: G2
+report_text: Alderwick incident, accounting workstation LAB-ACC-03. After phishing, the actor installed
+  a commercial remote access product named TetherDesk so that the operator could interact with the desktop
+  without custom malware. Network telemetry showed tetherdesk.exe opening outbound connections to the
+  relay address 198.51.100.61, which is not part of the vendor's published relay ranges and is attributed
+  to the actor's own relay server. The agent was installed under a user profile directory without administrator
+  rights and was configured to start at logon. The organisation does not license TetherDesk, and a software
+  inventory found no authorised installation anywhere in the estate before the incident.
+evidence:
+- tetherdesk.exe opening outbound connections to the relay address 198.51.100.61
+logsource: windows_network_connection
+techniques:
+- T1219
+sigma_yaml: |
+  title: TetherDesk Agent Connecting to Actor Relay Address
+  id: 0b7d5c32-e8a1-4296-a3f0-5d1c8e46b972
+  status: experimental
+  description: Detects the unlicensed TetherDesk remote access agent connecting to the actor relay observed in the Alderwick incident.
+  references:
+    - ''
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1219
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\tetherdesk.exe'
+      DestinationIp: '198.51.100.61'
+    condition: selection
+  falsepositives:
+    - Authorised use of TetherDesk is not expected because the product is not licensed
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Users\erin\AppData\Local\TetherDesk\tetherdesk.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.61
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Users\Public\tetherdesk.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.61
+    dest_port: '6568'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.80
+    dest_port: '993'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\Microsoft\Edge\Application\msedge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.9
+    dest_port: '443'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Program Files\Contoso Remote\crsupport.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.62
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\mstsc.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.30
+    dest_port: '3389'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

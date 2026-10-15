@@ -1,0 +1,118 @@
+id: CTL2-11
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid discovery rule with an image selection and a regular expression: nltest.exe and
+  the regex literals dclist, domain_trusts and dsgetdc all occur in the quoted evidence, T1018 is correct
+  for domain controller discovery, and help-desk nltest secure-channel checks are not matched. nltest.exe
+  is not among the baseline images (0 of 400).'
+expected_gate: none
+report_text: Within ten minutes of landing, the operator began enumerating the domain from an interactive
+  cmd.exe session. They ran nltest.exe /dclist:corp.example to list domain controllers, nltest /domain_trusts
+  to map trust relationships, and nltest /dsgetdc:corp.example to identify the nearest controller. The
+  commands were typed by hand and spaced a few seconds apart, which indicates a person rather than an
+  automated tool. Domain controller discovery is a typical precursor to lateral movement. Our baseline
+  shows nltest.exe is almost never run on workstations, and when help-desk staff do use it they run secure
+  channel checks such as nltest /sc_query, which are not discovery of other hosts.
+evidence:
+- They ran nltest.exe /dclist:corp.example to list domain controllers, nltest /domain_trusts to map trust
+  relationships, and nltest /dsgetdc:corp.example to identify the nearest controller
+logsource: windows_process_creation
+techniques:
+- T1018
+sigma_yaml: |
+  title: Domain Controller And Trust Discovery With Nltest
+  id: 0c47e9b5-a2d8-4136-8f0e-b69a31d7c511
+  status: experimental
+  description: Detects nltest.exe run with the dclist, domain_trusts or dsgetdc options, the manual domain controller and trust discovery seen in the reported intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.discovery
+    - attack.t1018
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\nltest.exe'
+    selection_args:
+      CommandLine|re: '.*\s/(dclist|domain_trusts|dsgetdc).*'
+    condition: all of selection*
+  falsepositives:
+    - Domain administrators listing domain controllers or trusts for troubleshooting
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\nltest.exe
+    cmd: nltest.exe /dclist:corp.example
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\nltest.exe
+    cmd: nltest /domain_trusts
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\nltest.exe
+    cmd: nltest /dsgetdc:corp.example /force
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c ipconfig /all
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c whoami
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\nltest.exe
+    cmd: nltest /sc_query:corp.example
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\nltest.exe
+    cmd: nltest /sc_verify:corp.example
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

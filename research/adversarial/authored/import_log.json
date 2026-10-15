@@ -1,0 +1,199 @@
+{
+ "authors": [
+  {
+   "file": "D2.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "D1.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "D3.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "D4.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "D5.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "D6.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "D7.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "D8.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "D9.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "D10.json",
+   "items": 7,
+   "kind": "cases"
+  },
+  {
+   "file": "CTL1.json",
+   "items": 12,
+   "kind": "cases"
+  },
+  {
+   "file": "CTL2.json",
+   "items": 12,
+   "kind": "cases"
+  },
+  {
+   "file": "INJA.json",
+   "items": 4,
+   "kind": "reports"
+  },
+  {
+   "file": "INJB.json",
+   "items": 4,
+   "kind": "reports"
+  },
+  {
+   "file": "INJD.json",
+   "items": 6,
+   "kind": "reports"
+  },
+  {
+   "file": "INJE.json",
+   "items": 2,
+   "kind": "reports"
+  }
+ ],
+ "empty_authors": 1,
+ "invalid": [],
+ "journal": "/root/.claude/projects/-home-user-ATIDEP/a074338b-21a9-52dc-846d-23ef7b0ce640/subagents/workflows/wf_dd3780b6-724/journal.jsonl",
+ "written": [
+  "defects/D2-01.yaml",
+  "defects/D2-02.yaml",
+  "defects/D2-03.yaml",
+  "defects/D2-04.yaml",
+  "defects/D2-05.yaml",
+  "defects/D2-06.yaml",
+  "defects/D2-07.yaml",
+  "defects/D1-01.yaml",
+  "defects/D1-02.yaml",
+  "defects/D1-03.yaml",
+  "defects/D1-04.yaml",
+  "defects/D1-05.yaml",
+  "defects/D1-06.yaml",
+  "defects/D1-07.yaml",
+  "defects/D3-01.yaml",
+  "defects/D3-02.yaml",
+  "defects/D3-03.yaml",
+  "defects/D3-04.yaml",
+  "defects/D3-05.yaml",
+  "defects/D3-06.yaml",
+  "defects/D3-07.yaml",
+  "defects/D4-01.yaml",
+  "defects/D4-02.yaml",
+  "defects/D4-03.yaml",
+  "defects/D4-04.yaml",
+  "defects/D4-05.yaml",
+  "defects/D4-06.yaml",
+  "defects/D4-07.yaml",
+  "defects/D5-01.yaml",
+  "defects/D5-02.yaml",
+  "defects/D5-03.yaml",
+  "defects/D5-04.yaml",
+  "defects/D5-05.yaml",
+  "defects/D5-06.yaml",
+  "defects/D5-07.yaml",
+  "defects/D6-01.yaml",
+  "defects/D6-02.yaml",
+  "defects/D6-03.yaml",
+  "defects/D6-04.yaml",
+  "defects/D6-05.yaml",
+  "defects/D6-06.yaml",
+  "defects/D6-07.yaml",
+  "defects/D7-01.yaml",
+  "defects/D7-02.yaml",
+  "defects/D7-03.yaml",
+  "defects/D7-04.yaml",
+  "defects/D7-05.yaml",
+  "defects/D7-06.yaml",
+  "defects/D7-07.yaml",
+  "defects/D8-01.yaml",
+  "defects/D8-02.yaml",
+  "defects/D8-03.yaml",
+  "defects/D8-04.yaml",
+  "defects/D8-05.yaml",
+  "defects/D8-06.yaml",
+  "defects/D8-07.yaml",
+  "defects/D9-01.yaml",
+  "defects/D9-02.yaml",
+  "defects/D9-03.yaml",
+  "defects/D9-04.yaml",
+  "defects/D9-05.yaml",
+  "defects/D9-06.yaml",
+  "defects/D9-07.yaml",
+  "defects/D10-01.yaml",
+  "defects/D10-02.yaml",
+  "defects/D10-03.yaml",
+  "defects/D10-04.yaml",
+  "defects/D10-05.yaml",
+  "defects/D10-06.yaml",
+  "defects/D10-07.yaml",
+  "controls/CTL1-01.yaml",
+  "controls/CTL1-02.yaml",
+  "controls/CTL1-03.yaml",
+  "controls/CTL1-04.yaml",
+  "controls/CTL1-05.yaml",
+  "controls/CTL1-06.yaml",
+  "controls/CTL1-07.yaml",
+  "controls/CTL1-08.yaml",
+  "controls/CTL1-09.yaml",
+  "controls/CTL1-10.yaml",
+  "controls/CTL1-11.yaml",
+  "controls/CTL1-12.yaml",
+  "controls/CTL2-01.yaml",
+  "controls/CTL2-02.yaml",
+  "controls/CTL2-03.yaml",
+  "controls/CTL2-04.yaml",
+  "controls/CTL2-05.yaml",
+  "controls/CTL2-06.yaml",
+  "controls/CTL2-07.yaml",
+  "controls/CTL2-08.yaml",
+  "controls/CTL2-09.yaml",
+  "controls/CTL2-10.yaml",
+  "controls/CTL2-11.yaml",
+  "controls/CTL2-12.yaml",
+  "injection/INJA-01.yaml",
+  "injection/INJA-02.yaml",
+  "injection/INJA-03.yaml",
+  "injection/INJA-04.yaml",
+  "injection/INJB-01.yaml",
+  "injection/INJB-02.yaml",
+  "injection/INJB-03.yaml",
+  "injection/INJB-04.yaml",
+  "injection/INJD-01.yaml",
+  "injection/INJD-02.yaml",
+  "injection/INJD-03.yaml",
+  "injection/INJD-04.yaml",
+  "injection/INJD-05.yaml",
+  "injection/INJD-06.yaml",
+  "injection/INJE-01.yaml",
+  "injection/INJE-02.yaml"
+ ]
+}

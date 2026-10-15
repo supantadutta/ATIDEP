@@ -1,0 +1,107 @@
+id: D9-05
+role: defective
+defect_class: D9
+evasive: false
+why: The regex matches any wmic.exe remote process creation (/node:<host> process call create) without
+  constraining the launched payload. A patch-management console running wmic.exe /node:APP01 process call
+  create on its own patch runner uses the same flags and is matched by the rule.
+expected_gate: G10
+report_text: Lateral movement from the compromised file server used built-in WMI tooling instead of a
+  remote shell. The operator ran wmic.exe /node:FS02 process call create C:\Users\Public\r.exe to start
+  the beacon on the second server, and repeated the pattern against four further hosts using the same
+  account. Because no service is installed on the target and no file share is touched beyond the staged
+  binary, there is little footprint besides the process creation itself. Defenders can recover the remote
+  hostname from the node argument, and the child process on the target is parented by WmiPrvSE.exe. The
+  staged binary was always named r.exe and was copied beforehand to the public profile directory of each
+  target.
+evidence:
+- wmic.exe /node:FS02 process call create C:\Users\Public\r.exe
+logsource: windows_process_creation
+techniques:
+- T1047
+sigma_yaml: |
+  title: WMIC Remote Process Creation Via Node Argument
+  id: 90d7a1e8-2b64-4f39-a8c5-6e13b7d4f209
+  status: experimental
+  description: Detects wmic.exe starting a process on a remote node, as used for lateral movement from the compromised file server
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1047
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\wmic.exe'
+      CommandLine|re: '/node:[^ ]+ process call create'
+    condition: selection
+  falsepositives:
+    - Unknown
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe /node:FS02 process call create C:\Users\Public\r.exe
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-files
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe /node:APP07 process call create C:\Users\Public\r.exe
+    parent: C:\ProgramData\Crane\beacon.exe
+    parent_cmd: C:\ProgramData\Crane\beacon.exe
+    user: LAB\svc-files
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe os get caption,version
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\PING.EXE
+    cmd: ping 192.0.2.10
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe /node:APP01 process call create "C:\Program Files\CranePatch\patchrun.exe /quiet"
+    parent: C:\Program Files\CranePatch\console\cpconsole.exe
+    parent_cmd: cpconsole.exe
+    user: LAB\patch-admin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe /node:APP01 product get name,version
+    parent: C:\Program Files\CranePatch\console\cpconsole.exe
+    parent_cmd: cpconsole.exe
+    user: LAB\patch-admin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

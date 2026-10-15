@@ -1,0 +1,109 @@
+id: D7-01
+role: defective
+defect_class: D7
+evasive: true
+why: The rule's only term is CommandLine containing 'cmd.exe /c' (ten characters, so it looks discriminating)
+  but this is the ordinary way to run a one-shot command; it matches the baseline's frequent benign 'cmd.exe
+  /c ipconfig /all' and 'cmd.exe /c whoami' executions among the 31 cmd.exe launches, far above the 2-event
+  limit.
+expected_gate: G11
+report_text: 'Incident Note CN-114, macro-enabled loader. The malicious attachment is a Word document
+  named invoice_q3.docm. On open, the macro does not call PowerShell at all. Instead the macro spawns
+  a command interpreter and chains the staging steps through it. Responders recovered the following invocation
+  from process telemetry: cmd.exe /c copy C:\Users\Public\cache.dat C:\ProgramData\Crane\svcupd.exe &&
+  start /b C:\ProgramData\Crane\svcupd.exe. The same pattern was seen on three hosts, always launched
+  with the /c switch and a chained command, and always as a child of winword.exe. The dropped binary establishes
+  persistence in a later stage that is covered in a separate note. Analysts assess that use of the Windows
+  command shell as the first execution step is deliberate, because the group has avoided PowerShell in
+  every intrusion since spring.'
+evidence:
+- cmd.exe /c copy C:\Users\Public\cache.dat C:\ProgramData\Crane\svcupd.exe && start /b C:\ProgramData\Crane\svcupd.exe
+- the macro spawns a command interpreter and chains the staging steps through it
+logsource: windows_process_creation
+techniques:
+- T1059.003
+sigma_yaml: |
+  title: Command Shell Executing a Command via cmd.exe /c
+  id: 3f6c1d52-8a41-4b7e-9c2a-5d0e7b91a4c3
+  status: experimental
+  description: Detects the Windows command shell running a chained one-shot command, as used by a macro loader that avoids PowerShell.
+  references:
+      - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+      - attack.execution
+      - attack.t1059.003
+  logsource:
+      category: process_creation
+      product: windows
+  detection:
+      selection:
+          CommandLine|contains: 'cmd.exe /c'
+      condition: selection
+  falsepositives:
+      - Administrative scripts and installers that run commands through cmd.exe
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c copy C:\Users\Public\cache.dat C:\ProgramData\Crane\svcupd.exe && start /b C:\ProgramData\Crane\svcupd.exe
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n C:\Users\bob\Downloads\invoice_q3.docm
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c copy C:\Users\Public\cache.dat C:\ProgramData\Crane\svcupd.exe && start /b C:\ProgramData\Crane\svcupd.exe
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n C:\Users\carol\Downloads\invoice_q3.docm
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: '"C:\Program Files\Google\Chrome\Application\chrome.exe" --profile-directory=Default'
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /k cd /d C:\Scripts
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: '"C:\Windows\System32\cmd.exe"'
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

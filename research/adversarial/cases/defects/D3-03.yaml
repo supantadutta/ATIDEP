@@ -1,0 +1,100 @@
+id: D3-03
+role: defective
+defect_class: D3
+evasive: true
+why: DnsQueryName differs from the allowed dns_query field QueryName only by the added prefix Dns; the
+  allowed fields for dns_query are exactly Image and QueryName, so DnsQueryName is an invented field.
+expected_gate: G5
+report_text: Analysts at the fictional Pennant Biologics security operations team reviewed DNS client
+  telemetry from a compromised file server. A PowerShell process repeatedly queried names under the zone
+  ledger-sync.pennantbio.invalid at fixed 60-second intervals, with the first label carrying base32-encoded
+  host data. These lookups were the only recurring external queries issued by powershell.exe on the host,
+  which otherwise performs no name resolution of its own. The operators used the zone as a low-bandwidth
+  command channel and read instructions from TXT answers. The beacon began shortly after a scheduled task
+  was added and continued until the host was isolated. Detection should key on powershell.exe resolving
+  any name under ledger-sync.pennantbio.invalid, because the zone has no legitimate business use and was
+  registered only days before the intrusion.
+evidence:
+- A PowerShell process repeatedly queried names under the zone ledger-sync.pennantbio.invalid at fixed
+  60-second intervals
+- Detection should key on powershell.exe resolving any name under ledger-sync.pennantbio.invalid
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: PowerShell Resolving Names Under Beacon Zone
+  id: 5d1a9e30-7c42-4e8b-8f16-a3b2c9047d5e
+  status: experimental
+  description: Detects powershell.exe resolving names under the zone used as a DNS command channel.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      DnsQueryName|endswith: 'ledger-sync.pennantbio.invalid'
+    condition: selection
+  falsepositives:
+    - Security researchers resolving the zone from a managed analysis host
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: mfrgg43fmzsxi.ledger-sync.pennantbio.invalid
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: nbswy3dpeb3w6.ledger-sync.pennantbio.invalid
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: wiki.pennantbio.test
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: time.pennantbio.test
+  lookalike:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: psgallery-mirror.pennantbio.test
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

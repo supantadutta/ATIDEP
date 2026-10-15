@@ -1,0 +1,139 @@
+id: CTL1-10
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tags match T1059.001 and T1027, powershell.exe and the encoded-command literal are
+  quoted in the evidence, and the regex needs an -e, -en, -enc or -encodedcommand switch followed by a
+  40+ character argument, so a short encoded one-liner, -ExecutionPolicy, -eq and -File invocations do
+  not match.'
+expected_gate: none
+report_text: Incident responders recovered the stager from a compromised workstation. It was started with
+  powershell.exe -nop -e followed by a single base64 argument of about 400 characters with no spaces inside
+  the blob. The encoding conceals the script content from simple command-line review. Short forms of the
+  -EncodedCommand switch such as -e, -en and -enc were all seen in the wild, so a rule keyed on the full
+  switch name misses them. Normal automation at this site passes scripts with -File or -Command and never
+  needs an encoded argument that long. Detection should match powershell.exe when an -e style switch is
+  followed by a base64 argument of at least 40 characters.
+evidence:
+- It was started with powershell.exe -nop -e followed by a single base64 argument of about 400 characters
+- Short forms of the -EncodedCommand switch such as -e, -en and -enc were all seen in the wild
+logsource: windows_process_creation
+techniques:
+- T1059.001
+- T1027
+sigma_yaml: |
+  title: Powershell Encoded Command With Long Base64 Argument
+  id: f4950307-c6db-42f4-988a-b507d628a30a
+  status: experimental
+  description: 'Detects powershell.exe started with an encoded command switch in a short or long form followed by a base64 argument of at least 40 characters.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.stealth
+    - attack.t1027
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\powershell.exe'
+    selection_cli:
+      CommandLine|re: '.*\s-e(n|nc|ncodedcommand)?\s+\S{40,}.*'
+    condition: selection_img and selection_cli
+  falsepositives:
+    - 'Management agents that pass long encoded scripts, to be reviewed individually'
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -e SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAn
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell -noni -enc JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAA=
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -w 1 -encodedcommand UwB0AGEAcgB0AC0AUAByAG8AYwBlAHMAcwAgAGMAYQBsAGMALgBlAHgAZQA=
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe //B C:\Users\alice\AppData\Local\Temp\inv.js
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\msiexec.exe
+    cmd: msiexec.exe /i C:\Temp\app.msi /qn
+    parent: C:\Windows\System32\services.exe
+    parent_cmd: services.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c ipconfig /all
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Scripts\backup.ps1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -enc VwBoAG8AYQBtAGkA
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -Command "Get-Service | Where-Object Status -eq Running"
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

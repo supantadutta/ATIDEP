@@ -1,0 +1,112 @@
+id: D3-02
+role: defective
+defect_class: D3
+evasive: true
+why: The rule matches on DestinationHostname, a field that exists in the public Sigma network_connection
+  specification but is not in this laboratory's allowed list for network_connection (Image, DestinationIp,
+  DestinationPort, Initiated); the report also gives the destination IP 203.0.113.77, which could have
+  been used with DestinationIp.
+expected_gate: G5
+report_text: Telemetry from the fictional Larkspur Logistics environment showed mshta.exe, which normally
+  never opens outbound sockets on these servers, connecting to the staging server relay-04.larkspur-cdn.test
+  on TCP port 8443 to retrieve an HTA payload. The staging server resolved to 203.0.113.77 at the time
+  of the incident. The connection was initiated by an mshta.exe process launched from a scheduled maintenance
+  script that had been altered. Analysts confirmed that mshta.exe was used only in this one case on the
+  affected hosts during the preceding ninety days, and that the destination hostname did not appear in
+  any proxy log before the intrusion. Defenders should alert when mshta.exe connects out to relay-04.larkspur-cdn.test,
+  since the process has no business reason to reach external infrastructure from these hosts. The payload
+  then launched a second-stage downloader.
+evidence:
+- mshta.exe, which normally never opens outbound sockets on these servers, connecting to the staging server
+  relay-04.larkspur-cdn.test on TCP port 8443
+- Defenders should alert when mshta.exe connects out to relay-04.larkspur-cdn.test
+- The staging server resolved to 203.0.113.77 at the time of the incident.
+logsource: windows_network_connection
+techniques:
+- T1218.005
+sigma_yaml: |
+  title: Mshta Outbound Connection To Staging Relay Host
+  id: c84f2a96-1e07-4b3d-a5d2-6f90b71c4e28
+  status: experimental
+  description: Detects mshta.exe opening a connection to the staging relay hostname used to retrieve an HTA payload.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.005
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\mshta.exe'
+      DestinationHostname|endswith: 'larkspur-cdn.test'
+    condition: selection
+  falsepositives:
+    - Administrators testing the staging relay from a managed workstation
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\mshta.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '8443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\SysWOW64\mshta.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '8443'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.10
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\Mozilla Firefox\firefox.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.24
+    dest_port: '443'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\mshta.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.15
+    dest_port: '80'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\mshta.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.16
+    dest_port: '8080'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

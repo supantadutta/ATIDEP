@@ -2,14 +2,14 @@
 
 ## Agentic Threat Intelligence and Detection Engineering Platform
 
-> **Project positioning:** ATIDEP is the technical solution: a governed, open-source pipeline that turns selected threat intelligence into validated, human-approved detection content for a laboratory Wazuh target. The research contribution is a controlled evaluation of that pipeline against a manual workflow and against a single-prompt LLM baseline. Cost is a secondary, descriptive dimension (see §2.4 and §22).
+> **Project positioning:** ATIDEP is the technical solution: a governed, open-source pipeline that turns selected threat intelligence into validated, human-approved detection content for a laboratory Wazuh target. The research contribution is a controlled evaluation of that pipeline on **two dimensions**: *technical effectiveness* against a manual workflow and a single-prompt LLM baseline, and *economic cost-effectiveness* against a manual workflow and a modelled paid configuration of the same functions. Both dimensions are measured or modelled from stated inputs; neither conclusion is assumed (see §2.4 and §22).
 
 **Program:** Professional Master's in Information and Cyber Security (PMICS)  
 **Institution:** University of Dhaka  
 **Project Type:** Master's Final Project in Cybersecurity  
 **Prepared for:** Supanta Dutta  
-**Document version:** 3.0 (supersedes 2.0, archived at `docs/archive/ATIDEP_Blueprint_v2.md`)  
-**Date:** 2 October 2026
+**Document version:** 3.1 (supersedes 2.0, archived at `docs/archive/ATIDEP_Blueprint_v2.md`; revised from 3.0 on 15 October 2026 for the two-dimension evaluation, change-log row 25)  
+**Date:** 2 October 2026 (3.0); 15 October 2026 (3.1)
 
 ---
 
@@ -37,14 +37,15 @@ v3 keeps the v2 architecture and governance ideas (evidence grounding, determini
 | 14 | H4 ("no significant reduction") is not equivalence. | **Non-inferiority test** with a pre-set margin. | 9, 29 |
 | 15 | H1's 30% was arbitrary; endpoint was wall-clock time. | Primary endpoint is analyst *active* minutes; threshold fixed from the pilot before the main run. | 9 |
 | 16 | H5 measured false positives on a strawman. | Public attack datasets for positives; a lab-generated benign baseline plus hand-built look-alikes. | 27.7 |
-| 17 | H6 compared against a commercial baseline that was never measured, and against a manual workflow with no software cost. | H6 is dropped. A **break-even analysis** replaces ROI %. | 22 |
+| 17 | H6 compared against a commercial baseline that was never measured, and against a manual workflow with no software cost. | H6 is dropped. A **break-even analysis** replaces ROI %. *Superseded in part by row 25: a modelled paid reference scenario is now defined and tested by H7.* | 22 |
 | 18 | LLM variance and training-data contamination ignored. | Pinned model, ≥3 runs per item, post-cutoff reports, SigmaHQ similarity check. | 27.9 |
 | 19 | Ground truth labelled by the system's builder alone. | Second labeler on a sample; Cohen's κ; labels frozen and hashed before the main run. | 27.3 |
 | 20 | Scope: 10 agents, 7 dashboard pages, 23 tables, 21 endpoints in 16 weeks, experiments in week 15. | Cut list, 5 components, 3 UI pages, 17 tables, freeze at end of week 12, experiments in weeks 13–15. | 10.3, 26 |
 | 21 | Security gaps. | SSRF guard, sandboxed document parsing, IOC refanging, benign-domain allowlist, verbatim-quote check, tool-less extraction model. | 19 |
 | 22 | "Environmental relevance", "potential impact" and source reliability were undefined. | Defined, with a synthetic organisation profile. | 17.2.5 |
 | 23 | Editorial: subsection numbers did not match sections; "a open-source" typo; success statement near-unfalsifiable; cost positioned as both secondary and central. | Renumbered; fixed; success split into engineering criteria and reported-either-way research outcomes; one cost lane. | throughout |
-| 24 | Cost story blurred between the solution and the paper, and "cost-effective with open source" was never defined measurably. | One cost story in two registers with a fixed interface; three pre-registered cost-effectiveness checks (C1-C3); a dedicated paper chapter; local-first inference with a cloud opt-in cap; an open-source claim audit. | 2.4, 22 |
+| 24 | Cost story blurred between the solution and the paper, and "cost-effective with open source" was never defined measurably. | One cost story in two registers with a fixed interface; three pre-registered cost-effectiveness checks (C1-C3); a dedicated paper chapter; local-first inference with a cloud opt-in cap; an open-source claim audit. *Superseded in part by row 25: the checks C1-C3 are replaced by E1-E3 and the pre-registered decision rule H7; "one cost lane" stays, but cost is no longer a secondary dimension.* | 2.4, 22 |
+| 25 | Cost was a "secondary, descriptive" dimension; no paid comparator was defined; "without significant spending" was asserted; `cost_rates.yaml` held invented numbers (an analyst rate, an electricity price, a hardware price) that the cost tab silently used; token usage did not record whether the provider or an estimate supplied it; local compute time was discarded; only a local model client existed. | **Two-dimension evaluation** (§2.2, §2.4, §6, §8 RQ8-RQ9, §9 H7): technical effectiveness and economic cost-effectiveness. A **modelled paid scenario** built from the same nine functions (FN1-FN9) by component substitution, never run, with technical performance assumed equal. A **pre-registered decision rule** (H7), outside the Holm family. Every price, rate, tariff and volume is **sourced or null**; unpriced items read exactly `Vendor quote required / public price unavailable`; an incomplete total is a lower bound and is never completed with zero. Usage provenance, compute time, a hosted-model client behind a spend cap, and four separate kinds of time are recorded (§22.2). Open source is not zero cost: twelve ledger categories keep licence, threat-intelligence data, infrastructure, hardware, electricity, storage, inference, analyst labour, maintenance, development, onboarding and other apart. | 2.2, 2.4, 2.5, 5-9, 10.2, 22, 23, 28, 29, 31, 34.2, 35, 38, 41, 42 |
 
 ### 0.2 How to read the status of claims about Wazuh
 
@@ -56,9 +57,9 @@ Wazuh and Sigma-tooling statements were checked against primary sources on 2 Oct
 
 This project will design, implement, and evaluate an **open-source Agentic Threat Intelligence and Detection Engineering Platform named ATIDEP**. The platform collects cyber threat intelligence from a small set of approved sources, normalises it, extracts evidence-linked indicators and adversary behaviours, calculates a transparent priority, decides whether the intelligence supports a defensible detection, generates Sigma rules (for behaviours) or Wazuh CDB lists (for indicators), validates the generated content through hard gates and tests, and prepares human-approved detections for controlled deployment to a laboratory Wazuh manager.
 
-After deployment or simulation, ATIDEP collects detection results and analyst dispositions and recommends rule improvements that go back through validation and approval. Lightweight instrumentation records analyst time, model usage, and resource use so that effort and cost can be analysed in the research paper.
+After deployment or simulation, ATIDEP collects detection results and analyst dispositions and recommends rule improvements that go back through validation and approval. Lightweight instrumentation records analyst time, model usage (with where each count came from), local compute time and resource use, so that effort and cost can be analysed in the research paper in physical units and, under stated and sourced inputs, in money.
 
-The project compares three conditions under a pre-registered protocol: a **manual** detection-engineering workflow, the **full ATIDEP workflow** with human review, and a **single-prompt LLM baseline** with no pipeline. Outcomes are analyst effort, rule validity, independently judged rule quality, detection behaviour on held-out events, safety-gate effectiveness, and cost.
+The project compares three conditions under a pre-registered protocol: a **manual** detection-engineering workflow, the **full ATIDEP workflow** with human review, and a **single-prompt LLM baseline** with no pipeline. Outcomes on the technical dimension are analyst effort, rule validity, independently judged rule quality, detection behaviour on held-out events and safety-gate effectiveness. On the economic dimension the outcomes are unit costs of the workflow under named workloads, compared with the manual workflow and with a modelled paid configuration by a pre-registered decision rule.
 
 ATIDEP is not intended to replace analysts. It automates repetitive steps, preserves evidence traceability, explains its recommendations, and keeps every deployment decision under human and policy control.
 
@@ -85,7 +86,11 @@ Collect CTI
 
 ### 2.2 Research evaluation
 
-The paper evaluates ATIDEP on extraction accuracy, detection-opportunity accuracy, ATT&CK mapping accuracy, rule validity (first-pass and post-repair), independently judged rule quality, detection on held-out events, false-positive behaviour on benign events, safety-gate effectiveness against seeded defects and prompt injection, analyst effort, resource utilisation, and (descriptively) cost.
+The paper evaluates ATIDEP on **two dimensions**.
+
+**Technical effectiveness:** extraction accuracy, detection-opportunity accuracy, ATT&CK mapping accuracy, rule validity (first-pass and post-repair), independently judged rule quality, detection on held-out events, false-positive behaviour on benign events, safety-gate effectiveness against seeded defects and prompt injection, analyst effort and resource utilisation.
+
+**Economic cost-effectiveness:** the cost of the detection-engineering workflow, in physical quantities (tokens, hours, kilowatt-hours, gigabytes) and, under stated and sourced inputs, in money, per report processed, per detection generated, per detection that passed every gate, per detection approved and per detection deployed, under named monthly workloads. It is compared with the manual workflow and with a modelled paid configuration of the same functions (§2.4, §22), and it is read together with the technical results (§22.6, §38).
 
 ### 2.3 Binding scope decision
 
@@ -93,20 +98,34 @@ The minimum viable product uses **Python, FastAPI, Streamlit, SQLite, Sigma, MIT
 
 ATIDEP is agentic but not dangerously autonomous. LLM agents may extract, reason, draft, and recommend, but they have no tools, cannot execute anything, and cannot deploy. Deployment requires passing every hard gate plus a recorded human approval bound to the exact rule content. The platform never executes model-generated commands.
 
-### 2.4 Cost-positioning decision (one story, two registers)
+### 2.4 Cost-effectiveness decision (the second evaluation dimension)
 
-Cost-effectiveness is part of the project's purpose: the claim is that a fully open-source pipeline can do this job without significant spending. To stop the solution and the paper from blurring into each other, cost is organised as **one story told in two registers, with a fixed interface**.
+Cost-effectiveness is a **main research objective**, not an operational footnote. The question is: *can a predominantly open-source, automated detection-engineering workflow deliver strong, practically useful technical performance at substantially lower cost than a comparable paid configuration?* The answer is whatever the measurements and the cost model show. It is not assumed, and every direction of result is reported: cheaper and adequate, cheaper but technically weaker, equally priced, costlier, or not evaluable for want of inputs.
 
-| | Solution (project plan) | Paper |
+**Open source is not zero cost.** The cost model separates twelve ledger categories: software licence, threat-intelligence data, compute infrastructure, hardware, energy, storage, model inference, analyst labour, maintenance and operations, development (one-off build effort, build view only), onboarding (one-off setup for an adopting organisation) and other. Licence fees can be zero while most of the others are not.
+
+**Scenarios.** All are expressed over the same nine functions (FN1 intelligence sources, FN2 ingest and processing, FN3 language-model reasoning, FN4 validation and conversion, FN5 detection platform, FN6 orchestration, interface and audit, FN7 infrastructure, FN8 analyst review and approval, FN9 maintenance and operations), so that they are functionally comparable rather than unrelated product lists.
+
+| Scenario | What it is | Status |
 |---|---|---|
-| Role | Constraint and measurement: be cost-aware by construction | Research dimension: analyse, and be explicit about assumptions |
-| Contains | Open-source-only stack with a bill of materials and licence audit; local-first inference with cloud as an opt-in under a hard daily cap; timers, tokens, CPU/RAM and API-call records; running totals in one UI tab; CSV/SQLite export | Cost analysis (TCO in build and adopt views, unit economics, break-even, sensitivity); cost awareness (hidden-cost register, stated assumptions, where the conclusion fails); the cost-effectiveness verdict (C1-C3, §22.6) |
-| Lives in | §13, §22.1-22.2, §22.7, §23, `policies.yaml` | Chapter 8 of the paper (§34.2, §22.8), Section 2.8 of the paper's literature review, the method chapter's cost section, threats to validity |
-| Never contains | Cost modelling, ROI, price-comparison logic | Claims that were not measured |
+| **S-MANUAL** | Experimental condition A: ordinary tools, no language model | analyst time measured |
+| **S-OSS-LOCAL** | Condition B as built: open-source stack, local open-weight model | measured |
+| **S-OSS-API** | Condition B's pipeline on a paid hosted model | measured only if that arm is run (a spend cap applies); otherwise not costed |
+| **S-PAID** | The same nine functions rebuilt by component substitution with paid components where a paid product exists: a hosted model API, pay-per-use cloud compute and storage, and, in the platform perimeter, a commercial detection platform | a **modelled counterfactual**, never run; its technical performance is **assumed** equal to S-OSS-LOCAL (or to S-OSS-API where that arm is run) |
 
-**Interface.** The paper consumes only (a) the exported effort and cost records and (b) the versioned `config/cost_rates.yaml`. The application computes nothing beyond running totals and the budget cap. Everything else is done offline and can be re-run from the exported data.
+The loader refuses a scenario that silently omits a function: each one carries a cost line or a reasoned `not_required` entry. Free open components that a buyer would reuse unchanged stay free in S-PAID. Things a paid product offers that ATIDEP does not claim (vendor support and service levels, curated content, certifications, liability) are **not priced**; they are listed in the paper in a table of non-monetised differences, each with the direction in which it biases the comparison.
 
-**What "cost-effective" means here.** Three pre-registered, descriptive checks (§22.6): C1, an open-source stack with a measured cash outlay; C2, a lower adopt-view cost per accepted rule than the manual workflow; C3, a reported break-even volume with sensitivity analysis. Analyst labour is expected to dominate cost, so the verdict depends mainly on the measured efficiency result (H1) and the documented rates. The thesis does not claim that the open-source stack is cheaper than any commercial platform, because no commercial baseline is measured.
+**Perimeters.** The **primary** perimeter is the *workflow* (functions that turn intelligence into reviewed detections, without the detection platform): a smaller commercial total is conservative against ATIDEP. The *platform* perimeter adds FN5 and is reported as a scenario table without a verdict, because ATIDEP's converter and gates are Wazuh-specific and a different platform would also need porting.
+
+**Inputs are sourced or null.** No commercial price, labour rate, electricity tariff, hardware price, exchange rate or workload volume is invented. Each comes from a cited source with the date it was checked, or it is `null`. The **price register** (`config/price_register.yaml`) keeps, per entry: vendor and product or service, pricing source, URL, date checked, currency, billing unit, included usage, selected tier, workload assumption, calculated cost, and notes and limitations. A candidate with no public price is recorded as **`Vendor quote required / public price unavailable`**, never as zero and never estimated. The coordinator, not the code, names the commercial candidates and writes the adequacy test they must meet *before* any price is looked up; the **base** price case is the lowest *calculated* cost among adequate priced candidates (conservative against ATIDEP) and the **upper** case the highest. Labour rates (analyst and engineer) are configurable, sourced and have no default.
+
+**Totals can be incomplete.** A total with a missing rate, an unpriced product or an unmeasured quantity is reported as a **lower bound** with the list of what is missing. It is never completed with zero. The decision rule (H7) states what each combination of complete and bounded sides can and cannot conclude (§22.6).
+
+**Interface.** The application records physical quantities (tokens with their provenance, compute time, four kinds of time, approvals, deployments) and enforces a spend cap; it computes no money. The offline package `research.economics` combines the exported records with four versioned files (`config/cost_rates.yaml`, `config/price_register.yaml`, `config/cost_scenarios.yaml`, the `economics:` block of `config/experiment.yaml`) and can be re-run by anyone from the exports. The paper reports measured and assumed quantities in separate columns.
+
+**What "cost-effective" means here.** Three pre-registered descriptive analyses (E1 to E3, §22.6) and one pre-registered decision rule (H7, §9, §22.6), read together with technical adequacy in a joint assessment whose wording is fixed in advance (§38). The assessment never states that ATIDEP is equivalent to, or as good as, a paid system: the paid side is a modelled counterfactual.
+
+**Not claimed.** That ATIDEP is cheaper than any commercial product that was not priced; that a paid configuration performs as well as ATIDEP; anything about volumes or labour rates that no one supplied; or any saving beyond what measured quantities and sourced inputs support.
 
 ### 2.5 Success criteria
 
@@ -114,7 +133,7 @@ Success is split so that the thesis does not depend on the direction of the resu
 
 **Engineering success** is achieved when the acceptance criteria in §31 are met (the artifact works, is auditable, and cannot deploy an unvalidated or unapproved rule).
 
-**Research outcome** is whatever the pre-registered analysis (§29) shows for each hypothesis in §9, **reported in either direction**. The project claims the following only if the data support it: under documented laboratory assumptions, a governed open-source workflow reduced analyst active effort per item (H1) with rule quality not worse than manual by more than the pre-set margin (H4), while the gates blocked every seeded defective rule (H3). A hypothesis that is not supported is a finding, not a failure of the project.
+**Research outcome** is whatever the pre-registered analysis (§29) shows for each hypothesis in §9, **reported in either direction**, on both dimensions. On the technical dimension the project claims the following only if the data support it: under documented laboratory assumptions, a governed open-source workflow reduced analyst active effort per item (H1) with rule quality not worse than manual by more than the pre-set margin (H4), while the gates blocked every seeded defective rule (H3). On the economic dimension it claims a cost advantage only if the pre-registered rule H7 is supported, with all inputs sourced, and then only in the capped wording of §38. A hypothesis that is not supported is a finding, not a failure of the project. A zero-escape result for H3 is a security objective, not an outcome to be forced; an escape is reported with its case and cause.
 
 ---
 
@@ -152,9 +171,9 @@ Security teams normally perform these activities by hand:
 10. Test and deploy approved content.
 11. Monitor results and tune rules.
 
-These tasks are repetitive, time-consuming, and dependent on experienced personnel. Commercial platforms automate parts of the process, but licensing, integration, infrastructure, and support costs can be difficult for resource-constrained organisations.
+These tasks are repetitive, time-consuming, and dependent on experienced personnel. Commercial platforms automate parts of the process, but licensing, integration, infrastructure, and support costs can be difficult for resource-constrained organisations. Whether that difference is large, small or absent for a given workload is an empirical question that depends on prices, labour rates and volumes, none of which this project assumes.
 
-This project investigates whether a governed agentic workflow built mainly from open-source components can operationalise threat intelligence with less analyst effort, while maintaining rule quality, evidence traceability, and human oversight.
+This project investigates whether a governed agentic workflow built mainly from open-source components can operationalise threat intelligence with less analyst effort, while maintaining rule quality, evidence traceability, and human oversight, and whether, on measured quantities and sourced inputs, it does so at a substantially lower cost than a comparable paid configuration of the same functions.
 
 ---
 
@@ -168,7 +187,7 @@ A language model can assist with extraction and rule drafting, but an unconstrai
 
 ## 6. Research Aim
 
-To design, implement, and experimentally evaluate an open-source platform, ATIDEP, that transforms heterogeneous cyber threat intelligence into prioritised, explainable, validated, and human-approved detection content, and to determine the effect of its workflow and controls on analyst effort, rule quality, and safety relative to manual and single-prompt baselines.
+To design, implement, and experimentally evaluate an open-source platform, ATIDEP, that transforms heterogeneous cyber threat intelligence into prioritised, explainable, validated, and human-approved detection content, to determine the effect of its workflow and controls on analyst effort, rule quality, and safety relative to manual and single-prompt baselines, and to determine from measured quantities and a stated, sourced cost model whether it delivers that performance at a substantially lower cost than a manual workflow and a modelled paid configuration of the same functions.
 
 ---
 
@@ -186,8 +205,9 @@ To design, implement, and experimentally evaluate an open-source platform, ATIDE
 10. Convert a documented Sigma subset to Wazuh rules and test them at two tiers.
 11. Implement approval, versioning, rollback, and a tamper-evident audit trail.
 12. Evaluate alerts and recommend tuning, retirement, or enrichment.
-13. Record effort, model usage, and resource use sufficient for offline cost analysis.
+13. Record effort, model usage (with the provenance of each token count), local compute time, and resource use sufficient for offline cost analysis, keeping analyst active time, automated execution time, model inference time and wall-clock time apart.
 14. Compare the workflow with a manual workflow and a single-prompt LLM baseline under a pre-registered, bias-controlled protocol.
+15. Build an offline economic-evaluation model (sourced inputs, a price register, functionally comparable scenarios, a cost ledger, normalised unit costs, sensitivity and tipping-point analysis) and evaluate cost-effectiveness against the manual workflow and a modelled paid configuration by a pre-registered decision rule, without inventing any price, rate or volume.
 
 ---
 
@@ -195,7 +215,7 @@ To design, implement, and experimentally evaluate an open-source platform, ATIDE
 
 ### Main research question
 
-> To what extent does a governed, open-source agentic workflow reduce the analyst effort needed to turn cyber threat intelligence into validated, deployable detection content, without reducing independently judged rule quality or operational safety, and how much of the result is attributable to the pipeline's structure and validators rather than to the language model alone?
+> To what extent does a governed, open-source agentic workflow reduce the analyst effort needed to turn cyber threat intelligence into validated, deployable detection content, without reducing independently judged rule quality or operational safety; how much of the result is attributable to the pipeline's structure and validators rather than to the language model alone; and what does the workflow cost, per unit of detection content and under stated workloads, relative to a manual workflow and to a modelled paid configuration of the same functions?
 
 ### Supporting research questions
 
@@ -207,9 +227,12 @@ To design, implement, and experimentally evaluate an open-source platform, ATIDE
 6. How does rule quality, judged blind by independent raters and measured on held-out events, compare between manual, ATIDEP, and single-prompt conditions?
 7. Does feedback-based tuning reduce false positives on benign events while retaining true-positive detections?
 
-### Secondary (descriptive) research question
+### Supporting research questions: economic dimension
 
-8. Is the open-source workflow cost-effective under the three pre-registered checks of §22.6 (open-source stack and cash outlay, cost per accepted rule against the manual workflow, and break-even volume), and how sensitive is that conclusion to its assumptions?
+8. What does the workflow cost, in physical quantities and in money, per report processed, per detection generated, per detection that passes every hard gate, per detection approved and per detection deployed, under named monthly workloads, and how does that compare with the manual workflow? Which cost categories dominate, and how much of each figure is measured, supplied from a cited source, assumed, or still missing?
+9. When the workflow is technically adequate (H2, H3 and H4 of §9), is it substantially cheaper than a modelled paid configuration of the same functions under the pre-registered decision rule (H7), and which assumptions (labour rate, volume, price case, hardware, review time) would reverse that conclusion?
+
+RQ8 and RQ9 are not "secondary" in importance: they are the second evaluation dimension (§2.4). They are separated from RQ1-RQ7 because their answers rest on a cost model with sourced inputs rather than on a statistical test of sampled outcomes.
 
 ---
 
@@ -217,23 +240,39 @@ To design, implement, and experimentally evaluate an open-source platform, ATIDE
 
 All thresholds below marked **(pilot-fixed)** are set from the pilot set, written into `config/experiment.yaml`, and committed (git tag `prereg-v1`) **before** the main run. They are not changed afterwards.
 
-**Confirmatory (primary) hypotheses**: tested with Holm correction at family-wise α = 0.05 (§29).
+The hypotheses fall into three groups. **Technical confirmatory** (H1, H4) are tested with Holm correction. **Technical secondary** (H2, H3, H5, H6) are estimated with intervals. The **economic decision rule** (H7) is pre-registered but is not a significance test and sits outside the Holm family. Exploratory economic analyses E1-E3 follow.
+
+**Technical confirmatory (primary) hypotheses**: tested with Holm correction at family-wise α = 0.05 (§29).
 
 - **H1 (efficiency).** The ATIDEP workflow reduces the median analyst *active* minutes per item to final disposition (accepted rule, or documented rejection) by at least δ_t relative to the manual workflow. δ_t is pilot-fixed; the provisional value is 30%. Supported if the estimated median relative reduction is ≥ δ_t and the one-sided 95% bootstrap lower bound is above 0.
 - **H4 (quality non-inferiority).** The mean blinded rubric score of ATIDEP-approved rules is not lower than that of manual rules by more than Δ_q (pilot-fixed; provisional 0.5 on a 5-point scale). Tested as non-inferiority (equivalently TOST's lower arm), not as "no significant difference".
 
-**Secondary hypotheses**: reported with effect sizes and confidence intervals; no claim of significance beyond the confirmatory family.
+**Technical secondary hypotheses**: reported with effect sizes and confidence intervals; no claim of significance beyond the confirmatory family.
 
 - **H2 (structural validity).** At least 80% of rules generated for items labelled detectable are Sigma-schema-valid and convertible within the Wazuh-compatible subset before human editing, after at most two automated repair attempts. First-pass validity (no repair) is reported alongside.
 - **H3 (gate effectiveness).** On the seeded defective-rule set and the prompt-injection report set (§27.6), no defective rule reaches *Approved* or *Deployed*, and no injection attempt causes an unsupported claim, a benign-allowlisted indicator, or a validation bypass to be accepted. Reported with an exact upper confidence bound on the escape rate and per-defect-class recall.
 - **H5 (pipeline contribution).** The full pipeline produces a higher rate of rules that pass every hard gate and a higher blinded rubric score than the single-prompt baseline using the same model and the same information; removing the validators lets defective rules through at a measurable rate.
 - **H6 (feedback).** For seeded rules with known benign-trigger patterns, applying the approved improvement recommendations reduces false-positive alerts on the held-out benign corpus by at least a pilot-fixed fraction (provisional 50%) while retaining at least 90% of true-positive detections on held-out positive events.
 
-**Exploratory analysis (no hypothesis).**
+**Technical adequacy (derived, not a separate test).** ATIDEP is *technically adequate* when H2 (structural validity at least 80%), H3 (no defective rule reaches Approved or Deployed) and H4 (quality non-inferior to manual) are all supported. It is *not met* if any one of them fails, and *unknown* until all three are measured and none has failed. "Technically strong", in the sense of the question in §2.4, means exactly this and nothing broader. The criteria are fixed here, before any result; they are not adjusted to suit the cost outcome.
 
-- **E1 (cost-effectiveness).** The three descriptive checks C1-C3 of §22.6, with the supporting unit costs and break-even volume under stated scenarios. Reported with bootstrap intervals and sensitivity analysis; no additional hypothesis test is made.
+**Economic decision rule (pre-registered; outside the Holm family).**
 
-v2's H6 (open-source workflow cheaper than "an equivalent manually operated or commercial workflow") is removed: the manual workflow has no software cost, so the claim was trivially true, and no commercial baseline was ever measured.
+- **H7 (cost advantage).** At the **primary cell** (the one named primary workload, the adopt view, the base price case, the workflow perimeter), the monthly *differential cost* of the open-source configuration, **O** (S-OSS-LOCAL), is at most (1 − δ_c) times that of the modelled paid configuration, **P** (S-PAID): **O ≤ (1 − δ_c) · P**. The differential cost is the *technology cost* (every priced line except analyst review) plus the *operating labour* that differs between the scenarios (maintenance, administration and setup hours multiplied by the engineer rate). Analyst review time is common to the automated scenarios, so it cancels; it is excluded from the comparison and reported in hours beside it. δ_c is the coordinator's threshold for "substantially cheaper", written with its rationale before the freeze (`economics.delta_c_pct`, `economics.delta_c_rationale`); the primary workload is named by the coordinator in the same way. Until both are set, H7 is *not evaluable*.
+- **Why a decision rule and not a test.** The paid side is a modelled counterfactual: its uncertainty is dominated by prices, rates and assumptions, not by sampling. A p-value over sampled items would attach a statistical meaning to a quantity that is not sampled. A descriptive stratified BCa bootstrap over items gives an interval for the measured quantities on the open-source side and is labelled descriptive.
+- **Incomplete totals.** Either total may be only a lower bound when an input is missing. The rule then concludes only what a bound allows: *O complete, P a lower bound* → supported if O already meets the threshold against that lower bound, otherwise inconclusive; *O a lower bound, P complete* → not supported if O already exceeds the threshold, otherwise inconclusive; *both lower bounds* → inconclusive. A missing input is never replaced by zero.
+- **Robustness.** H7 is also evaluated at every workload × view × price case; it is labelled **robust** only if it holds in every cell where it can be evaluated and **conditional** otherwise, with the failing cells listed. The engineer rate at which the verdict flips, and the paid total at which it would flip, are reported.
+- **Wording.** A supported H7 means "O met the pre-registered threshold against the modelled counterfactual P". It never means the paid systems perform equally well, because P's technical performance is assumed, not measured.
+
+**Exploratory economic analyses (descriptive; no hypothesis test, no multiplicity correction).** They replace the v3.0 checks C1-C3.
+
+- **E1 (cost composition and open-source audit).** The bill of materials with each component's licence (`tools/licence_audit.py`), the pinned model's licence and its classification against the Open Source AI Definition 1.0 (an open-weight model is not "open-source AI" unless data information and code are also disclosed, so the stack is described as *an open-source software stack with an open-weight model* unless the model qualifies), measured cash outlay over the whole experiment by locality (local, hosted), and the cost by ledger category, with the share of every total that is measured, supplied, assumed or still missing.
+- **E2 (normalised unit costs).** Per report processed, per detection generated, per valid detection (every hard gate passed), per approved detection, per deployed detection and per experimental run; analyst minutes per detection; language-model inference cost per report and per detection; monthly and annual cost under the named workloads. Reported for S-MANUAL, S-OSS-LOCAL and S-PAID (and S-OSS-API if run), each cell marked complete or a lower bound. A unit cost is *undefined* (not zero) when its denominator was not measured.
+- **E3 (break-even, sensitivity, tipping points).** Break-even volume against the manual workflow, a one-way sensitivity (tornado) analysis over rates, task times, review share, model price, hardware life and maintenance hours, the price-case range, and the points at which a verdict flips.
+
+**Joint assessment (derived; wording fixed in §38).** Technical adequacy and H7 are read together: adequate and substantially cheaper; adequate but not substantially cheaper; cheaper but technically inferior; neither; or not evaluable. Every outcome carries the statement that the paid side is a modelled counterfactual and that no parity with any paid system is established.
+
+v2's H6 (open-source workflow cheaper than "an equivalent manually operated or commercial workflow") was removed in v3.0 because the manual workflow has no software cost and no commercial baseline had been defined. In v3.1 the question returns in a form that can be answered: a defined paid scenario built from the same functions, sourced inputs and a decision rule fixed in advance.
 
 ---
 
@@ -252,7 +291,7 @@ v2's H6 (open-source workflow cheaper than "an equivalent manually operated or c
 - Wazuh rule conversion, `logtest`, and export/dry-run/lab deployment through the Wazuh API.
 - Human approval, versioning, rollback, tamper-evident audit.
 - Alert-quality evaluation and improvement recommendations.
-- Effort and cost instrumentation.
+- Effort, usage and resource instrumentation (physical quantities, with the provenance of each token count), and an offline economic-evaluation model with sourced inputs (§22).
 
 ### 10.2 Excluded
 
@@ -262,7 +301,9 @@ v2's H6 (open-source workflow cheaper than "an equivalent manually operated or c
 - Real malware execution.
 - Customer or production data.
 - Full OpenCTI/MISP deployment, enterprise high-availability architecture.
-- Claims that laboratory findings prove universal superiority over commercial platforms.
+- Claims that laboratory findings prove universal superiority over commercial platforms, or parity with any paid system.
+- Running, installing or benchmarking any commercial product.
+- Any invented commercial price, labour rate, tariff, exchange rate or workload volume. An input that no one has sourced stays `null` or reads `Vendor quote required / public price unavailable`.
 
 ### 10.3 Deferred and cut (explicitly out of the 16-week plan)
 
@@ -276,7 +317,8 @@ v2's H6 (open-source workflow cheaper than "an equivalent manually operated or c
 | 10 "agents" | 10 | 5 components, 4 LLM agents | Six were deterministic stages. |
 | 21 API endpoints | 21 | ≈15 | Experiments run from scripts, not the API. |
 | 23 database tables | 23 | 15 | Merged claims, versions, and records. |
-| ROI percentage, commercial price comparison | in cost framework and H6 | removed | Not measurable here (§22). |
+| ROI percentage | in cost framework | removed | Replaced by unit costs and break-even (§22). |
+| Commercial price comparison | in cost framework and H6 | v3.0: removed. v3.1: returns as a **modelled paid scenario** with sourced inputs and a pre-registered decision rule (H7) | A comparison with a commercial product is wanted as a research dimension (row 25); it is made without running any product, without invented prices and without claiming parity (§2.4, §22). |
 | Live Windows agent end-to-end test | none | optional Tier 3 | Only if spike S1 shows logtest cannot simulate Windows events. |
 
 ### 10.4 Priority tiers (used to decide what to cut under schedule pressure)
@@ -1025,89 +1067,110 @@ Each spike has a time box, pass criteria, and a recorded decision (ADR). Results
 
 ---
 
-## 22. Cost Awareness and Cost Analysis
+## 22. Cost Awareness and Economic Evaluation
 
 ### 22.1 Division of responsibility
 
-The division and the interface are fixed in §2.4. In short: the application records and enforces (§22.2, §22.7); the paper analyses and judges (§22.3-22.6, §22.8). No research claim depends on a price comparison with a commercial platform. If one is wanted, it appears as an appendix labelled *illustrative, based on published list prices, not measured*, and only if the prices can be verified from the vendors' own publications.
+The division and the interface are fixed in §2.4. In short: the **application records physical quantities and enforces a spend cap** (§22.2, §22.7); the **offline package `research.economics` models money** from those records and from four versioned, sourced input files (§22.3-22.6); the **paper judges** (§22.8). The application computes no money. Anyone can re-run the whole evaluation from the exports (`python -m research.economics check` lists what is still missing; `python -m research.economics report` writes the tables). No number in the repository is a price, rate, tariff or volume that someone invented: every value is sourced and dated or is `null`.
 
-### 22.2 Recorded cost events
+### 22.2 What is recorded (measurement)
 
-Every stage emits a record: run ID, item ID, component, start/end, duration, CPU and memory estimate (sampled), API calls, input/output tokens, model price snapshot, analyst minutes (from the timer), infrastructure allocation, result status.
+Every unit of work leaves a record that keeps the following apart and never adds them together:
 
-### 22.3 Total cost of ownership (offline)
+| Kind of time or quantity | Where it comes from | Note |
+|---|---|---|
+| **Analyst active time** | the analyst timer, per item, condition and activity | heartbeat every 30 s while the page is open; auto-pause after an idle limit of 120 s; time lost to idle gaps is counted and reported (`idle_capped_seconds`, `idle_capped_gaps`); each session ends in a disposition (accepted, rejected, in progress); platform upkeep is timed on an item-less `operations` activity and kept out of per-item review time |
+| **Automated execution time** | machine time of the pipeline stages | per stage; excludes model wait |
+| **Model inference time** | the model call's wait, and for a local model the server's reported compute time | separate from the above |
+| **Wall-clock time** | start to end of the run or session | reported, never summed with the others |
+| **Tokens** | each model call: input, output, and `usage_source` = `provider`, `provider_partial`, `estimated` or `unknown` | an estimate is never presented as a provider count; a repeated identical request is probed once to see whether a caching server under-reports input tokens |
+| **Demand versus fresh spend** | replayed calls cost nothing but their tokens are kept as *demand* | experiments are not paid for twice, and the demand is still known |
+
+Further rules: a **failed run keeps what it spent** (intention to treat); a run stopped by the spend cap is recorded as `budget_exceeded` and is **missing data**, not a model failure; approvals and lab deployments are counted from the live application database, model usage and machine time from the experiment's results database, and the two are joined by the SHA-256 of the item's raw content so that one ratio never mixes two sources; production usage per item is the mean over that item's condition-B runs (one reviewed run per item is what an adopter would pay for), and the additional runs, the ablations and the single-prompt baseline are reported apart as research overhead. A hosted model is reached only through a client that refuses plain-HTTP remote endpoints and redirects, never prints the key, and sits behind a replay store and a hard spend cap (§22.7).
+
+### 22.3 The cost model
+
+Costs are assembled in a **ledger** from lines, each tied to one of the nine functions FN1-FN9 (§2.4) and to one of twelve categories (software licence, threat-intelligence data, compute infrastructure, hardware, energy, storage, model inference, analyst labour, maintenance and operations, development, onboarding, other). A line has a *driver* (monthly, analyst hours, energy kWh, storage GB, fixed hours, tokens) that must match its billing unit; a mismatch is refused when the files load. One-off lines (development in the build view, adoption setup, integration) are spread straight-line over the horizon without discounting; horizons of 12, 24 and 36 months are reported.
+
+- **Views.** *Adopt* (primary): an organisation reusing the finished artifact: setup, administration, review time and inference. *Build*: adds the one-off development hours.
+- **Perimeters.** *Workflow* (primary) and *platform* (adds FN5), as in §2.4.
+- **Hardware.** `Allocated hardware = purchase price × project usage share ÷ useful life (months)` per host-month. The number of hosts is a step function of the machine hours needed (`ceil(hours ÷ (730 × usage share))`), so a heavy workload is charged for the extra hosts it needs. Electricity attributes the whole loaded draw measured with a plug-in meter to the work (idle draw is not subtracted), which errs against ATIDEP.
+- **Local inference** is not a separate free line: it is the hardware and electricity used while the model works, shown as a view of those lines so nothing is counted twice. **Hosted inference** is metered tokens × the register's price.
+- **Missing is missing.** A line with an unset rate, an unpriced product or an unmeasured quantity makes its total *incomplete*; the total is a **lower bound** and lists what is missing. A ratio with a missing numerator or denominator is *undefined*, never zero.
+- **Evidence shares.** Every total is split by basis of evidence: *measured*, *supplied from a cited source*, *assumed* and *quote required*, so a reader sees how much of a number rests on what.
+- **Equivalence assumptions** (reported, not hidden): the paid scenario needs the same analyst review minutes as the open-source one; operating hours are equal unless the register says a managed service removes some; the technical performance of S-PAID is assumed equal. The analysis reports the operating hours at which these assumptions would flip the verdict.
+
+### 22.4 Inputs and the price register
+
+| File | Holds | Rule |
+|---|---|---|
+| `config/cost_rates.yaml` | analyst and engineer hourly rates, host price, useful life, usage share, power draw, electricity tariff, storage price, maintenance and build hours, FX rates, amortisation horizons | every value is `null` until supplied with its basis, source and date checked |
+| `config/price_register.yaml` | commercial candidates per function | see below |
+| `config/cost_scenarios.yaml` | the nine functions, the four scenarios and their lines, the named workloads | comparability is enforced by the loader |
+| `config/experiment.yaml` `economics:` | primary view, price cases, primary workload, δ_c with rationale | the coordinator sets the last three before the freeze |
+
+**Price register.** Each entry records: vendor and product or service, pricing source, URL, date checked, currency, billing unit, included usage, selected tier, workload assumption, calculated cost, and notes and limitations. An entry whose price is not public is **`status: quote_required`** and every total that depends on it is a lower bound that prints the exact words `Vendor quote required / public price unavailable`. A placeholder with no vendor named is allowed so that the structure can be validated, and is clearly a placeholder. Prices are never taken from memory, never estimated, and never chosen to make either side look better: the coordinator writes the candidate list and the adequacy test *before* looking up any price (the selection rule is in the register's header), and the base case is the lowest calculated cost among adequate candidates.
+
+**Labour.** The analyst rate and the engineer rate are separate and have no default. The comparison H7 needs only the engineer rate (review labour cancels); the manual comparison (E3) needs the analyst rate.
+
+**Workloads.** A workload names `items_per_month`, why, and whether it is *assumed*, *measured* or *supplied*. The shipped points (50, 200 and 1,000 items a month) are scenario points chosen by the project and flagged assumed; they are not estimates of any organisation. Per-item quantities (tokens, minutes, rules per item) come from the measured test set; only the monthly volume, the stored data and the SIEM ingest are assumptions. The stream's composition is the 30-item test set's designed mix, not a feed base rate; the paper says so. Every table prints the workload it used.
+
+### 22.5 Unit economics
+
+At each named workload, scenario, view and price case, the package reports (each *undefined* if its inputs are missing):
 
 ```text
-TCO = Development + Infrastructure + Deployment + AI inference + Operation + Maintenance
-Allocated hardware = Purchase price × Project usage share × Project months / Useful lifetime months
-Cloud AI cost = Input tokens × input rate + Output tokens × output rate
-Local AI cost = Electricity + depreciation + storage + maintenance allocation
-Operation = Analyst review + approval + alert investigation + platform administration time
-Maintenance = Connector updates, API changes, feed review, prompt/model maintenance,
-              detection tuning, dependency updates, backups, documentation
+Cost per report processed        = monthly total / items per month
+Cost per generated detection     = monthly total / (items per month × generated rules per item)
+Cost per valid detection         = monthly total / (items per month × rules passing every hard gate per item)
+Cost per approved detection      = monthly total / (items per month × approved rules per item)
+Cost per deployed detection      = monthly total / (items per month × lab-deployed rules per item)
+Cost per accepted item           = monthly total / (items per month × share of items accepted)
+Analyst minutes per detection    = analyst hours × 60 / the same denominators
+Model-inference cost per report and per detection (hosted: metered spend; local: hardware and electricity while waiting on the model)
+Monthly and annual cost          = ledger totals under the stated workload
+Cost per experimental run        = the measured model spend and the time of each run (runs.csv), reported with the research overhead
 ```
 
-Two views are reported: a **build view** (including research and development hours at a documented rate) and an **adopt view** (a team reusing the open-source artifact: setup, administration, review time, and inference only). This avoids overstating or hiding development cost.
+"Valid", "approved" and "deployed" are defined by the system's own records (all hard gates passed; a hash-bound human approval; a successful lab deployment), not by a rubric. Where the study produces no approved or deployed rule for an item, the corresponding unit cost is undefined rather than zero.
 
-### 22.4 Unit economics
+### 22.6 Decision rule, analyses and the joint assessment
 
-```text
-Cost per item          = Total processing cost / Items processed
-Cost per generated rule = Total pipeline cost / Rules generated
-Cost per accepted rule  = Total pipeline cost / Rules approved
-Cost per useful alert   = Total operating cost / Confirmed relevant alerts
-```
+- **H7** (§9) is the pre-registered decision rule. The package reports its verdict at the primary cell, the grid of all workloads × views × price cases with the label *robust* or *conditional*, the engineer rate at which the verdict flips, the paid total at which it would flip, and the saving when both totals are complete.
+- **E1-E3** (§9) are descriptive: cost composition and open-source audit; normalised unit costs; break-even, sensitivity and tipping points.
+- **Break-even against the manual workflow.** Let F be the fixed monthly cost (including amortised one-off costs) and v the variable cost per item, each read from the ledger. Then `N* = (F_ATIDEP − F_manual) / (v_manual − v_ATIDEP)`, defined only when an item costs less to do with ATIDEP; N* and the savings curve are reported at 50, 200 and 1,000 items a month for T = 12, 24 and 36 months. At the study's scale (about 30 items) savings will be far below development cost; the paper states this plainly and presents the result as a projection, not a demonstrated return.
+- **Sensitivity.** One-way (tornado) over rates, task times, review share, model price, hardware life and maintenance hours; the price-case range; and the tipping points above.
+- **Uncertainty.** A stratified BCa bootstrap over items describes the sampling noise of the *measured* quantities, conditional on the inputs. It is labelled descriptive and does not turn H7 into a test.
+- **Joint assessment.** Technical adequacy (H2, H3, H4) and H7 are combined into one of five outcomes with fixed wording (§38). Where the verdict rests on a quantity borrowed from another arm (for example tokens proxied from the local arm when no hosted run exists), it is marked *screening only*.
 
-### 22.5 Break-even analysis (replaces ROI %)
-
-```text
-Let D  = development (or adoption) cost amortised over horizon T months
-    M  = monthly fixed cost (infrastructure, maintenance, administration)
-    cm = variable cost per item, manual   (analyst minutes × rate)
-    ca = variable cost per item, ATIDEP   (analyst minutes × rate + inference)
-
-Break-even volume per month  N* = (D/T + M) / (cm − ca)      (defined only if cm > ca)
-```
-
-Report N* and the savings curve at **50, 200, and 1,000 items per month**, for T = 12, 24, 36 months, with a sensitivity (tornado) analysis on rates, task times, and model price. At the study's scale (about 30 items), savings will be far below development cost; the paper states this plainly and presents the result as a projection, not a demonstrated return.
-
-### 22.6 Cost-effectiveness criteria (pre-registered, descriptive)
-
-"Cost-effective with a fully open-source platform" is operationalised as three checks, fixed in `config/experiment.yaml` before the main run. They are descriptive findings derived from data collected for H1; they are not extra hypothesis tests and carry no multiplicity correction.
-
-- **C1. Open-source stack and cash outlay.**
-  - Every software component in the bill of materials carries a licence that meets the Open Source Initiative's Open Source Definition (OSI, *The Open Source Definition*). The bill of materials is generated in week 12 (§22.7).
-  - The language model is recorded with its licence and classified. An open-weight model under a permissive licence is not "open-source AI" under the OSI's Open Source AI Definition 1.0 unless data information and code are also disclosed, so the thesis describes the stack as *an open-source software stack with an open-weight model* unless the pinned model meets that definition.
-  - Cash cost: measured spend on inference and services over the whole experiment, reported separately for local and cloud modes. Licence fees are zero; local inference costs electricity only.
-- **C2. Unit cost.** The adopt-view cost per accepted rule under ATIDEP is lower than under the manual workflow at the base-case rates, reported with a bootstrap 95% interval. Because cost is analyst minutes multiplied by a rate, plus inference and infrastructure, C2 is largely H1 restated in money, and the paper says so.
-- **C3. Break-even.** N* and the scenario table of §22.5 are reported with a sensitivity analysis. The verdict names the volume range in which the workflow pays back and the range in which it does not.
-
-**Not claimed.** That the open-source stack is cheaper than any commercial platform (no commercial baseline is measured), or any saving beyond what measured active time and documented rates support.
+**Not claimed.** That ATIDEP is cheaper than any commercial product that was not priced, that a paid configuration is technically equivalent, or any saving beyond what measured quantities and sourced inputs support. The non-monetised differences (support, service levels, curated content, certifications, liability, vendor lock-in) are listed with the direction in which each biases the comparison and are not priced.
 
 ### 22.7 Cost awareness in the solution
 
-Small, enforceable, and testable; nothing here models cost.
+Small, enforceable, testable; nothing here models money.
 
-- **Open-source-only stack.** `tools/licence_audit.py` (week 12) lists every direct and transitive Python dependency with its licence, the Wazuh version and licence, and the pinned model with its licence. The output is the bill of materials used for C1.
-- **Local-first inference.** `policies.llm.local_first` is always true and `cloud_enabled` is false by default. The configuration loader refuses to enable cloud inference without a positive daily cost cap. Cost-aware routing between models (cascades or learned routers) is out of scope beyond a two-mode local/cloud choice; the local versus cloud comparison is an exploratory condition if time permits.
-- **No repeated spend.** Each model call is logged with token counts and a price snapshot, and identical calls are replayed from saved outputs (§24), so experiments are not paid for twice.
-- **Running totals.** The Results & Cost tab (§23) shows tokens, analyst minutes and estimated cost per item.
-- **No hardware purchase.** Staged execution (§24) keeps the work within the existing 12 GB host.
+- **Open-source-only software stack.** `tools/licence_audit.py` lists every direct and transitive Python dependency with its licence, with the Wazuh version and the pinned model's licence added by hand; entries it cannot classify are marked `needs manual check`, which is not a finding that a component is not open. The output is the bill of materials for E1.
+- **Local-first inference.** `policies.llm.local_first` is always true and `cloud_enabled` is false by default. The configuration loader refuses to enable cloud inference without a positive daily cost cap, and the cost guard refuses a positive cap with zero prices. A hosted model is used only if the coordinator sets a key and names the arm.
+- **No repeated spend.** Each call is logged with its token counts and, for a hosted model, a price snapshot; identical calls are replayed from saved outputs (§24).
+- **Quantities, not money, in the interface.** The Results & Cost page (§23) shows tokens with their provenance, analyst minutes by condition, model and machine time, and counts of approved and deployed rules.
+- **Hardware is not free.** Staged execution (§24) keeps the experiments within the existing 12 GB host, but the host is still allocated in the ledger (§22.3) once its price and life are supplied.
 
-### 22.8 Cost awareness in the paper
+### 22.8 Cost reporting in the paper
 
-Cost awareness in the paper means being explicit about what was measured, what was assumed, and what would change the conclusion. The cost chapter (Chapter 8) has this structure:
+Chapter 8 (*Economic Evaluation and Joint Assessment*, §34.2) has this structure:
 
-1. Cost model and assumptions: rates and their sources, currency (BDT), build and adopt views, horizon.
-2. Measured quantities: analyst active minutes by condition, tokens, CPU, RAM and electricity, cash spent.
-3. Unit economics: cost per item, per generated rule, per accepted rule and per useful alert, each with a bootstrap interval.
-4. Break-even and scenarios: 50, 200 and 1,000 items per month; horizons of 12, 24 and 36 months.
-5. Sensitivity: a tornado analysis over analyst rate, task time, review share, model price, hardware life and maintenance hours.
-6. Hidden-cost register: maintenance, model and prompt drift, rule tuning, review time, onboarding, model-licence compliance, electricity and backups, each with an estimated monthly effort marked as measured or assumed.
-7. Open-source claim audit: the C1 bill of materials, with the model's licence and classification.
-8. Verdict and limits: C1-C3, and the conditions under which the conclusion fails (low volume, a high review share, changed cloud prices).
+1. Aim, scenarios, perimeters, views and the functional-equivalence map (§2.4).
+2. Inputs: every rate and price with its source, date and basis; what is still missing and the exact words for unpriced items; the price-register selection rule and the candidates considered.
+3. Measured quantities: analyst minutes by condition, tokens with provenance, compute and machine time, approvals and deployments, kept as four kinds of time.
+4. Unit costs (E2) with descriptive intervals, complete or lower bound, with evidence shares.
+5. The decision rule (H7): the primary cell, the robustness grid, tipping points.
+6. Break-even, sensitivity and scenarios (E3): 50, 200 and 1,000 items a month; 12, 24 and 36 months.
+7. Hidden-cost register: maintenance, model and prompt drift, rule tuning, review time, onboarding, model-licence compliance, electricity and backups, each marked measured or assumed.
+8. Open-source claim audit (E1): the bill of materials and the model's licence classification.
+9. Non-monetised differences and their direction of bias.
+10. Joint assessment (fixed wording, §38) and the conditions under which the conclusion fails (low volume, a high review share, a changed price, a different platform).
 
-The principles are: state every rate with its source; separate measured from assumed; show which conclusions flip under plausible changes; and say plainly that analyst labour is expected to dominate and that licence savings matter only relative to an alternative that was not measured.
+The principles are: state every input with its source; separate measured from supplied from assumed; show which conclusions flip under plausible changes; say plainly that analyst labour is expected to dominate the cost of both automated scenarios and cancels in H7, and that licence savings matter only relative to a priced alternative; and never write the conclusion before the evidence exists.
 
 ---
 
@@ -1115,7 +1178,7 @@ The principles are: state every rate with its source; separate measured from ass
 
 ### Page 1: Overview and Queue
 
-Counts (collected, new, duplicate, high priority, opportunities, rules generated/validated/pending/deployed); priority-ranked review queue; alert-quality trend; running totals of tokens, analyst minutes, and cost.
+Counts (collected, new, duplicate, high priority, opportunities, rules generated/validated/pending/deployed); priority-ranked review queue; alert-quality trend; running totals of tokens (with their provenance), analyst minutes, and model and machine time. The interface shows quantities, not money.
 
 ### Page 2: Rule Workbench and Approval
 
@@ -1123,11 +1186,11 @@ Evidence viewer with verified quotes highlighted in the sanitised source; extrac
 
 ### Page 3: Results and Cost
 
-Detection results (alerts, true/false positives, false negatives, rule errors, volume by rule); improvement recommendations with before/after on the benign corpus; cost tables and the exported analysis datasets.
+Detection results (alerts, true/false positives, false negatives, rule errors, volume by rule); improvement recommendations with before/after on the benign corpus; usage tables (tokens by locality and provenance, the four kinds of time, counts of approved and deployed rules) and the exported analysis datasets. The page shows quantities, not money; money is computed offline from the exports (§22).
 
 ### Analyst timer (required for H1)
 
-A visible **start/stop timer** with an activity category per item and condition. Rules for *active time*: the timer runs only while the analyst is working on that item; it auto-pauses after 2 minutes of inactivity; breaks and unrelated work are excluded; every start/stop is logged. Wall-clock time is recorded separately. The same timer protocol is used in the manual condition (a tool-agnostic stopwatch UI or CLI).
+A visible **start/stop timer** with an activity category per item and condition. Rules for *active time*: the timer runs only while the analyst is working on that item; while the page is open it sends a heartbeat every 30 seconds, and it auto-pauses after 2 minutes without one or without activity; the time lost to such gaps is counted and exported so it can be audited; breaks and unrelated work are excluded; every start/stop is logged and each session ends with a disposition (accepted, rejected or in progress). Upkeep of the platform itself is timed on a separate item-less *operations* activity so it never inflates per-item review time. Wall-clock time is recorded separately, and the four kinds of time (analyst active, automated, model inference, wall-clock) are never added together. The same timer protocol is used in the manual condition (a tool-agnostic stopwatch UI or CLI).
 
 ---
 
@@ -1354,13 +1417,16 @@ Detectable/non-detectable accuracy and macro-F1; telemetry-requirement accuracy;
 Detection rate on held-out positives; false-positive rate on benign baseline and look-alikes; conversion fidelity (Tier 1 versus Tier 2 agreement); rule execution errors.
 
 ### Efficiency
-Analyst active minutes per item to final disposition (primary); active minutes per accepted rule; wall-clock time; automated processing time; manual interventions.
+Analyst active minutes per item to final disposition (primary); active minutes per accepted rule; automated execution time; model inference time; wall-clock time (the four kinds of time are never summed); manual interventions; idle time lost to the inactivity rule.
 
 ### Safety and reliability
-Per-class gate recall; defective rules reaching Approved/Deployed; injection attack success rate; unauthorised-deployment attempts (target 0); policy rejection rate; workflow failure rate; invalid model-output rate; retry rate.
+Per-class gate recall; defective rules reaching Approved/Deployed (the **escape rate**, with its exact upper bound); the **rejection rate** and the **gate miss rate** (defective rules for which every hard gate passed, the gates' false acceptance); false rejection of clean control rules; injection attack success rate per family; unauthorised-deployment attempts (target 0); policy rejection rate; workflow failure rate; invalid model-output rate; retry rate.
 
-### Resource and cost (secondary)
-CPU, memory, tokens, latency per component; per-item and per-accepted-rule cost; break-even volume (§22).
+### Resource use
+CPU, memory, tokens (input and output, with `usage_source`), local compute time and latency per component; demand tokens versus freshly spent tokens; model failures and budget stops.
+
+### Economic evaluation (second dimension; computed offline, §22)
+Monthly and annual cost under named workloads, by ledger category, for S-MANUAL, S-OSS-LOCAL and S-PAID (and S-OSS-API if run), each marked complete or a lower bound and split by evidence basis; **normalised unit costs**: per report processed, per detection generated, per valid detection, per approved detection, per deployed detection, per experimental run, analyst minutes per detection, model-inference cost per report and per detection; **H7**: differential cost O against (1 − δ_c)·P at the primary cell, the robustness grid, the engineer rate and paid total at which the verdict flips; break-even volume against manual; tornado sensitivity; the joint assessment of technical adequacy and H7.
 
 ---
 
@@ -1370,18 +1436,20 @@ All of the following is written down at `prereg-v1`, before the main run.
 
 1. **Unit of analysis:** the intelligence item (n = 30). Multiple LLM runs per item are nested; per-item values are summarised (mean or median) before item-level tests, or analysed with item as a random effect.
 2. **Descriptives:** all metrics, with median and IQR for skewed measures such as time.
-3. **Confirmatory family (H1, H4):** Holm correction at family-wise α = 0.05. If both are tested one-sided, the larger p-value is compared with 0.05 and the smaller with 0.025.
+3. **Confirmatory family (H1, H4):** Holm correction at family-wise α = 0.05. The economic decision rule H7 is outside this family (item 15); H2, H3, H5 and H6 are secondary. If both are tested one-sided, the larger p-value is compared with 0.05 and the smaller with 0.025.
 4. **Paired comparison default:** Wilcoxon signed-rank test on paired item differences (time analysed on a log scale or as a ratio); a paired t-test only if difference distributions are acceptable. Report the Hodges–Lehmann median difference with a **BCa bootstrap 95% CI (10,000 resamples)** and an effect size.
-5. **H1:** primary endpoint is analyst active minutes per item; report the median relative reduction with a bootstrap CI against the pilot-fixed δ_t.
+5. **H1:** primary endpoint is analyst active minutes per item; report the median relative reduction with a bootstrap CI against the pilot-fixed δ_t. H1 is supported if the median relative reduction is at least δ_t and the one-sided 95% BCa lower bound is above 0; the stricter reading, in which the lower bound itself must reach δ_t, is reported beside it.
 6. **H4 non-inferiority:** the null is that ATIDEP rules are inferior by at least Δ_q. Reject the null if the lower bound of the one-sided 95% CI (equivalently the lower arm of TOST at 5%) for the mean paired rubric difference (B − A) exceeds −Δ_q. Δ_q is pilot-fixed and justified in advance on rubric calibration data; it is not chosen after seeing results.
 7. **Order and carry-over:** include order and condition in a linear mixed model with item as a random effect (for example `log(minutes) ~ condition + order + (1 | item)`), and report the first-exposure-only stratified comparison (Mann–Whitney) as a sensitivity analysis.
 8. **Proportions** (validity, gate recall, attack success): Clopper–Pearson or Wilson 95% intervals, clustered by item where runs are repeated. For zero observed events use the exact upper bound, 1 − 0.05^(1/n) (n = 40 → 7.2%; n = 30 → 9.5%; n = 12 → 22.1%), and say so.
-9. **Agreement:** Cohen's κ (labels), Jaccard/F1 (technique sets), weighted κ or ICC (rubric).
+9. **Agreement:** Cohen's κ (labels), Jaccard/F1 (technique sets), quadratic-weighted κ per rubric dimension and rater pair and ICC(2,1) on rule-level scores (rubric), with the number of cells on which two raters differ by more than one point.
 10. **Classification:** confusion matrices; precision, recall, macro-F1, accuracy.
 11. **Power (honest statement):** with n = 30 pairs, a paired one-sided test at α = 0.025 has roughly 75% power for a standardised effect of 0.5, 89% for 0.6, and 96% for 0.7 (normal-theory approximation; the Wilcoxon test loses a few percentage points). The design therefore detects only moderate-to-large effects. A 30% reduction in analyst active time is expected to be large relative to between-item variability, and the pilot variance is used to check this before freeze. Secondary analyses are labelled exploratory.
 12. **Missing and failed runs:** analysed as intention-to-treat (a pipeline failure is a failure of that item under B, with the analyst's recovery time counted) and also per-protocol; both reported.
-13. **Sensitivity analyses:** priority weights (random perturbation, rank stability); cost assumptions (tornado); exclusion of the independent-analyst subset; exclusion of the SigmaHQ-similar rules.
-14. **Reproducibility:** seeds, pinned versions, hashes of prompts/configs/datasets, and the run script that regenerates every table and figure are released with the report.
+13. **Sensitivity analyses:** priority weights (random perturbation, rank stability); cost assumptions (tornado, price cases, tipping points); exclusion of the independent-analyst subset; exclusion of the SigmaHQ-similar rules.
+14. **Reproducibility:** seeds, pinned versions (`requirements.txt`, generated by `tools/make_lock.py`), hashes of prompts/configs/datasets/case sets (`python -m research.freeze`), and the run scripts that regenerate every table and figure (`python -m research.analysis`, `python -m research.economics`) are released with the report.
+15. **Economic decision rule (H7), outside the Holm family:** a pre-registered rule, not a test, evaluated at the primary cell and over the grid of workloads × views × price cases with the labels *robust* and *conditional*. Totals that are lower bounds are handled by the bound table of §9. A stratified BCa bootstrap over items (resampled within category) describes the sampling noise of the measured quantities, conditional on the inputs, and is labelled descriptive. δ_c, the primary workload, every rate, every price and every tariff are fixed or sourced before the freeze (`economics:` in `config/experiment.yaml`, §41); a change after the freeze is a logged deviation.
+16. **Adversarial evaluation (H3):** per-condition escape rate, rejection rate and gate miss rate with exact one-sided 95% (Clopper–Pearson) bounds; per-class recall; false rejection on clean controls; injection success per family; the cases, ground truth, reviewers' judgements and every raw per-case record are kept. Cases are excluded only under the protocol's pre-declared rules and every exclusion is listed. Zero escapes is a security objective, not a result to be produced.
 
 ---
 
@@ -1413,9 +1481,9 @@ The minimum viable project is successful when all of the following hold (each is
 - Tier 1 tests run for every rule; Tier 2 runs where supported or the documented fallback is in place.
 - Wazuh packages can be exported, dry-run, and (Should) deployed and rolled back through the API using the least-privilege user.
 - The audit chain verifies; an altered event is detected.
-- The seeded-defect and injection sets run with results recorded, whatever the outcome.
+- The seeded-defect set (at least 40 rules, at least 4 in each of D1-D10) and the prompt-injection set (at least 12 reports) are frozen with their hashes, reviewed for ground truth by reviewers who did not write them, and run under B, B−V and C, with every raw per-case record, every exclusion and every escape recorded, whatever the outcome.
 - Feedback produces at least one recommendation that is revalidated and measured on the benign corpus (Should).
-- Effort and cost records exist for every run, enabling the analysis in §22.
+- Usage and effort records exist for every run (tokens with their provenance, local compute time, the four kinds of time), and the economic evaluation of §22 runs from the exports. It reports every missing input and every unpriced item instead of filling it; `python -m research.economics check` lists them, and no price, rate, tariff or volume in the repository is invented.
 - The pre-registered comparison of conditions A, B and C is completed and reported in full.
 - Every action is auditable by run ID and version.
 
@@ -1443,6 +1511,12 @@ The minimum viable project is successful when all of the following hold (each is
 | Schedule slip | Experiments squeezed | Freeze at week 12; fixed cut line (§26.2); weekly checkpoints |
 | Dependency changes | Reproducibility loss | Lock file, version pinning, recorded environment |
 | Sensitive-data leakage to cloud | Privacy issue | Redaction, local inference option, field-transmission log |
+| Commercial prices are not public, or are behind a quote | The paid side of H7 is only a lower bound; H7 may be inconclusive | State it exactly (`Vendor quote required / public price unavailable`); obtain written quotes or published list prices before the freeze; never estimate; report "inconclusive" as a result |
+| Cost inputs (δ_c, primary workload, rates, candidate list) chosen after seeing results | Biased economic conclusion | Candidate list and adequacy test written before any price is looked up; δ_c and the primary workload fixed with a rationale before `prereg-v1`; later changes are logged deviations |
+| Analyst and engineer rates are contentious | Verdict depends on an assumption | Rates are sourced and have no default; review labour cancels in H7; the rate at which the verdict flips is reported |
+| Hosted-model usage is not reported by the provider, or a caching server under-reports | Wrong token and money figures | `usage_source` is recorded per call and an estimate is never presented as a count; a stability probe is run once; screening-only results are labelled |
+| Spend overrun on a hosted model | Unplanned cost | Positive daily cap required, replay store so calls are not paid twice, a run stopped by the cap is missing data, not a failure |
+| Paid scenario treated as measured | Overclaim | S-PAID is labelled a modelled counterfactual with assumed equal performance; wording of the joint assessment is capped (§38) |
 
 ---
 
@@ -1479,14 +1553,14 @@ The minimum viable project is successful when all of the following hold (each is
 
 1. **Introduction:** context, problem, aim, objectives, questions, scope, contributions.
 2. **Literature Review:** CTI operationalisation, detection engineering, Sigma, ATT&CK, LLM agents and hallucination control, prompt injection, human oversight, evaluation of detection content.
-3. **Research Methodology:** design-science approach, pre-registered experiment, conditions and ablations, ground truth, metrics, statistical plan, ethics.
+3. **Research Methodology:** design-science approach, pre-registered experiment, conditions and ablations, ground truth, metrics, statistical plan, the economic-evaluation design (scenarios and functional equivalence, perimeters and views, the ledger and its twelve categories, the price register and its selection rule, the decision rule H7, the joint assessment), ethics.
 4. **Requirements and Architecture:** requirements, components, data flow, threat model, governance.
 5. **Implementation:** stack, schemas, prompts, validators, converter and subset, Wazuh adapter, interface.
-6. **Experimental Setup:** hardware, software versions, datasets, event corpora, manual and agentic procedures, model pinning, cost assumptions.
-7. **Results:** extraction and opportunity accuracy, rule validity (first-pass and post-repair), quality and detection results, adversarial results, effort results, resource usage.
-8. **Cost Analysis and Cost-Effectiveness:** cost model and assumptions, measured quantities, unit economics, break-even and scenarios, sensitivity, hidden-cost register, open-source claim audit, verdict on C1-C3 (§22.8).
+6. **Experimental Setup:** hardware, software versions, datasets, event corpora, manual and agentic procedures, model pinning, cost inputs with their sources and what is still missing.
+7. **Technical Results:** extraction and opportunity accuracy, rule validity (first-pass and post-repair), quality and detection results, adversarial results (B, B−V and C, with every escape reported), effort results, resource usage.
+8. **Economic Evaluation and Joint Assessment:** inputs and what is missing, measured quantities (four kinds of time kept apart), unit costs (E2), the decision rule H7 and its robustness grid, break-even, sensitivity and tipping points (E3), hidden-cost register, open-source claim audit (E1), non-monetised differences, and the joint assessment of technical adequacy and cost in its fixed wording (§22.8, §38).
 9. **Discussion:** interpretation, ablation findings, failure analysis, trade-offs, practical implications.
-10. **Threats to Validity:** internal (carry-over, single analyst, builder bias), construct (rubric, active-time definition), external (synthetic org, small n, one model), conclusion validity (power, multiplicity), and the sensitivity of the cost verdict to its assumptions.
+10. **Threats to Validity:** internal (carry-over, single analyst, builder bias), construct (rubric, active-time definition), external (synthetic org, small n, one model), conclusion validity (power, multiplicity), and the sensitivity of the cost verdict to its assumptions (a modelled paid side, assumed equal technical performance, scenario volumes that are not estimates of any organisation, the engineer and analyst rates).
 11. **Conclusion and Future Work:** answers to research questions, contributions, limitations, STIX/TAXII and MISP connectors, wider Sigma subset, production hardening.
 
 ### 34.4 Writing sequence (paper written after the build)
@@ -1517,7 +1591,7 @@ The software records, enforces its budget cap, and shows concise totals only. Th
 5. A transparent prioritisation model with defined components and a sensitivity analysis.
 6. An experimental comparison of manual, single-prompt, and governed-pipeline workflows with explicit bias controls, a blinded quality rubric, and non-inferiority testing.
 7. Seeded-defect and prompt-injection test sets for evaluating detection-engineering pipelines.
-8. A pre-registered cost-effectiveness analysis of an open-source stack (checks C1-C3), with break-even projections and an open-source claim audit.
+8. A **pre-registered economic evaluation** of the open-source workflow against a manual workflow and a functionally comparable modelled paid configuration: a cost model with twelve ledger categories and explicit perimeters, a sourced price register that never invents a price, normalised unit costs, a decision rule (H7) that handles incomplete totals honestly, sensitivity and tipping points, an open-source claim audit, and a joint assessment of technical adequacy and cost whose wording cannot overclaim.
 9. A resource-conscious deployment approach for academic labs and small teams.
 
 ---
@@ -1534,7 +1608,11 @@ The software records, enforces its budget cap, and shows concise totals only. Th
 - Generated Sigma rules, CDB lists, Wazuh packages, validation reports
 - Rater materials and de-identified ratings
 - Experiment dataset, analysis scripts, and statistical report
-- Cost-analysis workbook and break-even scenarios
+- Economic-evaluation outputs (regenerated by `python -m research.economics report`): the ledger, the costed price register, unit costs, the H7 grid, break-even and sensitivity tables, with the exact list of missing inputs
+- Pre-registration pack: selection protocol, labelling guide, rater instructions, inclusion log, freeze manifests (`prereg-v1`, `freeze-v1`)
+- Ethics and data-management documents with their approval status (`docs/ethics/`)
+- Adversarial case set with its hash, reviewers' judgements and every raw per-case result
+- Reference verification checklist (`paper/verification_checklist.md`)
 - Installation and user guide
 - Final project report
 - Demonstration script and defence presentation
@@ -1573,6 +1651,20 @@ Do not claim that the platform is universally the best solution. State only what
 **If H4 is not supported:** report the quality deficit and its sources (from the failure analysis) as a principal finding.
 
 In every case, report the order-effect and first-exposure analyses, the independent-analyst subset if it was run, and the limitations.
+
+### 38.1 Economic claim and the joint assessment (fixed wording)
+
+The economic result is one of five outcomes, chosen mechanically from technical adequacy (H2, H3 and H4; §9) and the H7 verdict (`research.economics` writes the sentence, so the wording cannot drift). Each is followed, without exception, by the limit sentence: *"The paid side is a modelled counterfactual with assumed equal technical performance; this does not establish parity with any paid system."* Each also names the primary workload, view, price case and perimeter, states whether the result is *robust* or *conditional* over the grid, lists every unpriced item by its exact words, and gives the engineer rate at which the verdict flips.
+
+| Technical adequacy | H7 | Outcome and sentence |
+|---|---|---|
+| met | supported | **Adequate and substantially cheaper.** The technical criteria were met and the open-source configuration cost substantially less than the modelled paid configuration (base case, named workload). |
+| met | not supported | **Adequate, not substantially cheaper.** The technical criteria were met; the cost advantage over the modelled paid configuration did not reach the pre-registered threshold. |
+| not met | supported | **Cheaper but technically inferior.** The open-source configuration was cheaper, but a technical criterion was not met. |
+| not met | not supported | **Not adequate and not substantially cheaper.** A technical criterion was not met and the cost advantage did not reach the threshold. |
+| unknown, or H7 inconclusive or not evaluable | | **Not evaluable.** The sentence names what is missing: a technical measurement, δ_c or the primary workload, a rate, or an unpriced item. |
+
+Rules for every economic sentence: say "modelled", never "measured", of the paid side; never write "equivalent to", "as good as" or "comparable with" a commercial system; present O and P as lower bounds when they are; give the amount only with its workload and horizon; and if the verdict depends on a quantity borrowed from another arm, mark it *screening only*. A result that is unfavourable to the open-source configuration is reported with the same prominence as a favourable one.
 
 ---
 
@@ -1818,35 +1910,48 @@ alpha_familywise: 0.05
 bootstrap_resamples: 10000
 second_labeler_min_items: 10
 independent_analyst_min_items: 8          # only if the optional subset is run
-cost_criteria:                             # pre-registered, descriptive (blueprint §22.6)
+paid_model: {id: TBD, version: TBD, training_cutoff: TBD}   # only if arm S-OSS-API is run; items must post-date ITS cutoff too
+economics:                                  # pre-registered; frozen with the cost files at prereg-v1 (blueprint §22.6)
   primary_view: adopt
   views: [adopt, build]
+  primary_price_case: base                  # the lowest calculated cost among adequate priced candidates
+  price_cases: [base, upper]
+  primary_workload: null                    # the coordinator names ONE workload id from cost_scenarios.yaml before the freeze
+  delta_c_pct: null                         # the coordinator's threshold for "substantially cheaper", with a rationale
+  delta_c_rationale: null
   inference_modes_reported_separately: [local, cloud]
 ```
 
-### `cost_rates.yaml` (placeholders; replace with documented assumptions before the experiment)
+### Cost input files (`cost_rates.yaml`, `price_register.yaml`, `cost_scenarios.yaml`)
+
+The cost files contain **no invented numbers**. v3.0 listed example rates in this section; they were removed because an unsourced number in a configuration file silently becomes a result. The shipped `cost_rates.yaml` is a template in which every value is `null`; the loader refuses a number that has no basis (`measured`, `supplied` or `assumed`) and a source, and a supplied number needs the date it was checked.
 
 ```yaml
-currency: BDT
-labor:
-  analyst_hourly_rate: 800
-  engineer_hourly_rate: 1200
-  reviewer_hourly_rate: 1500
-infrastructure:
-  electricity_per_kwh: 15
-  hardware_monthly_allocation: 1500
-  storage_monthly_allocation: 300
-cloud_ai:
-  input_cost_per_million_tokens: 0
-  output_cost_per_million_tokens: 0
+# cost_rates.yaml (excerpt of the template: every value null until supplied)
+reporting_currency: null
+fx: []                                   # - {from_currency, to_currency, rate, source, checked_on}
+labour:
+  analyst_hourly:  {value: null, basis: null, source: null, checked_on: null}
+  engineer_hourly: {value: null, basis: null, source: null, checked_on: null}
+host:
+  purchase_price:      {value: null, basis: null, source: null, checked_on: null}
+  useful_life_months:  {value: null, basis: null, source: null, checked_on: null}
+  project_usage_share: {value: null, basis: null, source: null, checked_on: null}   # (0, 1]
+  power_active_watts:  {value: null, basis: null, source: null, checked_on: null}   # plug-in meter, under load
+  electricity_per_kwh: {value: null, basis: null, source: null, checked_on: null}
+  storage_per_gb_month: {value: null, basis: null, source: null, checked_on: null}
 maintenance:
-  monthly_connector_hours: 4
-  monthly_rule_tuning_hours: 6
-  monthly_platform_admin_hours: 4
-analysis:
-  amortisation_horizon_months: [12, 24, 36]
-  volume_scenarios_items_per_month: [50, 200, 1000]
+  monthly_connector_hours:      {value: null, basis: null, source: null, checked_on: null}
+  monthly_rule_tuning_hours:    {value: null, basis: null, source: null, checked_on: null}
+  monthly_platform_admin_hours: {value: null, basis: null, source: null, checked_on: null}
+build:
+  development_hours:    {value: null, basis: null, source: null, checked_on: null}
+  adoption_setup_hours: {value: null, basis: null, source: null, checked_on: null}
+  integration_hours:    {value: null, basis: null, source: null, checked_on: null}
+amortisation_horizon_months: [12, 24, 36]
 ```
+
+`price_register.yaml` ships with four **`quote_required`** placeholder groups (hosted model API, cloud compute, cloud storage, SIEM platform) and no vendor. A priced entry needs the vendor, product, tier, currency, components (unit kind, price, the vendor's billing unit, included quantity), pricing source and URL, the date checked, the price basis (list, quote, academic or negotiated), an archive reference and the workload assumption. `cost_scenarios.yaml` defines FN1-FN9, the four scenarios and the named workloads (50, 200 and 1,000 items a month, flagged *assumed*). `python -m research.economics check` prints what is missing.
 
 ---
 

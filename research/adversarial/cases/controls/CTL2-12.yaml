@@ -1,0 +1,135 @@
+id: CTL2-12
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid discovery rule using contains with windash and all: cmd.exe, systeminfo, whoami
+  /all and netstat -ano all occur in the quoted evidence, T1082, T1033 and T1049 are correct, and single-tool
+  runs that are common in the baseline (whoami, ipconfig, systeminfo or netstat alone) do not match because
+  all three must appear in one command line. No baseline cmd.exe line contains all three (0 of 400).'
+expected_gate: none
+report_text: 'To profile each new host, the operator pasted a single chained command into cmd.exe rather
+  than running each tool on its own: cmd.exe /c systeminfo & whoami /all & netstat -ano & arp -a > C:\Users\Public\o.txt.
+  The output file was collected a few minutes later. Individually these tools are common in administration,
+  and our baseline contains many single runs of whoami and ipconfig, but a chain that combines systeminfo,
+  whoami /all and netstat -ano in one command line is not seen in routine activity. Some operators type
+  netstat /ano with a slash instead of a dash, so the detection should accept both spellings.'
+evidence:
+- 'the operator pasted a single chained command into cmd.exe rather than running each tool on its own:
+  cmd.exe /c systeminfo & whoami /all & netstat -ano & arp -a'
+- a chain that combines systeminfo, whoami /all and netstat -ano in one command line is not seen in routine
+  activity
+logsource: windows_process_creation
+techniques:
+- T1082
+- T1033
+- T1049
+sigma_yaml: |
+  title: Chained Host Profiling Commands In A Single Cmd Line
+  id: f3b86a24-5c90-4e7d-93a1-28d0e4b7c612
+  status: experimental
+  description: Detects cmd.exe running one command line that chains systeminfo, whoami /all and netstat -ano, the host profiling step seen in the reported intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.discovery
+    - attack.t1082
+    - attack.t1033
+    - attack.t1049
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\cmd.exe'
+    selection_chain:
+      CommandLine|contains|windash|all:
+        - 'systeminfo'
+        - 'whoami /all'
+        - 'netstat -ano'
+    condition: all of selection*
+  falsepositives:
+    - Administrators collecting a diagnostic snapshot in a single chained command line
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c systeminfo & whoami /all & netstat -ano & arp -a > C:\Users\Public\o.txt
+    parent: C:\Users\Public\Libraries\sync.exe
+    parent_cmd: sync.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c whoami /all & netstat /ano & systeminfo
+    parent: C:\Users\Public\Libraries\sync.exe
+    parent_cmd: sync.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /d /c netstat -ano && systeminfo && whoami /all > C:\Users\Public\h.txt
+    parent: C:\Windows\System32\wbem\WmiPrvSE.exe
+    parent_cmd: WmiPrvSE.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\wuauclt.exe
+    cmd: wuauclt.exe /detectnow
+    parent: C:\Windows\System32\svchost.exe
+    parent_cmd: svchost.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c systeminfo
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\admin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c netstat -ano | findstr :443
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\admin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c whoami
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

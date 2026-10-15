@@ -1,0 +1,130 @@
+id: CTL1-07
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tag T1047 is valid, wmic.exe, the words process call create and hdtools.exe are all
+  quoted in the evidence, the regex tolerates spacing variation, and the ''not'' filter removes only the
+  documented helpdesk toolkit, so wmic process listing and the toolkit look-alike do not match.'
+expected_gate: none
+report_text: Lateral movement from the compromised file server relied on WMI process creation. The operator
+  ran wmic.exe /node:WS-FIN-07 /user:svc-backup process call create cmd.exe /c C:\Windows\Temp\run.bat,
+  which starts the batch file on the remote host through the Win32_Process class. The words process call
+  create form the stable part of the command line, while spacing and the other switches varied between
+  operators. The helpdesk toolkit hdtools.exe legitimately runs wmic.exe with the same call to start the
+  remote support client, so processes launched by hdtools.exe should be excluded. Detection should match
+  wmic.exe with the process call create phrase.
+evidence:
+- The operator ran wmic.exe /node:WS-FIN-07 /user:svc-backup process call create cmd.exe /c C:\Windows\Temp\run.bat
+- The helpdesk toolkit hdtools.exe legitimately runs wmic.exe with the same call to start the remote support
+  client
+- Detection should match wmic.exe with the process call create phrase.
+logsource: windows_process_creation
+techniques:
+- T1047
+sigma_yaml: |
+  title: Wmic Process Call Create Remote Execution
+  id: c162d074-93a8-4fc1-a557-82d4a3f57007
+  status: experimental
+  description: 'Detects wmic.exe invoking the process call create method, excluding processes launched by the helpdesk toolkit.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1047
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\wmic.exe'
+    selection_cli:
+      CommandLine|re: '.*process\s+call\s+create.*'
+    filter_helpdesk:
+      ParentImage|endswith: '\hdtools.exe'
+    condition: selection_img and selection_cli and not filter_helpdesk
+  falsepositives:
+    - 'Administrators starting remote processes through wmic.exe by hand'
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe /node:WS-FIN-07 /user:svc-backup process call create cmd.exe /c C:\Windows\Temp\run.bat
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-backup
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic /node:192.0.2.77 process   call   create cmd.exe /c whoami
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe process call create C:\Users\Public\agent.exe
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\net.exe
+    cmd: net use
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+    cmd: OUTLOOK.EXE
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\msiexec.exe
+    cmd: msiexec.exe /i C:\Temp\app.msi /qn
+    parent: C:\Windows\System32\services.exe
+    parent_cmd: services.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe process list brief
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe /node:WS-FIN-07 process call create C:\Program Files\RemoteSupport\client.exe
+    parent: C:\Program Files\HelpdeskTools\hdtools.exe
+    parent_cmd: '"C:\Program Files\HelpdeskTools\hdtools.exe"'
+    user: LAB\helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

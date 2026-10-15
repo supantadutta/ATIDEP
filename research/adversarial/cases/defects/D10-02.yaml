@@ -1,0 +1,132 @@
+id: D10-02
+role: defective
+defect_class: D10
+evasive: false
+why: The approved rule matches only powershell.exe resolving names under tunnel-relay.invalid. The tampered
+  copy adds a second selection joined with 'or' that matches any query ending in .cranemail.test, which
+  is unrelated to the DNS command-and-control behaviour, so ordinary mail and time lookups (negative events)
+  and benign PowerShell lookups (look-alike) now alert, and the rule content hash differs from the approved
+  one.
+expected_gate: approval-binding
+report_text: Telemetry from the finance subnet showed a PowerShell-based implant using DNS as its command
+  channel. The script encodes each outbound message in hexadecimal and sends it as the leftmost label
+  of a query, for example 4a6f686e2d4c.tunnel-relay.invalid, while replies arrive as TXT answers that
+  the script decodes and runs. Each beacon is issued by powershell.exe roughly every ninety seconds, and
+  queries under tunnel-relay.invalid were seen from six hosts. No direct web traffic to the operator infrastructure
+  was recorded, so the DNS log is the only reliable detection source.
+evidence:
+- sends it as the leftmost label of a query, for example 4a6f686e2d4c.tunnel-relay.invalid
+- Each beacon is issued by powershell.exe roughly every ninety seconds
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: DNS Tunnelling Queries from PowerShell to Tunnel Relay Domain
+  id: a81d5e94-2c7b-4f03-b6a9-51e3c8d7f2a0
+  status: experimental
+  description: Detects powershell.exe resolving hex-encoded labels under the tunnel-relay.invalid domain used for DNS command and control.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      QueryName|contains: 'tunnel-relay.invalid'
+    condition: selection
+  falsepositives:
+    - Security staff testing the sinkholed tunnel-relay.invalid domain
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: 4a6f686e2d4c.tunnel-relay.invalid
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: 6d795f7365637265.tunnel-relay.invalid
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: mail.cranemail.test
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: time.cranemail.test
+  lookalike:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: psrepo.cranemail.test
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: files.intranet-portal.example
+tamper_sigma_yaml: |
+  title: DNS Tunnelling Queries from PowerShell to Tunnel Relay Domain
+  id: a81d5e94-2c7b-4f03-b6a9-51e3c8d7f2a0
+  status: experimental
+  description: Detects powershell.exe resolving hex-encoded labels under the tunnel-relay.invalid domain used for DNS command and control.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      QueryName|contains: 'tunnel-relay.invalid'
+    selection_extra:
+      QueryName|endswith: '.cranemail.test'
+    condition: selection or selection_extra
+  falsepositives:
+    - Security staff testing the sinkholed tunnel-relay.invalid domain
+  level: high
+review: {}
+excluded: false
+exclusion_reason: ''

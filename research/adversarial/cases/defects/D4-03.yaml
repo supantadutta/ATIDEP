@@ -1,0 +1,111 @@
+id: D4-03
+role: defective
+defect_class: D4
+evasive: true
+why: 'The CommandLine value list has two alternatives: ''Set-MpPreference -DisableRealtimeMonitoring''
+  is quoted verbatim in the evidence, but ''Set-MpPreference -DisableIOAVProtection'' (DisableIOAVProtection)
+  occurs nowhere in the report or the evidence and no assumption covers it. One value is supported and
+  the second is not.'
+expected_gate: G4
+report_text: During the Saltmarsh intrusion, the operators weakened endpoint protection shortly after
+  obtaining administrative access, before dropping their remote access tooling. Responders recovered process-creation
+  records showing PowerShell used to change Microsoft Defender preferences. The relevant invocation was
+  powershell.exe -NoProfile -Command Set-MpPreference -DisableRealtimeMonitoring $true, run from a scheduled
+  maintenance script on the file server. The change persisted until the next policy refresh, giving the
+  operators roughly forty minutes of reduced scanning. The Defender operational log recorded the preference
+  change, but no alert was forwarded to the monitoring team. We recommend alerting on attempts to turn
+  off real-time scanning through PowerShell, since legitimate administrators normally manage these settings
+  through central policy rather than ad hoc commands on a server.
+evidence:
+- powershell.exe -NoProfile -Command Set-MpPreference -DisableRealtimeMonitoring $true
+logsource: windows_process_creation
+techniques:
+- T1562.001
+sigma_yaml: |
+  title: Defender Protection Disabled Via PowerShell Set-MpPreference
+  id: 4be8d217-9a35-4c0f-b6e2-83f1a7d05c69
+  status: experimental
+  description: Detects PowerShell turning off Microsoft Defender protection features through Set-MpPreference.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1562.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      CommandLine|contains:
+        - 'Set-MpPreference -DisableRealtimeMonitoring'
+        - 'Set-MpPreference -DisableIOAVProtection'
+    condition: selection
+  falsepositives:
+    - Administrators temporarily disabling real-time scanning during software installation
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command Set-MpPreference -DisableRealtimeMonitoring $true
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c maint.bat
+    user: LAB\svc-maint
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -ExecutionPolicy Bypass -Command Set-MpPreference -DisableRealtimeMonitoring 1
+    parent: C:\Windows\System32\svchost.exe
+    parent_cmd: svchost.exe -k netsvcs -p -s Schedule
+    user: LAB\svc-maint
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe Get-ChildItem C:\Temp
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\todo.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -Command Set-MpPreference -ScanAvgCPULoadFactor 30
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -Command Get-MpPreference | Select-Object DisableRealtimeMonitoring
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

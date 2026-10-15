@@ -1,0 +1,109 @@
+id: D1-07
+role: defective
+defect_class: D1
+evasive: true
+why: The condition 'selection_tool and or selection_domain' has two consecutive binary operators, which
+  is a syntax error in the Sigma condition grammar. Both selections it names are defined, so a check that
+  only looks for the condition key or for undefined names would miss it.
+expected_gate: G1
+report_text: Responders traced the second-stage download on the compromised file server to the built-in
+  certificate utility. certutil.exe was run with -urlcache -split -f against a staging host, and the resolver
+  log shows certutil.exe asking for dl.reedmarsh-files.test just before the payload landed in the temp
+  directory. The domain belongs to a commodity hosting provider and was registered four days before the
+  intrusion. No business application in the environment has any reason to resolve names under reedmarsh-files.test,
+  and certutil.exe normally only resolves the internal certificate authority and the vendor revocation
+  endpoints. The operators reused the same staging name across the other two compromised hosts, so the
+  domain suffix is a stable anchor even though the payload filename changed on each host.
+evidence:
+- certutil.exe asking for dl.reedmarsh-files.test just before the payload landed in the temp directory
+- No business application in the environment has any reason to resolve names under reedmarsh-files.test
+logsource: windows_dns_query
+techniques:
+- T1105
+sigma_yaml: |
+  title: Certutil Resolving The Reedmarsh Staging Domain
+  id: 17c4b8a9-d036-4e72-9a5f-b2e61d80c3f7
+  status: experimental
+  description: Detects certutil.exe resolving names under the reedmarsh-files.test staging domain used for ingress tool transfer.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1105
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection_tool:
+      Image|endswith: '\certutil.exe'
+    selection_domain:
+      QueryName|endswith: '.reedmarsh-files.test'
+    condition: selection_tool and or selection_domain
+  falsepositives:
+    - Administrators testing certificate retrieval against the hosting provider
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Windows\System32\certutil.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: dl.reedmarsh-files.test
+  - kind: dns_query
+    image: C:\Windows\SysWOW64\certutil.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: cdn.reedmarsh-files.test
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: www.northwind.test
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: time.northwind.test
+  lookalike:
+  - kind: dns_query
+    image: C:\Windows\System32\certutil.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: ca01.northwind.test
+  - kind: dns_query
+    image: C:\Windows\System32\certutil.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: crl.vendorpki.example
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

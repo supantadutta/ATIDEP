@@ -1,0 +1,101 @@
+id: D3-06
+role: defective
+defect_class: D3
+evasive: false
+why: The selection uses Hashes, which is not an allowed process_creation field in this laboratory's catalog
+  (Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName); the hash value is quoted
+  in the report but the field cannot be evaluated against the available telemetry.
+expected_gate: G5
+report_text: The fictional Orrin Marine Supply incident report details credential theft using a renamed
+  memory-dump utility. The operators staged the tool as svcstat.exe, with SHA256 9f2c41d7a85e03b6c1d4e8f7a2b95c30e6d1f4a7b8c92e05d3a6f1b48c7e9d02,
+  and ran it as svcstat.exe -accepteula -ma lsass.exe against the LSASS process on a domain member server.
+  The resulting dump file was compressed and moved to a staging share. The original name of the tool,
+  procdump.exe, was recovered from its version resources, but the renamed copy had no matching entry in
+  the software inventory. Responders recommend detecting svcstat.exe launched with the -ma switch against
+  lsass. Because the operators may rename the binary again, the report also lists the hash as an indicator
+  of this specific build. Dumping activity was observed on two hosts.
+evidence:
+- The operators staged the tool as svcstat.exe, with SHA256 9f2c41d7a85e03b6c1d4e8f7a2b95c30e6d1f4a7b8c92e05d3a6f1b48c7e9d02,
+  and ran it as svcstat.exe -accepteula -ma lsass.exe against the LSASS process
+- Responders recommend detecting svcstat.exe launched with the -ma switch against lsass.
+logsource: windows_process_creation
+techniques:
+- T1003.001
+sigma_yaml: |
+  title: Renamed Memory Dump Utility Targeting LSASS
+  id: 71c5e8a2-d094-4b6f-a38e-5b2f90d1c7e3
+  status: experimental
+  description: Detects the renamed memory-dump utility svcstat.exe launched against lsass, matching the known build hash.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.credential_access
+    - attack.t1003.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\svcstat.exe'
+      CommandLine|contains: '-ma lsass'
+      Hashes|contains: '9f2c41d7a85e03b6c1d4e8f7a2b95c30e6d1f4a7b8c92e05d3a6f1b48c7e9d02'
+    condition: selection
+  falsepositives:
+    - Administrators who copy a dump utility under the same name for troubleshooting
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\ProgramData\Crane\svcstat.exe
+    cmd: svcstat.exe -accepteula -ma lsass.exe C:\Windows\Temp\mem.dmp
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\ProgramData\Crane\svcstat.exe
+    cmd: svcstat.exe -accepteula -ma lsass.exe C:\Windows\Temp\mem2.dmp
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami.exe /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\hostname.exe
+    cmd: hostname.exe
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Tools\Sysinternals\procdump64.exe
+    cmd: procdump64.exe -accepteula -ma w3wp.exe C:\Dumps\w3wp.dmp
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\opsadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

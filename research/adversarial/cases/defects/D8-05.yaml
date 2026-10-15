@@ -1,0 +1,108 @@
+id: D8-05
+role: defective
+defect_class: D8
+evasive: true
+why: T1219 (Remote Access Tools) is a real, active technique and its tactic command_and_control is valid,
+  but the report supports only T1571 (Non-Standard Port) and states that no remote-administration product
+  was used; the tagged technique has no support in the report or any declared assumption.
+expected_gate: G7
+report_text: Incident summary, Sandrift Utilities (fictional water company). A custom backdoor named svchelper.exe,
+  placed in a public profile folder, called back to the operator over a raw TCP channel rather than over
+  web ports. Network telemetry showed the implant making outbound connections to 203.0.113.50 on port
+  4444, repeated every few minutes, and a follow-on PowerShell process used the same destination. Analysts
+  highlighted that the protocol is bespoke and that the choice of port 4444 for traffic that is not web
+  or remote-administration traffic is what makes it stand out in this environment. The operators did not
+  install or abuse any legitimate remote-administration or screen-sharing product; all control traffic
+  used the custom implant. The infrastructure address was stable for the whole eleven-day intrusion.
+evidence:
+- outbound connections to 203.0.113.50 on port 4444
+- the choice of port 4444 for traffic that is not web or remote-administration traffic
+logsource: windows_network_connection
+techniques:
+- T1571
+sigma_yaml: |
+  title: Outbound TCP 4444 Connection to Known Implant Controller
+  id: 7c3a95f1-0e28-4b6d-a4d7-92f1e8035b6c
+  status: experimental
+  description: Detects outbound connections to the controller address on the non-standard port 4444 observed in the intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1219
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      DestinationIp: '203.0.113.50'
+      DestinationPort: '4444'
+    condition: selection
+  falsepositives:
+    - Authorized red team exercises that reuse the same infrastructure address
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Users\Public\svchelper.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.50
+    dest_port: '4444'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.50
+    dest_port: '4444'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.20
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.31
+    dest_port: '443'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Program Files\Java\jre\bin\java.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.77
+    dest_port: '4444'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\nodejs\node.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.80
+    dest_port: '4444'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

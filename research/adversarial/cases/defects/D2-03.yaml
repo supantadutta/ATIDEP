@@ -1,0 +1,105 @@
+id: D2-03
+role: defective
+defect_class: D2
+evasive: true
+why: The falsepositives key is present but its value is an empty list, so the rule carries no false-positive
+  guidance although at least one entry is required. The field exists, which a presence-only check would
+  accept; all other metadata and the logic are valid.
+expected_gate: G2
+report_text: Vesperline engagement, host LAB-FIN-07. The backdoor moved staged data out of the network
+  over DNS rather than a direct connection. Packet captures and resolver logs showed the process resolving
+  long hex-encoded labels beneath tunnel.vesperline.test, with each query carrying a small slice of the
+  stolen archive in its leftmost label. Query volume peaked at several hundred lookups per minute during
+  the exfiltration window. The parent domain vesperline.test is also used by the vendor for ordinary web
+  hosting, so analysts limited the indicator to the tunnel subdomain. The authoritative name server for
+  tunnel.vesperline.test answered every query with a short TXT or A record, which the backdoor treated
+  as an acknowledgement.
+evidence:
+- resolving long hex-encoded labels beneath tunnel.vesperline.test
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: DNS Tunnelling Queries Under the Vesperline Tunnel Subdomain
+  id: c3a81d6e-52f7-4b09-9e14-2d7f60a8b3c1
+  status: experimental
+  description: Detects DNS lookups beneath the tunnel subdomain used by the Vesperline backdoor for data exfiltration.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection:
+      QueryName|endswith: 'tunnel.vesperline.test'
+    condition: selection
+  falsepositives: []
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: 6d61696c626f78402d73746167656431.tunnel.vesperline.test
+  - kind: dns_query
+    image: C:\Users\Public\svcmon.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: a3f1c9d2e7b0441800ff.tunnel.vesperline.test
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: intranet.lab.example
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: time.lab.example
+  lookalike:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: www.vesperline.test
+  - kind: dns_query
+    image: C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: mail.vesperline.test
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

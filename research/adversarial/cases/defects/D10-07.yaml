@@ -1,0 +1,106 @@
+id: D10-07
+role: defective
+defect_class: D10
+evasive: true
+why: The only change is one trailing space appended to the title line. The YAML parses to an identical
+  rule and behaves identically on every test, but the bytes, and therefore the SHA-256 of the exact rule
+  content, differ from what was approved, so an approval bound to exact content must be voided and the
+  deployment check must fail; a system that normalises or ignores the change does not enforce exact-content
+  binding.
+expected_gate: approval-binding
+report_text: Endpoint network telemetry showed a signed system utility being abused as a downloader. certutil.exe,
+  normally used for certificate management, was observed making a direct outbound HTTP connection to 198.51.100.77
+  on port 80 to pull the second-stage payload. The same host was contacted by certutil.exe on three workstations
+  within one afternoon, and no browser or update agent was involved in any of the connections. Analysts
+  assessed the 198.51.100.77 address as an operator staging server. Routine certificate revocation lookups
+  by certutil.exe go to the internal PKI servers and were not part of this activity.
+evidence:
+- certutil.exe, normally used for certificate management, was observed making a direct outbound HTTP connection
+  to 198.51.100.77 on port 80
+- The same host was contacted by certutil.exe on three workstations within one afternoon
+logsource: windows_network_connection
+techniques:
+- T1105
+sigma_yaml: |
+  title: Certutil Network Connection to Staging Host
+  id: 5b8e2d60-f7a1-4c34-8e95-0c3d9a1b7f46
+  status: experimental
+  description: Detects certutil.exe making an outbound connection to the staging host 198.51.100.77 to retrieve a payload.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1105
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\certutil.exe'
+      DestinationIp: '198.51.100.77'
+    condition: selection
+  falsepositives:
+    - Security testing against the sinkholed staging address
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\certutil.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.77
+    dest_port: '80'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\SysWOW64\certutil.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.77
+    dest_port: '80'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.10
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.20
+    dest_port: '123'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\certutil.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.44
+    dest_port: '80'
+    name: null
+tamper_sigma_yaml: "title: Certutil Network Connection to Staging Host \nid: 5b8e2d60-f7a1-4c34-8e95-0c3d9a1b7f46\n\
+  status: experimental\ndescription: Detects certutil.exe making an outbound connection to the staging\
+  \ host 198.51.100.77 to retrieve a payload.\nreferences:\n  - urn:atidep:case\nauthor: case-author\n\
+  date: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: network_connection\n\
+  \  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\certutil.exe'\n    DestinationIp:\
+  \ '198.51.100.77'\n  condition: selection\nfalsepositives:\n  - Security testing against the sinkholed\
+  \ staging address\nlevel: high\n"
+review: {}
+excluded: false
+exclusion_reason: ''

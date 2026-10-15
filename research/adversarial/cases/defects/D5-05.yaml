@@ -1,0 +1,106 @@
+id: D5-05
+role: defective
+defect_class: D5
+evasive: false
+why: 'The rule matches only on ScriptBlockText for a PowerShell service log source, which is the script
+  block log (event 4104); the laboratory catalog marks windows_powershell_script_block as available: false,
+  so the rule cannot fire in this laboratory.'
+expected_gate: G6
+report_text: A ransomware affiliate dumped credentials on a domain-joined file server without dropping
+  any binary. The operator pulled a PowerShell port of a well-known credential dumping tool into memory
+  and called it directly. Because the tool was loaded from a remote string, the process command line only
+  showed a short launcher. The analyst recovered the real activity from PowerShell script block logging
+  (event 4104), where the decoded script contained the function name Invoke-Mimikatz and the argument
+  -DumpCreds, together with the module command sekurlsa::logonpasswords. These strings appeared in a single
+  script block of roughly 1.2 MB, which is typical of the embedded reflective payload. Access to the LSASS
+  process was then used to obtain plaintext and hashed credentials of two domain administrators. Defenders
+  should therefore alert on the decoded script block rather than on the launcher.
+evidence:
+- the decoded script contained the function name Invoke-Mimikatz and the argument -DumpCreds, together
+  with the module command sekurlsa::logonpasswords
+logsource: windows_powershell_script_block
+techniques:
+- T1003.001
+- T1059.001
+sigma_yaml: |
+  title: PowerShell Invoke-Mimikatz Credential Dumping In Script Block
+  id: e47b6c20-93af-4d15-86c0-a3d2f91e5b55
+  status: experimental
+  description: Detects a PowerShell script block that contains the Invoke-Mimikatz function with the DumpCreds argument or the sekurlsa logonpasswords module command.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.credential_access
+    - attack.t1003.001
+    - attack.execution
+    - attack.t1059.001
+  logsource:
+    product: windows
+    service: powershell
+  detection:
+    selection_function:
+      ScriptBlockText|contains|all:
+        - Invoke-Mimikatz
+        - '-DumpCreds'
+    selection_module:
+      ScriptBlockText|contains: 'sekurlsa::logonpasswords'
+    condition: selection_function or selection_module
+  falsepositives:
+    - Authorised red team exercises that run Mimikatz from PowerShell
+  level: critical
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -c "Invoke-Mimikatz -DumpCreds"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-files
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -c "Invoke-Mimikatz -Command 'sekurlsa::logonpasswords'"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-files
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\svchost.exe
+    cmd: svchost.exe -k netsvcs -p
+    parent: C:\Windows\System32\services.exe
+    parent_cmd: C:\Windows\System32\services.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c dir D:\Shares
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\kate
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "Get-Process lsass | Select-Object Id, Name"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\admin-leo
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

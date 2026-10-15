@@ -1,0 +1,112 @@
+id: D6-02
+role: defective
+defect_class: D6
+evasive: false
+why: DestinationPort|gt is a numeric comparison modifier, and the accepted Sigma subset allows only exact,
+  contains, startswith, endswith, re, all and windash. The rest of the rule (log source, fields, values,
+  tags, metadata) is valid and its values appear in the evidence.
+expected_gate: G3
+report_text: 'Investigation note for the WETMARSH campaign. A malicious DLL was executed through rundll32.exe
+  from a user-writable directory, and the process then beaconed to a staging server. Network telemetry
+  showed rundll32.exe opening outbound connections to 203.0.113.77 on port 8443 and, on later days, on
+  port 9001, so the operator evidently rotated through high ports. Analysts note that rundll32.exe does
+  not normally make network connections at all, and certainly not to unusual high ports. Blocking the
+  staging address alone was judged insufficient because the actor re-provisioned its infrastructure twice
+  during the engagement. The recommended detection focus is therefore the behaviour of the process itself:
+  outbound connections initiated from rundll32.exe to ports above 8000. Standard web and file-sharing
+  ports were not used by the beacon in any of the observed cases. The infrastructure belongs to a commercial
+  hosting provider.'
+evidence:
+- Network telemetry showed rundll32.exe opening outbound connections to 203.0.113.77 on port 8443 and,
+  on later days, on port 9001
+- outbound connections initiated from rundll32.exe to ports above 8000
+logsource: windows_network_connection
+techniques:
+- T1571
+sigma_yaml: |
+  title: Rundll32 Outbound Connection to High Destination Port
+  id: a93f0b17-6d24-4c8e-b5a1-7e90d2c4f318
+  status: experimental
+  description: Detects rundll32.exe initiating outbound network connections to destination ports above 8000.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\rundll32.exe'
+      DestinationPort|gt: 8000
+      Initiated: 'true'
+    condition: selection
+  falsepositives:
+    - Uncommon administrative tooling that loads a network-aware DLL through rundll32.exe
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '8443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '9001'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Fabrikam Browser\browser.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.25
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.123
+    dest_port: '123'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.30
+    dest_port: '445'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.30
+    dest_port: '135'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

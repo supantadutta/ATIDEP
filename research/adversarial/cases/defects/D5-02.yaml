@@ -1,0 +1,102 @@
+id: D5-02
+role: defective
+defect_class: D5
+evasive: false
+why: 'The detection depends solely on ScriptBlockText from PowerShell script block logging (event 4104),
+  a source the laboratory catalog marks available: false; with that telemetry absent the rule has no data
+  to evaluate and can never alert in this laboratory.'
+expected_gate: G6
+report_text: 'Incident responders investigating a compromised finance workstation found that the intruder
+  disabled the Antimalware Scan Interface before running anything noisy. The activity was invisible in
+  process telemetry because the bypass ran inside an already-running PowerShell session. PowerShell script
+  block logging (event 4104) preserved the one-line bypass, which uses reflection to flip an internal
+  flag in the AMSI utility class. The recovered line was: [Ref].Assembly.GetType(''System.Management.Automation.AmsiUtils'').GetField(''amsiInitFailed'',''NonPublic,Static'').SetValue($null,$true).
+  After this line executed, later script blocks containing known offensive tooling were no longer submitted
+  to the antimalware provider. We saw the same line, byte for byte, on three hosts, which suggests a shared
+  operator playbook. Because the string lives only inside the script block, command-line and image-load
+  telemetry gave no indication that AMSI had been tampered with.'
+evidence:
+- '[Ref].Assembly.GetType(''System.Management.Automation.AmsiUtils'').GetField(''amsiInitFailed'',''NonPublic,Static'').SetValue($null,$true)'
+logsource: windows_powershell_script_block
+techniques:
+- T1562.001
+sigma_yaml: |
+  title: PowerShell AMSI Bypass Via AmsiUtils amsiInitFailed Reflection
+  id: 7b2d9e14-2c35-4f68-b1a7-8d03e6c59f12
+  status: experimental
+  description: Detects a PowerShell script block that sets the amsiInitFailed field of the AmsiUtils class through reflection to disable AMSI scanning.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1562.001
+  logsource:
+    category: ps_script
+    product: windows
+  detection:
+    selection:
+      ScriptBlockText|contains|all:
+        - AmsiUtils
+        - amsiInitFailed
+    condition: selection
+  falsepositives:
+    - Security research scripts executed on a lab host by the security team
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils').GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\fin-dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -c "$a=[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils');
+      $a.GetField('amsiInitFailed','NonPublic,Static').SetValue($null,$true)"
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\fin-dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\calc.exe
+    cmd: calc.exe
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c dir C:\Users\erin\Documents
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "[Ref].Assembly.GetType('System.Management.Automation.AmsiUtils')
+      | Out-Null"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\sec-frank
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

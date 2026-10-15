@@ -1,0 +1,134 @@
+id: CTL2-01
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid rule: every discriminating value (powershell.exe, cmd.exe, 4444, 8888) occurs in
+  the quoted evidence, the T1571 tag and tactic are correct, the log source is available, it matches all
+  positives and none of the negative or look-alike events, and the baseline holds no connections to ports
+  4444 or 8888 (0 of 400).'
+expected_gate: none
+report_text: Intrusion summary, week 41. The operator gained a reverse shell on the finance file server
+  when a hidden powershell.exe process opened a raw TCP socket to 203.0.113.50 on port 4444. After the
+  perimeter proxy began resetting that connection, the same script fell back to port 8888 on 198.51.100.77.
+  Later the operator ran cmd.exe to launch a netcat-style relay, which also connected to 203.0.113.50
+  on port 4444. None of these ports is used by a sanctioned application, and ordinary shell processes
+  in this network make outbound connections only to ports 80 and 443. We assess that the operator chose
+  arbitrary high ports to avoid the web-proxy allow list. Defenders should alert on command shells that
+  open outbound sessions to these two ports.
+evidence:
+- a hidden powershell.exe process opened a raw TCP socket to 203.0.113.50 on port 4444
+- the same script fell back to port 8888 on 198.51.100.77
+- the operator ran cmd.exe to launch a netcat-style relay, which also connected to 203.0.113.50 on port
+  4444
+logsource: windows_network_connection
+techniques:
+- T1571
+sigma_yaml: |
+  title: Command Shell Outbound Connection To Reverse Shell Ports
+  id: 7c1d9e42-5a3b-4f68-b0e1-2d94c7a8e601
+  status: experimental
+  description: Detects powershell.exe or cmd.exe opening an outbound connection to TCP port 4444 or 8888, ports used for raw reverse shells in the reported intrusion and not used by any sanctioned application.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection_shell:
+      Image|endswith:
+        - '\powershell.exe'
+        - '\cmd.exe'
+    selection_port:
+      DestinationPort:
+        - '4444'
+        - '8888'
+    condition: all of selection*
+  falsepositives:
+    - Authorized penetration tests or red team exercises that use default listener ports
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.50
+    dest_port: '4444'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.77
+    dest_port: '8888'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\cmd.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.50
+    dest_port: '4444'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.20
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.9
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Users\alice\AppData\Local\Microsoft\OneDrive\OneDrive.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.31
+    dest_port: '443'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.20
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.44
+    dest_port: '8888'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,100 @@
+id: D7-03
+role: defective
+defect_class: D7
+evasive: true
+why: 'The rule has two conditions on two different fields, but both are near-universal: Image ending in
+  ''.exe'' matches every Windows program and DestinationPort 443 is the dominant port of the 80 baseline
+  connections from chrome.exe, msedge.exe, Teams, svchost.exe and OneDrive, so most baseline network connections
+  match, far above the 2-event limit.'
+expected_gate: G11
+report_text: Intrusion Summary IS-0931, beaconing implant. The implant is installed as C:\ProgramData\CraneSync\crsync.exe
+  and contacts its controller over TCP port 443 at a fixed interval of roughly ninety seconds. Traffic
+  on this port blends in with ordinary HTTPS, and the controller address 203.0.113.50 was only recovered
+  from memory. The implant opens a fresh connection for every beacon instead of keeping a session open,
+  and its request headers copy the browser family used in the victim environment. Responders confirmed
+  that the process crsync.exe made outbound connections to the controller from all five infected workstations.
+  Network defenders should treat this as web-protocol command and control rather than as a data transfer
+  tool, because the volume of each exchange is very small.
+evidence:
+- C:\ProgramData\CraneSync\crsync.exe
+- contacts its controller over TCP port 443 at a fixed interval of roughly ninety seconds
+logsource: windows_network_connection
+techniques:
+- T1071.001
+sigma_yaml: |
+  title: Executable Making Outbound Connection on TCP 443
+  id: c19a5e73-62bd-4d08-8f41-b3a7e0d29c65
+  status: experimental
+  description: Detects an executable making an outbound connection on TCP port 443, the web-protocol beacon channel used by the implant.
+  references:
+      - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+      - attack.command_and_control
+      - attack.t1071.001
+  logsource:
+      category: network_connection
+      product: windows
+  detection:
+      selection:
+          Image|endswith: '.exe'
+          DestinationPort: '443'
+      condition: selection
+  falsepositives:
+      - Any software that communicates over HTTPS
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\ProgramData\CraneSync\crsync.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.50
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\ProgramData\CraneSync\crsync.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.50
+    dest_port: '443'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.20
+    dest_port: '123'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.25
+    dest_port: '993'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.80
+    dest_port: '8443'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

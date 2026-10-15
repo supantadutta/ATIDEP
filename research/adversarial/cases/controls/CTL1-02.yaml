@@ -1,0 +1,134 @@
+id: CTL1-02
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tags match T1003.001 and T1218.011, all values (rundll32.exe, comsvcs.dll, MiniDump,
+  #24) are quoted in the evidence, it covers both the named export and the ordinal form, and it ignores
+  rundll32 calls to other DLLs and ordinary lsass lookups.'
+expected_gate: none
+report_text: 'The credential theft stage was carried out without dropping a dumping tool. The actor ran
+  rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump 624 C:\Windows\Temp\lsa.dmp full, where 624 was
+  the process identifier of lsass.exe resolved earlier with tasklist. The MiniDump export of comsvcs.dll
+  is an undocumented way to write a process memory dump and no administration tooling in this environment
+  uses it. The same export can be reached by ordinal as comsvcs.dll #24, so the ordinal form must be covered
+  as well. The dump was compressed and uploaded within minutes. Defenders should detect rundll32.exe invoking
+  comsvcs.dll together with the MiniDump export or its ordinal.'
+evidence:
+- The actor ran rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump 624 C:\Windows\Temp\lsa.dmp full
+- 'The same export can be reached by ordinal as comsvcs.dll #24, so the ordinal form must be covered as
+  well.'
+logsource: windows_process_creation
+techniques:
+- T1003.001
+- T1218.011
+sigma_yaml: |
+  title: Rundll32 Comsvcs MiniDump Process Memory Dump
+  id: 7c1d8b2f-4e53-4a7c-9b02-3d8f5e0a2b02
+  status: experimental
+  description: 'Detects rundll32.exe invoking the MiniDump export of comsvcs.dll, by name or by ordinal, to write a process memory dump.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.credential_access
+    - attack.t1003.001
+    - attack.stealth
+    - attack.t1218.011
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\rundll32.exe'
+    selection_dll:
+      CommandLine|contains: 'comsvcs.dll'
+    selection_export:
+      CommandLine|contains:
+        - 'MiniDump'
+        - '#24'
+    condition: selection_img and selection_dll and selection_export
+  falsepositives:
+    - 'Rare debugging by administrators using the comsvcs.dll MiniDump export'
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump 624 C:\Windows\Temp\lsa.dmp full
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: 'rundll32.exe comsvcs.dll, #24 624 C:\Users\Public\l.dmp full'
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\SysWOW64\rundll32.exe
+    cmd: rundll32 c:\windows\system32\comsvcs.dll,minidump 624 c:\windows\temp\a.dmp full
+    parent: C:\Windows\System32\wbem\WmiPrvSE.exe
+    parent_cmd: C:\Windows\System32\wbem\WmiPrvSE.exe -secured -Embedding
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\wuauclt.exe
+    cmd: wuauclt.exe /detectnow
+    parent: C:\Windows\System32\svchost.exe
+    parent_cmd: svchost.exe -k netsvcs
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe shell32.dll,Control_RunDLL inetcpl.cpl
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist /fi "imagename eq lsass.exe"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

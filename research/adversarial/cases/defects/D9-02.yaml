@@ -1,0 +1,102 @@
+id: D9-02
+role: defective
+defect_class: D9
+evasive: true
+why: The rule matches on the agent file name and the vendor default relay port only, with no constraint
+  on the install path or the destination address. The sanctioned HelpLink agent installed under Program
+  Files connecting to the vendor cloud relay on port 7070 differs from the malicious positives only in
+  its directory and destination IP, and is matched.
+expected_gate: G10
+report_text: In the second week of the intrusion the operator installed a commercial remote-support utility,
+  HelpLink, as a persistence fallback. The portable agent, hl_agent.exe, was copied to C:\Users\Public\Libraries
+  and launched by a scheduled task. Network telemetry shows hl_agent.exe initiating outbound sessions
+  to a relay at 203.0.113.77 on TCP port 7070, which is the vendor's default relay port, every few minutes.
+  A standby relay at 203.0.113.78 answered on the same port when the primary was unreachable. Because
+  the binary is legitimately signed and the traffic is encrypted, the operator was able to mimic ordinary
+  help-desk activity. In total the victim network produced thousands of sessions over nine days. Defenders
+  should note that the agent file name was not changed by the operator.
+evidence:
+- Network telemetry shows hl_agent.exe initiating outbound sessions to a relay at 203.0.113.77 on TCP
+  port 7070
+- The portable agent, hl_agent.exe, was copied to C:\Users\Public\Libraries and launched by a scheduled
+  task.
+logsource: windows_network_connection
+techniques:
+- T1219
+sigma_yaml: |
+  title: HelpLink Agent Session To Default Relay Port
+  id: b3a94f10-6d2e-47c8-9b15-c0e7a8d3f562
+  status: experimental
+  description: Detects the HelpLink remote-support agent making an outbound connection to TCP port 7070 as seen when the operator used it as a persistence fallback
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1219
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\hl_agent.exe'
+      DestinationPort: 7070
+    condition: selection
+  falsepositives:
+    - Unknown
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Users\Public\Libraries\hl_agent.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '7070'
+    name: null
+  - kind: network_connect
+    image: C:\Users\Public\Libraries\hl_agent.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.78
+    dest_port: '7070'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Mozilla Firefox\firefox.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.12
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.10
+    dest_port: '445'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Program Files\HelpLink\hl_agent.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.20
+    dest_port: '7070'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

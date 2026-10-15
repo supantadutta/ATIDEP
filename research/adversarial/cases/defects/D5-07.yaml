@@ -1,0 +1,111 @@
+id: D5-07
+role: defective
+defect_class: D5
+evasive: true
+why: 'The rule declares the available category process_creation and filters on OriginalFileName, but its
+  only discriminating condition is on ScriptBlockText, which exists only in the PowerShell script block
+  log (windows_powershell_script_block, available: false); the task registration happens in-process via
+  a cmdlet, so no process telemetry carries the cmdlet text and the rule cannot fire in this laboratory.'
+expected_gate: G6
+report_text: 'During a manufacturing-sector investigation the actor established persistence by registering
+  a scheduled task from inside a PowerShell session, rather than by running schtasks.exe. Process telemetry
+  therefore showed no child process for the task creation. The decoded script block, recovered from event
+  4104, used the ScheduledTasks module cmdlets. The key line was: Register-ScheduledTask -TaskName ''WinSyncHelper''
+  -Action $action -Trigger $trigger -RunLevel Highest. The action ran a PowerShell one-liner from the
+  ProgramData directory at every logon. The task name was chosen to resemble a Windows component, but
+  it was absent from clean baseline images. Hunters should look for the cmdlet together with the task
+  name inside script content, because the task registration was performed by a library call in-process.
+  The session host was powershell.exe (OriginalFileName PowerShell.EXE) in all cases we observed.'
+evidence:
+- Register-ScheduledTask -TaskName 'WinSyncHelper' -Action $action -Trigger $trigger -RunLevel Highest
+- The session host was powershell.exe (OriginalFileName PowerShell.EXE) in all cases we observed.
+logsource: windows_powershell_script_block
+techniques:
+- T1053.005
+- T1059.001
+sigma_yaml: |
+  title: PowerShell Scheduled Task Persistence Named WinSyncHelper
+  id: b86f0e3a-d412-47a9-a5c1-90e7d4b38f77
+  status: experimental
+  description: Detects a PowerShell session that registers the scheduled task WinSyncHelper with the Register-ScheduledTask cmdlet.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1053.005
+    - attack.t1059.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_host:
+      OriginalFileName: 'PowerShell.EXE'
+    selection_task:
+      ScriptBlockText|contains|all:
+        - Register-ScheduledTask
+        - WinSyncHelper
+    condition: selection_host and selection_task
+  falsepositives:
+    - Administrators creating a task with the same name during an approved deployment
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "Register-ScheduledTask -TaskName 'WinSyncHelper' -Action
+      $action -Trigger $trigger -RunLevel Highest"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\plant-ops
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -w hidden -c "$t = New-ScheduledTaskTrigger -AtLogOn; Register-ScheduledTask
+      -TaskName 'WinSyncHelper' -Action $action -Trigger $t -RunLevel Highest"
+    parent: C:\Windows\System32\wbem\WmiPrvSE.exe
+    parent_cmd: C:\Windows\System32\wbem\WmiPrvSE.exe -secured -Embedding
+    user: LAB\plant-ops
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /query /fo LIST
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\pat
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\calc.exe
+    cmd: calc.exe
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\pat
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "Register-ScheduledTask -TaskName 'NightlyBackupCheck' -Action
+      $action -Trigger $trigger"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\admin-quinn
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,129 @@
+id: CTL2-03
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid rule using a parenthesised or-group joined to a port selection: rundll32.exe, regsvr32.exe,
+  8443 and 9001 are all in the quoted evidence, the T1218.011, T1218.010 and T1571 tags are correct, and
+  each alternative has two positive fields. Browsers using the same ports are not matched, and the baseline
+  has no connections to these ports (0 of 400).'
+expected_gate: none
+report_text: In the second wave the loader ran as a DLL through rundll32.exe, which then opened an outbound
+  TLS session to 203.0.113.141 on port 8443. A parallel infection chain used regsvr32.exe to load a remote
+  scriptlet and later beaconed to 198.51.100.9 on port 9001. Neither Windows binary has any reason to
+  talk to the internet in this environment, and in our telemetry they have never connected to any destination
+  on ports 8443 or 9001. Browsers do use port 8443 for some internal management consoles, so the detection
+  should key on the two binaries together with the port rather than on the port alone. Analysts should
+  treat any such connection from these binaries as hands-on-keyboard command-and-control activity.
+evidence:
+- the loader ran as a DLL through rundll32.exe, which then opened an outbound TLS session to 203.0.113.141
+  on port 8443
+- A parallel infection chain used regsvr32.exe to load a remote scriptlet and later beaconed to 198.51.100.9
+  on port 9001
+logsource: windows_network_connection
+techniques:
+- T1218.011
+- T1218.010
+- T1571
+sigma_yaml: |
+  title: Rundll32 Or Regsvr32 Outbound Connection To Non-Standard C2 Ports
+  id: 18f6b2d9-c47e-4a3f-91d5-6e0a7b4c3d03
+  status: experimental
+  description: Detects rundll32.exe or regsvr32.exe connecting out to TCP port 8443 or 9001, ports used for command-and-control by the loader chains in the reported intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.011
+    - attack.t1218.010
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection_rundll32:
+      Image|endswith: '\rundll32.exe'
+    selection_regsvr32:
+      Image|endswith: '\regsvr32.exe'
+    selection_port:
+      DestinationPort:
+        - '8443'
+        - '9001'
+    condition: (selection_rundll32 or selection_regsvr32) and selection_port
+  falsepositives:
+    - Custom line-of-business software that registers a COM server against an internal service on port 8443 or 9001
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.141
+    dest_port: '8443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.9
+    dest_port: '9001'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\rundll32.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.9
+    dest_port: '9001'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.20
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.9
+    dest_port: '80'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.60
+    dest_port: '8443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.61
+    dest_port: '9001'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

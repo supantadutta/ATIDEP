@@ -1,0 +1,99 @@
+id: D9-03
+role: defective
+defect_class: D9
+evasive: true
+why: The rule matches any PowerShell lookup under the shared hosting platform domain cranecloud.test,
+  not the operator's specific tenant names. A PowerShell monitoring script resolving the organisation's
+  own tenant on that platform differs from the malicious lookups only in the leftmost label and is matched.
+expected_gate: G10
+report_text: The second-stage implant beacons over HTTPS from PowerShell, and the resolver logs show how
+  it finds its relay. Every 90 seconds powershell.exe resolves fnx-sync.cranecloud.test or one of its
+  rotating siblings, all of them free tenant names on the public application-hosting platform cranecloud.test.
+  The operator registered these tenants with a throwaway account and rotated the leftmost label each day,
+  which defeats blocklists of single hostnames. Across one working day the implant queried 17 distinct
+  tenant names. The lookups were attributed to powershell.exe in every case, and no browser or system
+  service resolved any of them. Investigators were unable to attribute the throwaway account to a named
+  person.
+evidence:
+- Every 90 seconds powershell.exe resolves fnx-sync.cranecloud.test or one of its rotating siblings
+- all of them free tenant names on the public application-hosting platform cranecloud.test
+logsource: windows_dns_query
+techniques:
+- T1071.001
+sigma_yaml: |
+  title: PowerShell Lookup Of Cranecloud Platform Tenant Names
+  id: 1f8d2c76-a4e9-4b30-8e57-d9c1630b2a4e
+  status: experimental
+  description: Detects powershell.exe resolving tenant names on the cranecloud.test hosting platform used by the implant for relay discovery
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.001
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      QueryName|endswith: '.cranecloud.test'
+    condition: selection
+  falsepositives:
+    - Unknown
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: fnx-sync.cranecloud.test
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: k7q-sync.cranecloud.test
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: www.example.test
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: gallery.lab.example
+  lookalike:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: lab-intranet.cranecloud.test
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

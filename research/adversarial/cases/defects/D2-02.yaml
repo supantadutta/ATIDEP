@@ -1,0 +1,106 @@
+id: D2-02
+role: defective
+defect_class: D2
+evasive: false
+why: The status field is 'stable', but the laboratory contract requires every generated rule to carry
+  status experimental. All other metadata and the detection logic are valid.
+expected_gate: G2
+report_text: CraneMail follow-on activity, finance subnet. After installation the implant, a loader named
+  updchk.exe, stopped using web ports. Network telemetry showed updchk.exe opened outbound TCP connections
+  to 203.0.113.77 on port 8531 roughly every ninety seconds. Port 8531 was not on the approved outbound
+  list for the finance subnet, and the actor appears to have chosen it because the perimeter proxy only
+  inspects traffic on port 443. The traffic itself looked like TLS, with a self-signed certificate. Two
+  other hosts showed the same beaconing pattern the following day. Responders blocked the address at the
+  firewall and quarantined the three hosts, and the implant was not seen again after the block.
+evidence:
+- updchk.exe opened outbound TCP connections to 203.0.113.77 on port 8531 roughly every ninety seconds
+logsource: windows_network_connection
+techniques:
+- T1571
+sigma_yaml: |
+  title: Updchk Loader Beaconing to Actor Address on Non-Standard Port
+  id: 7e2b94f0-1a3d-4c85-8d62-b04f7a1c93e5
+  status: stable
+  description: Detects the updchk.exe implant connecting to the actor address 203.0.113.77 on TCP port 8531.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\updchk.exe'
+      DestinationIp: '203.0.113.77'
+      DestinationPort: '8531'
+    condition: selection
+  falsepositives:
+    - A different product that happens to share the file name and uses the same address and port is not expected
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Users\Public\updchk.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '8531'
+    name: null
+  - kind: network_connect
+    image: C:\ProgramData\Updater\UPDCHK.EXE
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '8531'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.10
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.5
+    dest_port: '445'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Program Files\Contoso Backup\bkagent.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.44
+    dest_port: '8531'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\SyncVault\syncvault.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.46
+    dest_port: '8531'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

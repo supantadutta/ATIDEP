@@ -1,0 +1,110 @@
+id: D3-01
+role: defective
+defect_class: D3
+evasive: false
+why: The detection uses NewProcessName, a Windows Security 4688 field name that is not in the allowed
+  field list for process_creation (Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName);
+  every other part of the rule is valid and backed by the quoted evidence.
+expected_gate: G5
+report_text: Incident responders at the fictional Harbourlight Freight company observed a loader that
+  abuses rundll32 to execute a dropped library without a visible window. After a phishing attachment was
+  opened, the user's session ran rundll32.exe C:\Users\Public\Crane\mediasync.dll,#1 from a Word child
+  process, which loaded the library by ordinal rather than by a named export. Analysts noted that legitimate
+  software on these hosts always calls rundll32 with a named export such as shell32.dll,Control_RunDLL,
+  so the ordinal-one invocation of a library from the Public profile was the discriminating feature. The
+  same pattern recurred on four workstations within two hours. The library then beaconed to an external
+  host over HTTPS. Responders recommend detecting rundll32 invocations that load a DLL from the Public
+  profile by ordinal. The library was removed after the hosts were imaged.
+evidence:
+- rundll32.exe C:\Users\Public\Crane\mediasync.dll,#1
+- legitimate software on these hosts always calls rundll32 with a named export such as shell32.dll,Control_RunDLL
+logsource: windows_process_creation
+techniques:
+- T1218.011
+sigma_yaml: |
+  title: Rundll32 Loading Public Profile DLL By Ordinal
+  id: 3b7e1c52-8a4d-4f19-9c60-2d5a7e813f04
+  status: experimental
+  description: Detects rundll32 loading a DLL from the Public profile through ordinal one, as seen in a phishing-delivered loader.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.011
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      NewProcessName|endswith: '\rundll32.exe'
+    selection_cmd:
+      CommandLine|contains: 'mediasync.dll,#1'
+    condition: selection_img and selection_cmd
+  falsepositives:
+    - Third-party software that loads its own library by ordinal through rundll32
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\Users\Public\Crane\mediasync.dll,#1
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\Users\Public\Crane\mediasync.dll,#1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c start
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig.exe /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe shell32.dll,Control_RunDLL desk.cpl
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe printui.dll,PrintUIEntry /in /n\\printsrv01.harbourlight.test\floor2
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

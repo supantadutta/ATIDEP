@@ -1,0 +1,105 @@
+id: D1-05
+role: defective
+defect_class: D1
+evasive: true
+why: The tags key is a single comma-separated string instead of a list of strings, which violates the
+  Sigma schema even though the YAML parses and a text search for the tag names still succeeds.
+expected_gate: G1
+report_text: The intruders installed a portable build of the commercial remote support client HelpBridge
+  to retain interactive access after their first implant was removed. The binary, hbridge.exe, was copied
+  into C:\ProgramData\Intel and started under a compromised service account. On every host hbridge.exe
+  opened a long-lived outbound connection to the relay at 203.0.113.64 on port 7799, which differs from
+  the default port 443 used by the sanctioned HelpBridge deployment on the help desk subnet. Analysts
+  believe the operators chose the relay port to blend with unrelated high-port traffic. Because the product
+  is legitimate and signed, antivirus raised no alert, and the sessions were only discovered when the
+  relay address appeared in an upstream firewall review.
+evidence:
+- hbridge.exe opened a long-lived outbound connection to the relay at 203.0.113.64 on port 7799
+- the sanctioned HelpBridge deployment on the help desk subnet
+logsource: windows_network_connection
+techniques:
+- T1219
+sigma_yaml: |
+  title: Remote Support Client Connecting To Relay On Non-Default Port
+  id: 8b60e3d2-f947-4a1c-a5d8-3c7e19b2046f
+  status: experimental
+  description: Detects the HelpBridge remote support client hbridge.exe connecting to a relay on port 7799 instead of the sanctioned default port.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags: attack.command_and_control, attack.t1219
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\hbridge.exe'
+      DestinationPort: '7799'
+    condition: selection
+  falsepositives:
+    - Sanctioned HelpBridge deployments reconfigured to use the relay port
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\ProgramData\Intel\hbridge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.64
+    dest_port: '7799'
+    name: null
+  - kind: network_connect
+    image: C:\Users\Public\hbridge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.64
+    dest_port: '7799'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Mozilla Firefox\firefox.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.44
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.5
+    dest_port: '443'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Program Files\HelpBridge\hbridge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.200
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\HelpBridge\hbridge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.201
+    dest_port: '8443'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

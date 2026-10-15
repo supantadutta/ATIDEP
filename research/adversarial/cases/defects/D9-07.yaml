@@ -1,0 +1,99 @@
+id: D9-07
+role: defective
+defect_class: D9
+evasive: true
+why: The rule matches any mshta.exe connection to TCP port 8080 without constraining the destination address.
+  A legacy HTA-based helpdesk kiosk application contacting the internal intranet server on port 8080 differs
+  from the malicious positives only in the destination IP and is matched.
+expected_gate: G10
+report_text: The initial-access chain used a remotely hosted HTA application. After the victim opened
+  a shortcut file, mshta.exe was spawned with a URL argument and established an outbound HTTP connection
+  to 203.0.113.90 on TCP port 8080 to retrieve the application. The use of port 8080 rather than the default
+  web ports was consistent across all six victims, and the server returned content of type application/hta.
+  Once downloaded, the HTA launched a PowerShell stager that connected to a second address. The analysts
+  note that mshta.exe made no other network connections on the victim systems during the intrusion window,
+  and that the infrastructure at 203.0.113.90 was taken down two days after discovery.
+evidence:
+- mshta.exe was spawned with a URL argument and established an outbound HTTP connection to 203.0.113.90
+  on TCP port 8080
+- The use of port 8080 rather than the default web ports was consistent across all six victims
+logsource: windows_network_connection
+techniques:
+- T1218.005
+sigma_yaml: |
+  title: Mshta Outbound Connection On Port 8080
+  id: c68e3b05-f17a-4d92-83b0-2a9d4e5c7f61
+  status: experimental
+  description: Detects mshta.exe opening an outbound connection to TCP port 8080 to retrieve a remotely hosted HTA application
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.005
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\mshta.exe'
+      DestinationPort: 8080
+    condition: selection
+  falsepositives:
+    - Unknown
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\mshta.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.90
+    dest_port: '8080'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\SysWOW64\mshta.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.90
+    dest_port: '8080'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.7
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\explorer.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.9
+    dest_port: '80'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\mshta.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.40
+    dest_port: '8080'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

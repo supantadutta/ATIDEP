@@ -1,0 +1,122 @@
+id: CTL2-07
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid DNS rule for external-address discovery: both lookup domains and both command-line
+  client names occur in the quoted evidence, T1016 is the correct discovery technique, and the same domains
+  resolved by a browser, or the same clients resolving ordinary domains, are not matched. The baseline
+  contains none of these names (0 of 400).'
+expected_gate: none
+report_text: Before configuring its tunnel, the operator checked the victim's external address from an
+  interactive shell. In one session curl.exe resolved ip-echo.example, and in another a powershell.exe
+  one-liner using Invoke-RestMethod resolved the fallback service myaddr.test. This lookup is a recognisable
+  step in hands-on-keyboard discovery because no business application on the finance subnet relies on
+  either service. Ordinary users do sometimes open the same address-check page in a web browser, so only
+  command-line clients should be flagged. The behaviour precedes tunnel creation by a few minutes and
+  gives defenders an early chance to intervene.
+evidence:
+- In one session curl.exe resolved ip-echo.example, and in another a powershell.exe one-liner using Invoke-RestMethod
+  resolved the fallback service myaddr.test
+logsource: windows_dns_query
+techniques:
+- T1016
+sigma_yaml: |
+  title: External Address Check Lookup By Command Line Client
+  id: 93a5d7c0-18e4-4b2f-a6d9-7c0e2f81b407
+  status: experimental
+  description: Detects powershell.exe or curl.exe resolving the external address check services ip-echo.example or myaddr.test, a discovery step seen before tunnel creation in the reported intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.discovery
+    - attack.t1016
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection_name:
+      QueryName:
+        - 'ip-echo.example'
+        - 'myaddr.test'
+    selection_client:
+      Image|endswith:
+        - '\curl.exe'
+        - '\powershell.exe'
+    condition: all of selection*
+  falsepositives:
+    - Administrators using curl.exe or PowerShell to check the external address of a host
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Windows\System32\curl.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: ip-echo.example
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: myaddr.test
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: ip-echo.example
+  negative:
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: windowsupdate.microsoft.com
+  - kind: dns_query
+    image: C:\Users\alice\AppData\Local\Microsoft\OneDrive\OneDrive.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: onedrive.live.com
+  lookalike:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: ip-echo.example
+  - kind: dns_query
+    image: C:\Windows\System32\curl.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: www.wikipedia.org
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

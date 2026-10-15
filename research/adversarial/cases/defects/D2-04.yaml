@@ -1,0 +1,109 @@
+id: D2-04
+role: defective
+defect_class: D2
+evasive: true
+why: The author key holds a string made only of three spaces, so no author is actually recorded. The key
+  is present and non-empty as a raw string, which a naive presence check would accept; all other metadata
+  and the logic are valid.
+expected_gate: G2
+report_text: 'Moorlight lateral movement review. After obtaining a service account, the operator pivoted
+  from the jump server to file servers using built-in tooling. Responders recovered the command wmic.exe
+  /node:LAB-FS-02 process call create from the jump server, followed by a cmd.exe payload staged under
+  the Temp directory of the target. The same wmic.exe pattern with a different /node: value appeared against
+  LAB-FS-03 twenty minutes later. Using wmic.exe with process call create against a remote node leaves
+  the spawned process as a child of WmiPrvSE.exe on the target, which is why the source-side command line
+  is the better detection point. Local administrators on the jump server were not observed using this
+  form during the baseline period.'
+evidence:
+- Responders recovered the command wmic.exe /node:LAB-FS-02 process call create from the jump server
+logsource: windows_process_creation
+techniques:
+- T1047
+sigma_yaml: |
+  title: WMIC Remote Process Creation via Node Switch
+  id: 18f6d2a9-0c47-4e3b-b5a2-6e91d4c7f082
+  status: experimental
+  description: Detects wmic.exe creating a process on a remote node as seen in the Moorlight lateral movement.
+  references:
+    - urn:atidep:case
+  author: "   "
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1047
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\wmic.exe'
+      CommandLine|contains|all:
+        - 'process call create'
+        - '/node:'
+    condition: selection
+  falsepositives:
+    - Administrators creating remote processes with wmic during approved maintenance
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe /node:LAB-FS-02 process call create "cmd.exe /c C:\Windows\Temp\s.exe"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc_deploy
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: WMIC.exe /NODE:LAB-FS-03 process call create "cmd.exe /c C:\Windows\Temp\s.exe"
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\svc_deploy
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\hostname.exe
+    cmd: hostname
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\dave\todo.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\explorer.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe process list brief
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\wbem\WMIC.exe
+    cmd: wmic.exe /node:LAB-FS-02 os get caption,version
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

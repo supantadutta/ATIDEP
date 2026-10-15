@@ -1,0 +1,101 @@
+id: D6-05
+role: defective
+defect_class: D6
+evasive: false
+why: ParentCommandLine|exists uses the exists modifier, which is not in the accepted modifier set (none,
+  contains, startswith, endswith, re, all, windash). The log source, other fields, values, tags and metadata
+  are valid, and the non-boolean values are quoted in the evidence.
+expected_gate: G3
+report_text: 'Case notes from the PALEWREN intrusion. A trojanised installer named docviewer.exe drops
+  a DLL called hlp.dll into a folder under the ProgramData directory and then runs it with the command
+  rundll32.exe C:\ProgramData\cache\hlp.dll,Start. The installer terminates within milliseconds of launching
+  the child, so by the time the process-creation event is logged the child has no parent command line
+  recorded: the ParentCommandLine field is absent. Analysts consider this absent-parent condition a useful
+  discriminator, because legitimate rundll32.exe invocations from installers keep the parent alive while
+  the DLL runs. The DLL is a loader that decrypts an embedded payload in memory. Related activity was
+  seen on three hosts at a courier company. Containment involved removing the DLL and blocking the dropper
+  hash. The loader is assessed as a commodity tool sold to several criminal groups.'
+evidence:
+- runs it with the command rundll32.exe C:\ProgramData\cache\hlp.dll,Start
+- 'the child has no parent command line recorded: the ParentCommandLine field is absent'
+logsource: windows_process_creation
+techniques:
+- T1218.011
+sigma_yaml: |
+  title: Rundll32 Loading hlp.dll Start Export with No Parent Command Line
+  id: 18b7f3a9-e4c2-4056-9d8a-52a0c1e7b6f4
+  status: experimental
+  description: Detects rundll32.exe running the hlp.dll Start export when the parent process has already exited and no parent command line is recorded.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.011
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\rundll32.exe'
+      CommandLine|contains: 'hlp.dll,Start'
+      ParentCommandLine|exists: false
+    condition: selection
+  falsepositives:
+    - Software that launches a helper through rundll32.exe and exits before the event is logged
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\ProgramData\cache\hlp.dll,Start
+    parent: C:\Users\bob\AppData\Local\Temp\docviewer.exe
+    parent_cmd: ''
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\ProgramData\cache\hlp.dll,Start
+    parent: C:\Users\carol\Downloads\docviewer.exe
+    parent_cmd: ''
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\bob\readme.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\Explorer.EXE
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\calc.exe
+    cmd: calc.exe
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\Explorer.EXE
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\Fabrikam\Help\hlp.dll,Start
+    parent: C:\Fabrikam\Help\fabhelp.exe
+    parent_cmd: '"C:\Fabrikam\Help\fabhelp.exe" --background'
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

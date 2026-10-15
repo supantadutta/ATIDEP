@@ -1,0 +1,132 @@
+id: D10-01
+role: defective
+defect_class: D10
+evasive: false
+why: The approved rule requires rundll32.exe together with comsvcs.dll and MiniDump on the command line.
+  The tampered copy deletes the whole CommandLine condition, so it alerts on every rundll32.exe execution
+  (including the Control_RunDLL and LockWorkStation look-alikes) and has no discriminating term, and its
+  SHA-256 no longer equals the approved hash.
+expected_gate: approval-binding
+report_text: During the intrusion the operator obtained domain credentials without dropping any custom
+  tooling. On the file server the operator opened an interactive cmd.exe and identified the LSASS process
+  identifier with tasklist. The operator then dumped the process memory with a living-off-the-land technique,
+  running rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump 612 C:\Users\Public\lsass.dmp full from
+  the command shell. The dump was written under the Public profile, compressed with the built-in tar utility
+  and deleted after transfer. Analysts saw the same comsvcs.dll MiniDump invocation on two further servers
+  within the hour, each time with a different process identifier. No malware binary was involved, so detection
+  has to rely on the command line rather than file hashes.
+evidence:
+- rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump 612 C:\Users\Public\lsass.dmp full
+- Analysts saw the same comsvcs.dll MiniDump invocation on two further servers within the hour
+logsource: windows_process_creation
+techniques:
+- T1003.001
+sigma_yaml: |
+  title: LSASS Memory Dump via Rundll32 Comsvcs MiniDump
+  id: 3f9c2a7e-5b1d-4c68-9a42-8d7e1f0b6c31
+  status: experimental
+  description: Detects rundll32.exe loading comsvcs.dll and calling the MiniDump export, a living-off-the-land method of dumping LSASS process memory.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.credential_access
+    - attack.t1003.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\rundll32.exe'
+      CommandLine|contains|all:
+        - 'comsvcs.dll'
+        - 'MiniDump'
+    condition: selection
+  falsepositives:
+    - Legitimate crash-dump collection by administrators using comsvcs.dll MiniDump
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump 612 C:\Users\Public\lsass.dmp full
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-backup
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\Windows\System32\comsvcs.dll, MiniDump 1048 C:\Users\Public\lsass2.dmp full
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc-backup
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\Documents\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe shell32.dll,Control_RunDLL desk.cpl
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe user32.dll,LockWorkStation
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: |
+  title: LSASS Memory Dump via Rundll32 Comsvcs MiniDump
+  id: 3f9c2a7e-5b1d-4c68-9a42-8d7e1f0b6c31
+  status: experimental
+  description: Detects rundll32.exe loading comsvcs.dll and calling the MiniDump export, a living-off-the-land method of dumping LSASS process memory.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.credential_access
+    - attack.t1003.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\rundll32.exe'
+    condition: selection
+  falsepositives:
+    - Legitimate crash-dump collection by administrators using comsvcs.dll MiniDump
+  level: high
+review: {}
+excluded: false
+exclusion_reason: ''

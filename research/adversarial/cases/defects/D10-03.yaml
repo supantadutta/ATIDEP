@@ -1,0 +1,132 @@
+id: D10-03
+role: defective
+defect_class: D10
+evasive: true
+why: Only the level line is changed, from high to low. The detection logic, tags and metadata are untouched
+  so every logic test and gate still passes on the tampered file, but the downgrade lowers alert priority
+  for a confirmed C2 channel and changes the SHA-256 of the approved content, so only the approval binding
+  can catch it.
+expected_gate: approval-binding
+report_text: The operator's reverse shell was started from a PowerShell one-liner on the kiosk host. Network
+  logs show powershell.exe connecting out to 203.0.113.50 on port 4444, a port that is not used by any
+  approved application in the environment, and holding the session open for several hours. The operator
+  chose the non-standard port to avoid the proxy that inspects traffic on ports 80 and 443. The same address
+  and port pairing was used from two other endpoints in the days that followed, and responders confirmed
+  that the listener on 203.0.113.50 was an operator-controlled host.
+evidence:
+- powershell.exe connecting out to 203.0.113.50 on port 4444, a port that is not used by any approved
+  application in the environment
+- The same address and port pairing was used from two other endpoints in the days that followed
+logsource: windows_network_connection
+techniques:
+- T1571
+sigma_yaml: |
+  title: PowerShell Outbound Connection to Operator Host on Port 4444
+  id: 6e0b4d12-9f38-4a57-8c1e-d2a7b5039e64
+  status: experimental
+  description: Detects powershell.exe opening a network connection to the operator host 203.0.113.50 on non-standard TCP port 4444.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      DestinationIp: '203.0.113.50'
+      DestinationPort: 4444
+    condition: selection
+  falsepositives:
+    - Penetration test exercises using the same listener address
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.50
+    dest_port: '4444'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\SysWOW64\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.50
+    dest_port: '4444'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.20
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.5
+    dest_port: '445'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.88
+    dest_port: '5985'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.30
+    dest_port: '443'
+    name: null
+tamper_sigma_yaml: |
+  title: PowerShell Outbound Connection to Operator Host on Port 4444
+  id: 6e0b4d12-9f38-4a57-8c1e-d2a7b5039e64
+  status: experimental
+  description: Detects powershell.exe opening a network connection to the operator host 203.0.113.50 on non-standard TCP port 4444.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      DestinationIp: '203.0.113.50'
+      DestinationPort: 4444
+    condition: selection
+  falsepositives:
+    - Penetration test exercises using the same listener address
+  level: low
+review: {}
+excluded: false
+exclusion_reason: ''

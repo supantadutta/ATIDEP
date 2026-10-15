@@ -1,0 +1,116 @@
+id: D1-04
+role: defective
+defect_class: D1
+evasive: false
+why: The detection key is a YAML list of single-key maps instead of a mapping of named selections plus
+  a condition. It parses as YAML but violates the Sigma schema, which requires detection to be a mapping.
+expected_gate: G1
+report_text: In the second stage of the intrusion the operator established persistence on each pivot host
+  with a scheduled task that masquerades as a Windows maintenance job. The task was registered from an
+  interactive command prompt with the command schtasks.exe /create /tn "Microsoft\Windows\WinSAT\WinSATUpdate"
+  /tr "C:\Users\Public\Libraries\wsupd.exe" /sc onlogon /ru SYSTEM and it points at an executable dropped
+  into the Public Libraries folder. Because the task runs as SYSTEM at every logon, the implant survived
+  reboots and profile resets. Defenders should note that the task name imitates a built-in WinSAT task,
+  while the genuine WinSAT tasks are never configured to launch binaries from user-writable directories.
+  Registration occurred within two minutes of the first remote shell on all four hosts.
+evidence:
+- schtasks.exe /create /tn
+- /sc onlogon /ru SYSTEM
+- Because the task runs as SYSTEM at every logon
+logsource: windows_process_creation
+techniques:
+- T1053.005
+sigma_yaml: |
+  title: Scheduled Task Created To Run At Logon As SYSTEM
+  id: 2d7f9b34-e1a6-4c58-b3d2-7a95c0e4f816
+  status: experimental
+  description: Detects schtasks.exe creating a task that runs at logon as SYSTEM, the persistence pattern seen on pivot hosts.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1053.005
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    - selection:
+        Image|endswith: '\schtasks.exe'
+        CommandLine|contains|all:
+          - '/create'
+          - '/sc onlogon'
+          - '/ru system'
+    - condition: selection
+  falsepositives:
+    - Software installers that register a SYSTEM logon task during setup
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn "Microsoft\Windows\WinSAT\WinSATUpdate" /tr "C:\Users\Public\Libraries\wsupd.exe"
+      /sc onlogon /ru SYSTEM
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc_helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn "Microsoft\Windows\Maintenance\MaintCheck" /tr "C:\Users\Public\Libraries\mchk.exe"
+      /sc onlogon /ru SYSTEM /f
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\svc_helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist.exe /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\PING.EXE
+    cmd: ping.exe -n 2 files.northwind.test
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn NorthwindBackup /tr "C:\Program Files\Northwind\backup.exe" /sc daily
+      /st 02:00 /ru SYSTEM
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\backupadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn TeamsAutoStart /tr "C:\Program Files\Teams\teams.exe" /sc onlogon
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

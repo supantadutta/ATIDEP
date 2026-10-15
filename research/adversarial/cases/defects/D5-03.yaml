@@ -1,0 +1,107 @@
+id: D5-03
+role: defective
+defect_class: D5
+evasive: true
+why: 'The rule declares the available category process_creation and filters on Image, but its only discriminating
+  condition is on ScriptBlockText, a field that exists only in the PowerShell script block log (windows_powershell_script_block,
+  available: false); the opportunity requires that unavailable source, so the rule cannot detect the in-memory
+  load in the laboratory''s telemetry.'
+expected_gate: G6
+report_text: 'A hospitality-sector intrusion set used a PowerShell loader that never wrote a payload to
+  disk. The launcher was a long encoded command, so process records contained only powershell.exe and
+  a Base64 blob. Script block logging on the one host where it happened to be enabled (event 4104) exposed
+  the decoded stage: the script decoded a second Base64 buffer and loaded it into memory as a .NET assembly.
+  The decoded text included the line [Reflection.Assembly]::Load([Convert]::FromBase64String($payload))
+  followed by a call to the loaded type''s entry method. This in-memory load is why file-based scanning
+  missed the implant. We recommend detection on the decoded script content rather than on the encoded
+  launcher, since the encoded launcher differs on every host while the decoded loader line is stable across
+  the victims we examined. The host process in every case was powershell.exe.'
+evidence:
+- '[Reflection.Assembly]::Load([Convert]::FromBase64String($payload))'
+- The host process in every case was powershell.exe.
+logsource: windows_powershell_script_block
+techniques:
+- T1059.001
+- T1027
+sigma_yaml: |
+  title: PowerShell In-Memory Assembly Load From Base64 Buffer
+  id: c1e84a76-5d90-4a3b-8f2e-12b7a9d0c633
+  status: experimental
+  description: Detects powershell.exe running a script that loads a Base64-decoded buffer as a .NET assembly in memory.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.stealth
+    - attack.t1027
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_host:
+      Image|endswith: '\powershell.exe'
+    selection_loader:
+      ScriptBlockText|contains|all:
+        - '[Reflection.Assembly]::Load'
+        - 'FromBase64String'
+    condition: selection_host and selection_loader
+  falsepositives:
+    - Administrative tooling that loads assemblies from encoded configuration data
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "[Reflection.Assembly]::Load([Convert]::FromBase64String($payload))"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c start powershell
+    user: LAB\front-desk
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -w hidden -c "$payload=(Get-Content C:\ProgramData\blob.txt); [Reflection.Assembly]::Load([Convert]::FromBase64String($payload)).GetType('Loader.Main').GetMethod('Run').Invoke($null,$null)"
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe C:\ProgramData\run.vbs
+    user: LAB\front-desk
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\grace
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\PING.EXE
+    cmd: ping.exe printer01.corp.example
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\grace
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "$cfg = Get-Content C:\Config\settings.b64; [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($cfg))"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\admin-henry
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

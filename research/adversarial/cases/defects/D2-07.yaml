@@ -1,0 +1,111 @@
+id: D2-07
+role: defective
+defect_class: D2
+evasive: false
+why: The level key is omitted entirely from the rule, although level is a required metadata field. Every
+  other required key is present and valid.
+expected_gate: G2
+report_text: Saltmarsh persistence note, workstation LAB-HR-11. To survive reboots the operator registered
+  a scheduled task instead of writing a Run key. Responders recovered the command schtasks.exe /create
+  /tn OneDriveSyncCheck followed by a trigger of /sc onlogon, with the task action pointing at a binary
+  in a folder named msdrv under ProgramData. The task name was chosen to look like a OneDrive housekeeping
+  job, and the msdrv folder name imitates a driver directory. The same folder name and logon trigger were
+  present on a second HR workstation. Administrators in this environment create scheduled tasks for backups
+  and patching, but none of those tasks use a logon trigger or an msdrv folder.
+evidence:
+- Responders recovered the command schtasks.exe /create /tn OneDriveSyncCheck followed by a trigger of
+  /sc onlogon
+- a binary in a folder named msdrv under ProgramData
+logsource: windows_process_creation
+techniques:
+- T1053.005
+sigma_yaml: |
+  title: Scheduled Task Created with Logon Trigger Pointing at Msdrv Folder
+  id: d26f81c4-3a95-4b7e-8c10-97e2a5b4d3f6
+  status: experimental
+  description: Detects schtasks.exe registering a logon-triggered task whose action sits in the msdrv folder as seen in the Saltmarsh persistence.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1053.005
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\schtasks.exe'
+      CommandLine|contains|all:
+        - '/create'
+        - 'onlogon'
+        - 'msdrv'
+    condition: selection
+  falsepositives:
+    - Administrators who deploy logon tasks from a folder named msdrv are not expected
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn OneDriveSyncCheck /tr C:\ProgramData\msdrv\svc.exe /sc onlogon /ru SYSTEM
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\frank
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /f /sc ONLOGON /tn "Printer Health" /tr "C:\ProgramData\msdrv\svc.exe"
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\frank
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\calc.exe
+    cmd: calc.exe
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\explorer.exe
+    user: LAB\grace
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\whoami.exe
+    cmd: whoami /groups
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\grace
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn BackupNightly /tr C:\Tools\backup.cmd /sc daily /st 02:00
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /query /fo LIST /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\itadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

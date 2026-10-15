@@ -1,0 +1,113 @@
+id: D4-07
+role: defective
+defect_class: D4
+evasive: true
+why: The Image value '\Windows\System32\schtasks.exe' contains a directory path that is in neither the
+  report nor the evidence quotation; the quotation supports only the bare file name schtasks.exe. No assumption
+  covers the path, so the full condition value is not traceable even though its final component is quoted.
+  The remaining values are quoted.
+expected_gate: G4
+report_text: 'Persistence in the Tidewater intrusion relied on a scheduled task created from a command
+  shell on a jump server. The operators registered a task named OneDriveSyncHelper that executes a renamed
+  payload from the Public profile every five minutes. Responders recovered the creation command from process
+  telemetry: schtasks.exe /create /tn OneDriveSyncHelper /sc minute /mo 5 /tr C:\Users\Public\Libraries\syncsvc.exe.
+  The task survived reboots and was re-created by the operators when administrators removed it on the
+  second day. The payload path sits in a directory that is writable by all local users, which is common
+  for commodity loaders. No scheduled task with this name appears in the software inventory for the server,
+  and the host''s change records contain no corresponding request.'
+evidence:
+- schtasks.exe /create /tn OneDriveSyncHelper /sc minute /mo 5 /tr C:\Users\Public\Libraries\syncsvc.exe
+logsource: windows_process_creation
+techniques:
+- T1053.005
+sigma_yaml: |
+  title: Scheduled Task Created Every Minute Pointing At Public Libraries
+  id: 6a39e1d5-b8c2-47f0-9d14-e3a5c80b72f6
+  status: experimental
+  description: Detects schtasks.exe creating a minute-interval task that runs a payload from the Public Libraries directory.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.persistence
+    - attack.privilege_escalation
+    - attack.t1053.005
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\Windows\System32\schtasks.exe'
+      CommandLine|contains|all:
+        - '/create'
+        - '/sc minute'
+        - '\Users\Public\Libraries'
+    condition: selection
+  falsepositives:
+    - Software that installs a polling task into the Public profile
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn OneDriveSyncHelper /sc minute /mo 5 /tr C:\Users\Public\Libraries\syncsvc.exe
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /create /tn WinSyncUpdate /sc minute /mo 10 /tr C:\Users\Public\Libraries\wupd.exe
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe -NoProfile
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\HOSTNAME.EXE
+    cmd: hostname.exe
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist.exe /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn LabBackupNightly /sc daily /st 02:00 /tr C:\LabBackup\backup.exe
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\backupadmin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks.exe /create /tn HelpdeskInventory /sc minute /mo 30 /tr C:\Tools\inventory.exe
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

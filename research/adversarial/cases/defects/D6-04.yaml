@@ -1,0 +1,124 @@
+id: D6-04
+role: defective
+defect_class: D6
+evasive: true
+why: The condition '1 of them' uses a quantifier target ('them') that is not one of the accepted forms
+  '1 of selection*' and 'all of selection*'. It is valid Sigma and reads like a supported form, but it
+  falls outside the declared subset. Fields, values, tags and metadata are otherwise valid and evidence-backed.
+expected_gate: G3
+report_text: Sandbox write-up for the NIGHTHERON backdoor, which is delivered as svchelper.exe. The implant
+  communicates exclusively over DNS. At start-up it resolves its command domains, which are update.nightheron.test
+  and sync.nightheron.invalid, to learn the current tasking. During data theft it switches to a second
+  behaviour in which svchelper.exe sends query names whose first label begins with the prefix nh- followed
+  by hex-encoded chunks of stolen data, directed at relay domains chosen by the operator. The second behaviour
+  was seen with several different relay domains, so a domain list alone does not cover it. The binary
+  is placed in a user-writable folder and has no legitimate counterpart in the environment. Both behaviours
+  were reproduced three times in the sandbox with consistent results, and no other process produced queries
+  with this prefix.
+evidence:
+- it resolves its command domains, which are update.nightheron.test and sync.nightheron.invalid, to learn
+  the current tasking
+- svchelper.exe sends query names whose first label begins with the prefix nh- followed by hex-encoded
+  chunks of stolen data
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: NIGHTHERON Backdoor DNS Command and Exfiltration Queries
+  id: d2406b8f-0c5e-4a79-a1d3-3f8b97e6c254
+  status: experimental
+  description: Detects DNS queries to the NIGHTHERON command domains and nh- prefixed exfiltration queries sent by svchelper.exe.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection_domains:
+      QueryName|endswith:
+        - '.nightheron.test'
+        - '.nightheron.invalid'
+    selection_exfil:
+      Image|endswith: '\svchelper.exe'
+      QueryName|startswith: 'nh-'
+    condition: 1 of them
+  falsepositives:
+    - Third-party software that uses host names beginning with nh-
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\ProgramData\Fabrikam\svchelper.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: update.nightheron.test
+  - kind: dns_query
+    image: C:\ProgramData\Fabrikam\svchelper.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: nh-48656c6c6f776f726c64.relay.example
+  - kind: dns_query
+    image: C:\ProgramData\Fabrikam\svchelper.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: sync.nightheron.invalid
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Fabrikam Browser\browser.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: www.cranemail.test
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: time.fabrikam.example
+  lookalike:
+  - kind: dns_query
+    image: C:\Program Files\Fabrikam NetHealth\nhagent.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: nh-status.fabrikam.test
+  - kind: dns_query
+    image: C:\Program Files\Fabrikam Browser\browser.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: forum.nightheron-birdclub.example
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

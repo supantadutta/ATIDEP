@@ -1,0 +1,107 @@
+id: D8-06
+role: defective
+defect_class: D8
+evasive: true
+why: The tags list contains only the tactic attack.command_and_control and no technique tag at all, although
+  the report supports T1071.004; every tag present is individually valid, but G7 requires at least one
+  technique tag.
+expected_gate: G7
+report_text: Incident summary, Valley Credit Union (fictional). A memory-resident implant, tracked by
+  the responders as PaleHarrow, polled its controller by resolving a fresh, short, random subdomain of
+  a dedicated parent zone roughly every ninety seconds, for example t7q2.relay-check.valleycu-status.invalid,
+  and decoded operator tasking from the DNS answers. All queries came from the implant's host process
+  and none came from a browser. The responders saw no large outbound transfers and found no sign of data
+  staging, so the DNS channel was assessed only as a command channel for the implant, not as a path for
+  taking data out. Any lookup for a name under the relay-check zone should be treated as hostile on this
+  network, because the zone is not used by any business system.
+evidence:
+- resolving a fresh, short, random subdomain of a dedicated parent zone roughly every ninety seconds,
+  for example t7q2.relay-check.valleycu-status.invalid
+- Any lookup for a name under the relay-check zone should be treated as hostile on this network
+logsource: windows_dns_query
+techniques:
+- T1071.004
+sigma_yaml: |
+  title: DNS Queries to Relay-Check Controller Zone
+  id: 18d4f7a6-93be-4e50-8c12-5a67b0d3e94f
+  status: experimental
+  description: Detects DNS lookups for names under the dedicated implant controller zone used for tasking polls.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+  logsource:
+    category: dns_query
+    product: windows
+  detection:
+    selection:
+      QueryName|endswith: '.relay-check.valleycu-status.invalid'
+    condition: selection
+  falsepositives:
+    - Security researchers sinkholing or probing the controller zone
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: dns_query
+    image: C:\Users\Public\palelib.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: t7q2.relay-check.valleycu-status.invalid
+  - kind: dns_query
+    image: C:\ProgramData\Intel\igfxsvc.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: k3m9.relay-check.valleycu-status.invalid
+  negative:
+  - kind: dns_query
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: www.valleycu.example
+  - kind: dns_query
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: update.vendor.example
+  lookalike:
+  - kind: dns_query
+    image: C:\Program Files\Microsoft\Edge\Application\msedge.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: www.valleycu-status.invalid
+  - kind: dns_query
+    image: C:\Program Files\MonAgent\monagent.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: null
+    dest_port: null
+    name: heartbeat.relay-monitor.valleycu.example
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

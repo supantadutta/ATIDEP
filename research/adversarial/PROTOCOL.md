@@ -29,12 +29,18 @@ table, the benign-baseline summary) and instructed not to read the implementatio
 outputs are kept unedited (`authored/`). Authors were asked to include subtle ("evasive") cases
 on purpose. The builder of the gates did not choose or edit any case.
 
-**Ground-truth check before any run.** A separate reviewer, who did not write the case, judges
-from the case alone whether the claimed defect is present, whether the control is clean, and
-whether events are labelled correctly. A case is **excluded** only if that reviewer judges the
-claimed property absent, with a written reason, and the exclusion is decided before the system
-sees the case. Every excluded case is listed in the report with its reason. Cases are never
-excluded because of how the system treated them.
+**Ground-truth check before any run.** Two separate reviewers, who did not write the case and who
+see only the case and the public contract (never the implementation), each judge from the case
+alone whether the claimed defect is present, whether a control is clean, and whether the events are
+labelled correctly. A third reviewer settles any case on which the first two differ. A case is
+**excluded** only if the reviewers' majority judges the claimed property absent, with a written
+reason, or if it fails a **mechanical integrity check** (an evidence quotation that is not
+verbatim in the report text, an event that cannot be built, an event kind that does not fit the
+log source, a missing positive, negative or look-alike event set). Both rules are applied before
+the system sees any case, and the reviewers' notes about *other* imperfections (a second, incidental
+defect, a weak event) are recorded and reported but do not exclude a case. Every excluded case is
+listed in the report with its reason. Cases are never excluded because of how the system treated
+them, and the review records are committed before any run.
 
 ## Conditions
 

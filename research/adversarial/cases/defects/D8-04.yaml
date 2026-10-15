@@ -1,0 +1,110 @@
+id: D8-04
+role: defective
+defect_class: D8
+evasive: true
+why: T1218.011 (Rundll32) maps only to the stealth tactic in v19.2; the extra attack.execution tag is
+  a valid tactic name but not a tactic of this technique, so the tactic list is inconsistent with the
+  technique even though the technique ID is correct and supported.
+expected_gate: G7
+report_text: Incident summary, Tessellate Components (fictional manufacturer). A purchase-order document
+  delivered by email led to a macro that dropped a DLL into a public profile folder and loaded it through
+  the Windows DLL host. The process tree showed WINWORD.EXE spawned rundll32.exe with the command line
+  rundll32.exe C:\Users\Public\Libraries\netprov.dll,Start and the DLL then opened an outbound session
+  to the actor. Analysts noted that Office applications almost never start rundll32 to load a DLL by export
+  name in this environment, so the combination of an Office parent and a DLL,export argument is the reliable
+  signal. The DLL file name changed between the three affected hosts but the export name did not. Nothing
+  in the report indicates the DLL was installed for persistence or that other binaries were used as proxies.
+evidence:
+- WINWORD.EXE spawned rundll32.exe with the command line rundll32.exe C:\Users\Public\Libraries\netprov.dll,Start
+- the combination of an Office parent and a DLL,export argument is the reliable signal
+logsource: windows_process_creation
+techniques:
+- T1218.011
+sigma_yaml: |
+  title: Rundll32 Spawned by Word Loading a DLL by Export
+  id: e2740b9d-6a15-4c3e-93f8-1b5d8a06c427
+  status: experimental
+  description: Detects rundll32 started by Word with a DLL and export name argument.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.execution
+    - attack.stealth
+    - attack.t1218.011
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\rundll32.exe'
+      ParentImage|endswith: '\winword.exe'
+      CommandLine|contains: '.dll,'
+    condition: selection
+  falsepositives:
+    - Word add-ins or document features that legitimately call rundll32 with a DLL export
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\Users\Public\Libraries\netprov.dll,Start
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n C:\Users\dave\Documents\PO-4471.docm
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe C:\Users\Public\Libraries\lanprov.dll,Start
+    parent: C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE
+    parent_cmd: WINWORD.EXE /n C:\Users\erin\Documents\PO-5530.docm
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\ping.exe
+    cmd: ping.exe -n 2 192.0.2.10
+    parent: C:\Windows\System32\cmd.exe
+    parent_cmd: cmd.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\calc.exe
+    cmd: calc.exe
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe shell32.dll,Control_RunDLL desk.cpl
+    parent: C:\Windows\explorer.exe
+    parent_cmd: explorer.exe
+    user: LAB\dave
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\rundll32.exe
+    cmd: rundll32.exe url.dll,FileProtocolHandler https://intranet.tessellate.example/
+    parent: C:\Program Files\Google\Chrome\Application\chrome.exe
+    parent_cmd: chrome.exe
+    user: LAB\erin
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

@@ -1,0 +1,110 @@
+id: D4-05
+role: defective
+defect_class: D4
+evasive: false
+why: The rule restricts Image to wscript.exe, a process name that does not occur anywhere in the report
+  (which says only 'a script host process') or in the evidence quotations, and no assumption covers it.
+  The destination IP and port are quoted verbatim, so the tool name taken from outside knowledge is the
+  single unsupported value.
+expected_gate: G4
+report_text: 'Network telemetry from the Larkspur incident shows an implant beaconing to a single external
+  address over a non-standard port. Every outbound session in the sample used the same destination: the
+  implant connected to 203.0.113.77 on TCP port 8443 at intervals of roughly sixty seconds, sending short
+  fixed-size requests and receiving small replies. The port is not associated with any approved business
+  application in the affected subnet. The connections originated from a script host process launched through
+  the user''s startup items, which explains why the activity resumed after each reboot. No domain name
+  was used; the operators addressed the server by IP only, which suggests the infrastructure was provisioned
+  for short-term use and will rotate quickly.'
+evidence:
+- the implant connected to 203.0.113.77 on TCP port 8443 at intervals of roughly sixty seconds
+- The port is not associated with any approved business application in the affected subnet.
+logsource: windows_network_connection
+techniques:
+- T1571
+sigma_yaml: |
+  title: Script Host Beaconing To Non-Standard Port
+  id: 18d6c9f4-0e7b-4f52-a3d9-b74c26e18f03
+  status: experimental
+  description: Detects wscript.exe connecting to 203.0.113.77 on TCP port 8443.
+  references:
+    - urn:atidep:case
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.command_and_control
+    - attack.t1571
+  logsource:
+    category: network_connection
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\wscript.exe'
+      DestinationIp: '203.0.113.77'
+      DestinationPort: '8443'
+    condition: selection
+  falsepositives:
+    - Administrative scripts contacting a management service on the same address
+  level: medium
+assumptions: []
+events:
+  positive:
+  - kind: network_connect
+    image: C:\Windows\System32\wscript.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '8443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\SysWOW64\wscript.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 203.0.113.77
+    dest_port: '8443'
+    name: null
+  negative:
+  - kind: network_connect
+    image: C:\Program Files\Google\Chrome\Application\chrome.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.10
+    dest_port: '443'
+    name: null
+  - kind: network_connect
+    image: C:\Windows\System32\svchost.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.15
+    dest_port: '443'
+    name: null
+  lookalike:
+  - kind: network_connect
+    image: C:\Windows\System32\wscript.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 198.51.100.40
+    dest_port: '8443'
+    name: null
+  - kind: network_connect
+    image: C:\Program Files\LabAgent\agent.exe
+    cmd: null
+    parent: null
+    parent_cmd: null
+    user: null
+    dest_ip: 192.0.2.60
+    dest_port: '8443'
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''

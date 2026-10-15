@@ -1,0 +1,112 @@
+id: D9-01
+role: defective
+defect_class: D9
+evasive: true
+why: The rule keys on cmstp.exe with /s, /ni and an .inf path but omits the /au auto-elevation switch
+  that the report ties to the malicious use. A deployment tool silently installing a VPN connection profile
+  with cmstp.exe /s /ni <profile>.inf satisfies every condition, so it matches the benign look-alike.
+expected_gate: G10
+report_text: 'During the intrusion at a regional logistics firm, the operator escalated privileges without
+  dropping any new executable. A phishing-delivered script wrote an installation file into the public
+  documents folder and then invoked the Microsoft Connection Manager Profile Installer to process it.
+  The command observed on the endpoint was: cmstp.exe /s /ni /au C:\Users\Public\Documents\cfg_update.inf.
+  The silent and no-interface switches suppress every dialog, and the all-users switch causes the profile
+  installer to run an auto-elevated COM object, which in this case executed a second-stage payload with
+  high integrity. The parent of the cmstp.exe process was wscript.exe. Responders recovered the same technique
+  on two further hosts the following night, always with a different installation file name but the same
+  switches.'
+evidence:
+- cmstp.exe /s /ni /au C:\Users\Public\Documents\cfg_update.inf
+- The silent and no-interface switches suppress every dialog
+logsource: windows_process_creation
+techniques:
+- T1218.003
+sigma_yaml: |
+  title: CMSTP Silent Install Of Profile File With No Interface Switch
+  id: 7c1e5a42-93b8-4d6f-a0c3-5e8f21b4d907
+  status: experimental
+  description: Detects cmstp.exe invoked with the silent and no-interface switches against an inf file, as used to launch an auto-elevated second-stage payload
+  references:
+    - 'urn:atidep:case'
+  author: case-author
+  date: 2026/10/02
+  tags:
+    - attack.stealth
+    - attack.t1218.003
+  logsource:
+    category: process_creation
+    product: windows
+  detection:
+    selection:
+      Image|endswith: '\cmstp.exe'
+      CommandLine|contains|all:
+        - '/s'
+        - '/ni'
+        - '.inf'
+    condition: selection
+  falsepositives:
+    - Unknown
+  level: high
+assumptions: []
+events:
+  positive:
+  - kind: process_create
+    image: C:\Windows\System32\cmstp.exe
+    cmd: cmstp.exe /s /ni /au C:\Users\Public\Documents\cfg_update.inf
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe C:\Users\Public\Documents\invoice_view.js
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmstp.exe
+    cmd: cmstp.exe /s /ni /au C:\Users\Public\Documents\profile_b7.inf
+    parent: C:\Windows\System32\wscript.exe
+    parent_cmd: wscript.exe C:\Users\Public\Documents\remit_notice.js
+    user: LAB\bob
+    dest_ip: null
+    dest_port: null
+    name: null
+  negative:
+  - kind: process_create
+    image: C:\Windows\System32\cmd.exe
+    cmd: cmd.exe /c ipconfig /all
+    parent: C:\Windows\explorer.exe
+    parent_cmd: C:\Windows\explorer.exe
+    user: LAB\alice
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\msiexec.exe
+    cmd: msiexec.exe /i C:\Temp\viewer_setup.msi /qn
+    parent: C:\Windows\System32\services.exe
+    parent_cmd: C:\Windows\System32\services.exe
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  lookalike:
+  - kind: process_create
+    image: C:\Windows\System32\cmstp.exe
+    cmd: cmstp.exe /s /ni C:\ProgramData\CraneVPN\cranevpn.inf
+    parent: C:\Program Files\CraneVPN\deploy\cranevpn_setup.exe
+    parent_cmd: cranevpn_setup.exe /deploy
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+  - kind: process_create
+    image: C:\Windows\System32\cmstp.exe
+    cmd: cmstp.exe /u C:\ProgramData\CraneVPN\cranevpn.inf
+    parent: C:\Program Files\CraneVPN\deploy\cranevpn_setup.exe
+    parent_cmd: cranevpn_setup.exe /remove
+    user: NT AUTHORITY\SYSTEM
+    dest_ip: null
+    dest_port: null
+    name: null
+tamper_sigma_yaml: ''
+review: {}
+excluded: false
+exclusion_reason: ''
