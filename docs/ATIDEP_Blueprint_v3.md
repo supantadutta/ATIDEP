@@ -476,8 +476,10 @@ atidep/
 │   ├── telemetry_catalog.yaml
 │   ├── org_profile.yaml        # synthetic organisation
 │   ├── wazuh_mapping.yaml      # field map, level map, parent SIDs
-│   ├── experiment.yaml         # pre-registered parameters (frozen at prereg-v1)
-│   └── cost_rates.yaml
+│   ├── experiment.yaml         # pre-registered parameters (frozen at prereg-v1), incl. economics block
+│   ├── cost_rates.yaml         # rates, host, hours: every value null until sourced
+│   ├── price_register.yaml     # commercial candidates; quote_required placeholders
+│   └── cost_scenarios.yaml     # FN1-FN9, the four scenarios, named workloads
 ├── app/
 │   ├── main.py
 │   ├── api/
@@ -540,8 +542,10 @@ atidep/
 │   ├── preregistration/        # analysis plan, thresholds, seeds
 │   ├── experiment_runs/
 │   ├── rubric/                 # rating sheets, rater calibration
-│   ├── analysis/
-│   └── cost_model/
+│   ├── analysis/               # statistics (paired, proportions, agreement, raters, crossover)
+│   ├── economics/              # offline cost model: inputs, ledger, measured, analysis, report
+│   ├── adversarial/            # case set, harness, review, runner, raw results
+│   └── dataset/                # dataset model and readiness check
 ├── spikes/                     # S1–S4 notebooks, results, ADRs
 └── docs/
     ├── architecture.md
@@ -1277,11 +1281,11 @@ Experiments and writing are protected; the build freezes at the end of week 12. 
 | 9 | Converter productionised; IOC builder; Tier 1 matcher; event corpora | Seeded bad-rule set authored | **First end-to-end rule on 3 pilot items** |
 | 10 | G3, G6, G8–G11; approval; audit chain | Injection report set authored | All gates implemented |
 | 11 | Wazuh adapter; Tier 2; deploy/rollback; Improvement Agent | Rubric draft; calibration on pilot rules | Dry-run and rollback demonstrated |
-| 12 | UI (3 pages), timers, cost records; baseline C and ablation switches; pilot run; bill of materials and licence audit | Fix thresholds (δ_t, Δ_q, G11 rate) from pilot; document cost rates with their sources; commit `config/experiment.yaml` | **FREEZE: tag `freeze-v1`, tag `prereg-v1`** |
+| 12 | UI (3 pages), timers, cost records; baseline C and ablation switches; pilot run; bill of materials and licence audit | Fix thresholds (δ_t, Δ_q, G11 rate) from pilot; document every cost rate with its basis, source and date (never a guess); name the commercial candidates and the adequacy test **before** looking up any price, then record prices and quotes; fix δ_c and the primary workload with a written rationale; commit `config/experiment.yaml` | **FREEZE: tag `freeze-v1`, tag `prereg-v1`** |
 | 13 | bug fixes only (no features) | Agentic runs ×3 per item; **Set Y agentic review**; baseline C and ablations; adversarial experiments | Raw experimental data complete for automated parts |
 | 14 | none | **Set X agentic review**; feedback experiment (H6); optional independent-analyst subset | Agentic and feedback data complete |
 | 15 | none | **Set Y manual** (≥ 14 days after its agentic review); blinded rubric rating; analysis; export cost records | All data collected |
-| 16 | none | Analysis including the cost chapter, report, demo, defence preparation | Final deliverables |
+| 16 | none | Analysis including the economic-evaluation chapter, report, demo, defence preparation | Final deliverables |
 
 The paper is written after the build is complete and the experiments have run (§34.4). Chapters 1 and 2 exist as early drafts and are rewritten from the results; no other chapter is drafted before then. Analysis scripts regenerate every table and figure from the exported data, so weeks 15–16 are analysis and writing, not data wrangling.
 
@@ -1576,7 +1580,7 @@ The project is built and evaluated first. The paper is then written from what wa
 
 ### 34.3 Separation rule
 
-The software records, enforces its budget cap, and shows concise totals only. The cost model, scenario and sensitivity analysis, hidden-cost register and break-even projection live in Chapter 8 of the paper and in the analysis files, so the security solution does not become a financial calculator. The interface between the two is defined in §2.4.
+The software records physical quantities, enforces its budget cap, and shows concise totals of quantities only. The cost model (`research.economics`), the scenario and sensitivity analysis, the hidden-cost register and the break-even projection live in the analysis files and in Chapter 8 of the paper, so the security solution does not become a financial calculator. Cost is nonetheless a research dimension, not a footnote: the two are separated so that the solution stays auditable and the economic evaluation can be re-run by anyone from the exports. The interface between the two is defined in §2.4.
 
 ---
 
@@ -1634,7 +1638,7 @@ The software records, enforces its budget cap, and shows concise totals only. Th
 11. Show a missing-telemetry block (Scenario 5) and a prompt-injection report being neutralised (Scenario 6).
 12. Show a tampered-approval refusal (Scenario 7).
 13. Add an analyst disposition; show a tuning recommendation and its before/after effect.
-14. Show effort and cost totals and the manual-versus-ATIDEP-versus-single-prompt comparison.
+14. Show effort and usage totals and the manual-versus-ATIDEP-versus-single-prompt comparison; run `python -m research.economics check` to show which cost inputs are still missing, and the economic report with its exact wording for unpriced items.
 
 ---
 
@@ -1975,8 +1979,13 @@ These could not be confirmed from primary documentation while v3 was written. Do
 | A12 | Exact validator coverage of the pinned pySigma / `sigma-cli` versions. | Version-dependent. | S1 |
 | A13 | The lab target is Wazuh 4.14.x; the docs `main` branch describes an unreleased 5.x with a different Engine, which this design does not target. | Documentation repository README (`main` = latest development version) and 5.x release notes. | S2 (pin the exact 4.14.x patch version) |
 | A14 | The pinned local model can be run under a permissive licence, and its classification under the OSI's Open Source AI Definition is known. | Depends on the model chosen in S3; the OSI definitions were confirmed in search extracts. | S3 |
-| A15 | Analyst, engineer and reviewer hourly rates and electricity price used in `cost_rates.yaml` are documented with a source. | Current values are placeholders. | Week 12 |
-| A16 | Published vendor list prices exist and can be verified, if the optional illustrative appendix is wanted. | Not checked; vendor and blog price comparisons found in search were unsuitable as evidence. | Optional |
+| A15 | The analyst and engineer hourly rates, the electricity tariff, the host price and life, the measured power draw, the storage price, the maintenance and build hours and any exchange rate in `cost_rates.yaml` are documented, each with basis, source and date. | **Open.** v3.0 listed example numbers; v3.1 removed them. Every value is `null` and `python -m research.economics check` lists them. Needs the coordinator. | Week 12, before `prereg-v1` |
+| A16 | The commercial candidates for the four priced groups (hosted model API, cloud compute, cloud storage, SIEM platform) are named, with the adequacy test, before any price is looked up; published list prices are then recorded from the vendors' own pages with the date and an archive reference, and any non-public price is recorded as `Vendor quote required / public price unavailable`. | **Open.** The register holds four placeholders and no price. A hosted model counts as adequate only if the pipeline has been run on it (arm S-OSS-API). Needs the coordinator. | Week 12 |
+| A17 | δ_c (the threshold for "substantially cheaper") and the one primary workload are fixed, with a written rationale that does not depend on the result. | **Open.** Both are `null` in `config/experiment.yaml`; H7 is not evaluable until they are set. Needs the coordinator and the supervisor. | Before `prereg-v1` |
+| A18 | Whether the optional hosted-model arm (S-OSS-API) is run, with which model, under what spend cap; and the paid model's training cutoff. | **Open.** `paid_model` is TBD. Without the arm, tokens for the hosted scenario are proxied from the local arm and every dependent result is marked *screening only*. | Week 12 |
+| A19 | The pinned model's licence classification (OSI Open Source AI Definition 1.0), training cutoff and digest; the stability of the server's usage counts. | **Open.** `tools/model_probe.py` gathers the evidence and selects nothing. | S3 |
+| A20 | Whether every reference in `paper/references.bib` agrees with the publisher's or the paper's own record. | **Open.** `paper/verification_checklist.md` lists all 54 entries as pending; none is marked verified. | Before submission |
+| A21 | The injection families that were not authored (encoded instructions; requests to disable validation or add an exfiltration URL) are covered by a later case addition written by a person. | **Open.** The authoring agent for those families was stopped by the platform's safety classifier and was not reworded around it (`research/adversarial/authored/NOT_AUTHORED.md`). | Before the final report |
 
 ---
 
@@ -2011,4 +2020,4 @@ These could not be confirmed from primary documentation while v3 was written. Do
 
 ## 44. Final One-Paragraph Proposal Description
 
-For the Master's Final Project in Cybersecurity, this research will design and evaluate ATIDEP, an open-source platform for threat-intelligence operationalisation and detection engineering. The platform collects selected cyber threat intelligence through hardened ingestion, extracts evidence-linked indicators and behaviours (each verified against the source text), prioritises them with a transparent scoring model, decides with deterministic telemetry checks whether a defensible detection exists, and generates Sigma rules for behaviours and Wazuh CDB lists for indicators. Generated content passes through hard validation gates, a bounded repair loop, and a two-tier functional test suite before human approval bound to the exact rule content, after which it can be exported, dry-run, or deployed to a laboratory Wazuh manager through a least-privilege API adapter. The platform collects detection results and proposes rule improvements that return to validation and approval, and it records effort and resource data for offline cost analysis. In a pre-registered, bias-controlled experiment, the governed workflow is compared with a manual workflow and with a single-prompt LLM baseline on analyst active effort, independently judged rule quality, validity, held-out detection and false-positive behaviour, and resistance to seeded defects and prompt injection, with descriptive break-even economics for small security teams and academic environments.
+For the Master's Final Project in Cybersecurity, this research will design and evaluate ATIDEP, an open-source platform for threat-intelligence operationalisation and detection engineering. The platform collects selected cyber threat intelligence through hardened ingestion, extracts evidence-linked indicators and behaviours (each verified against the source text), prioritises them with a transparent scoring model, decides with deterministic telemetry checks whether a defensible detection exists, and generates Sigma rules for behaviours and Wazuh CDB lists for indicators. Generated content passes through hard validation gates, a bounded repair loop, and a two-tier functional test suite before human approval bound to the exact rule content, after which it can be exported, dry-run, or deployed to a laboratory Wazuh manager through a least-privilege API adapter. The platform collects detection results and proposes rule improvements that return to validation and approval, and it records effort, model-usage and resource data, with the provenance of every count, for an offline economic evaluation. In a pre-registered, bias-controlled experiment, the governed workflow is evaluated on two dimensions: technically, against a manual workflow and a single-prompt LLM baseline on analyst active effort, independently judged rule quality, validity, held-out detection and false-positive behaviour, and resistance to seeded defects and prompt injection; and economically, against the manual workflow and a functionally comparable modelled paid configuration, through a cost model whose every price, rate and volume is sourced or left explicitly missing, normalised unit costs, a pre-registered decision rule and a joint assessment whose wording never claims parity with a paid system.
