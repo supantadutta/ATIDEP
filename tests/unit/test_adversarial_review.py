@@ -86,3 +86,29 @@ def test_cases_without_two_reviewers_are_reported_and_the_cli_exits_non_zero(cas
     write_review(rd, "1.json", "R1", "primary", [("D1-01", "present", [])])
     assert apply(cases, rd)["unreviewed"] == ["D1-01", "CTL1-01", "INJA-01"]
     assert main(["apply", str(rd), "--cases", str(cases)]) == 1
+
+
+def test_blind_inputs_hide_class_gate_role_and_order_and_keep_a_key(cases, tmp_path):
+    from research.adversarial.review import blind_agreement, prepare_blind
+    cs = load_case_set(cases)
+    plan = prepare_blind(cases, tmp_path / "blind", seed=1)
+    key = json.loads((tmp_path / "blind" / "key.json").read_text())
+    assert sorted(key.values()) == ["CTL1-01", "D1-01"] and sorted(key) == ["B001", "B002"]
+    assert plan == {"BL1": ["B001", "B002"]}
+    for label in key:
+        view = yaml.safe_load((tmp_path / "blind" / f"{label}.yaml").read_text())
+        assert set(view) == {"id", "report_text", "evidence", "logsource", "techniques",
+                             "sigma_yaml", "assumptions", "events"}
+    rd = tmp_path / "blind_reviews"
+    rd.mkdir()
+    inv = {v: k for k, v in key.items()}
+    (rd / "1.json").write_text(json.dumps({"reviews": [
+        {"label": inv["D1-01"], "gates_that_should_stop": ["G1"]},
+        {"label": inv["CTL1-01"], "gates_that_should_stop": []}]}))
+    (rd / "2.json").write_text(json.dumps({"reviews": [
+        {"label": inv["D1-01"], "gates_that_should_stop": []},
+        {"label": inv["CTL1-01"], "gates_that_should_stop": []}]}))
+    out = blind_agreement(key, cs, rd)
+    assert out["per_class"]["D1"]["claimed_gate_named_by_one"] == 1
+    assert out["per_class"]["NONE"]["no_gate_named_by_both"] == 1
+    assert out["defective_with_no_gate_named_by_both_blind_reviewers"] == []

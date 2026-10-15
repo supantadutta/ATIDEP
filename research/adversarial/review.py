@@ -86,6 +86,67 @@ class _Shim:
         return self._d
 
 
+BLIND_FIELDS = ("report_text", "evidence", "logsource", "techniques", "sigma_yaml", "assumptions",
+                "events")
+BLIND_BATCH = 11
+
+
+def prepare_blind(cases_dir: Path | str, out_dir: Path | str, seed: int = 20261015
+                  ) -> dict[str, list[str]]:
+    """Rule cases (not D10, whose property is about a later change) with opaque labels, no class,
+    no expected gate and no role, controls mixed in and the order shuffled with a committed seed.
+    The key from label to case is written beside the batches and is not given to reviewers."""
+    import random
+
+    cs = load_case_set(cases_dir)
+    cases = [c for c in (*cs.defects, *cs.controls) if c.defect_class != "D10"]
+    rng = random.Random(seed)
+    rng.shuffle(cases)
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+    key: dict[str, str] = {}
+    labels: list[str] = []
+    for i, c in enumerate(cases, 1):
+        label = f"B{i:03d}"
+        key[label] = c.id
+        labels.append(label)
+        view = {k: c.model_dump(mode="json")[k] for k in BLIND_FIELDS}
+        dump_case(_Shim({"id": label, **view}), out / f"{label}.yaml")
+    plan = {f"BL{k // BLIND_BATCH + 1}": labels[k:k + BLIND_BATCH]
+            for k in range(0, len(labels), BLIND_BATCH)}
+    (out / "key.json").write_text(json.dumps(key, indent=1, sort_keys=True))
+    (out / "batches.json").write_text(json.dumps(plan, indent=1))
+    return plan
+
+
+def blind_agreement(key: dict[str, str], cs: CaseSet, reviews_dir: Path | str
+                    ) -> dict[str, object]:
+    """Compare the blind reviewers' gate lists with what each case claims. Reported only."""
+    claims = {c.id: c for c in (*cs.defects, *cs.controls)}
+    got: dict[str, list[set[str]]] = {}
+    for p in sorted(Path(reviews_dir).glob("*.json")):
+        for r in json.loads(p.read_text(encoding="utf-8")).get("reviews", []):
+            got.setdefault(key[r["label"]], []).append(set(r["gates_that_should_stop"]))
+    per: dict[str, dict[str, int]] = {}
+    nothing: list[str] = []
+    for cid, sets in sorted(got.items()):
+        c = claims[cid]
+        cls = c.defect_class
+        cell = per.setdefault(cls, {"cases": 0, "claimed_gate_named_by_both": 0,
+                                    "claimed_gate_named_by_one": 0, "claimed_gate_named_by_none": 0,
+                                    "no_gate_named_by_both": 0})
+        cell["cases"] += 1
+        hits = sum(c.expected_gate in s for s in sets)
+        cell["claimed_gate_named_by_both" if hits >= 2 else
+             "claimed_gate_named_by_one" if hits == 1 else "claimed_gate_named_by_none"] += 1
+        if all(not s for s in sets):
+            cell["no_gate_named_by_both"] += 1
+            if c.role == "defective":
+                nothing.append(cid)
+    return {"per_class": per, "defective_with_no_gate_named_by_both_blind_reviewers": nothing,
+            "note": "supplementary; not used to exclude cases"}
+
+
 def decide(verdicts: list[str], *, issues: list[str]) -> tuple[bool, str, bool]:
     """(excluded, reason, needs_adjudication) for one case from its reviewers' verdicts."""
     if issues:

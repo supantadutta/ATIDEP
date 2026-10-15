@@ -42,6 +42,14 @@ defect, a weak event) are recorded and reported but do not exclude a case. Every
 listed in the report with its reason. Cases are never excluded because of how the system treated
 them, and the review records are committed before any run.
 
+**Blind classification check (supplementary; decided before any run).** Because reviewers who
+are told the claim tend to confirm it, a further pair of reviewers sees each rule case *without*
+its class or expected gate and says which gates, if any, should stop it. Their answers are
+reported as the *blind agreement rate* per class (the claimed gate named, a different gate named, or
+no gate named). They are **not** used to exclude cases: the exclusion rule above is the only one.
+A claimed-defective rule for which both blind reviewers name no gate at all is listed in the report
+as a case whose defect an independent reader could not find, whatever the run shows.
+
 ## Conditions
 
 | | what is enforced | how "reaches Approved" is determined |
