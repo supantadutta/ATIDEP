@@ -402,3 +402,31 @@ def probe_usage_stability(client: LLMClient, request: LLMRequest) -> tuple[int, 
     priced. Costs two model calls, so it is run once before an experiment, not per run."""
     first, second = client.complete(request), client.complete(request)
     return first.input_tokens, second.input_tokens, first.input_tokens == second.input_tokens
+
+
+def store_usage(path: Path | str) -> dict:
+    """Control total of a replay store: calls and tokens by model and by where the count came from.
+    The store holds only calls that were actually made (a replay is never written), so these totals
+    are what to reconcile against the provider's own usage page. A count marked ``estimated`` is
+    this tool's guess and cannot be reconciled."""
+    p = Path(path)
+    out: dict = {"calls": 0, "input_tokens": 0, "output_tokens": 0, "by_model": {},
+                 "by_usage_source": {}}
+    if not p.exists():
+        return out
+    for line in p.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        rec = json.loads(line)
+        r = rec["response"]
+        out["calls"] += 1
+        out["input_tokens"] += int(r.get("input_tokens", 0))
+        out["output_tokens"] += int(r.get("output_tokens", 0))
+        m = out["by_model"].setdefault(f"{rec['provider']}/{rec['model']}",
+                                       {"calls": 0, "input_tokens": 0, "output_tokens": 0})
+        m["calls"] += 1
+        m["input_tokens"] += int(r.get("input_tokens", 0))
+        m["output_tokens"] += int(r.get("output_tokens", 0))
+        src = r.get("usage_source", "unknown")
+        out["by_usage_source"][src] = out["by_usage_source"].get(src, 0) + 1
+    return out

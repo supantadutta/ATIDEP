@@ -1,15 +1,22 @@
 """Build the running application from ``config/`` and the environment.
 
 Nothing here is needed by the services themselves; it only assembles an :class:`AppContext`.
-Inference is local (Ollama on the loopback address); cloud inference is not wired in and the
-policy file keeps it off. The Wazuh lab objects are created only when their environment
+Inference is local by default (Ollama on the loopback address). A hosted model is an explicit
+opt-in (``ATIDEP_LLM_PROVIDER=cloud``) and is refused unless the policy file enables it with a
+positive daily cap, the key and endpoint are given, and the model's token prices come from a
+*priced* entry of ``config/price_register.yaml`` (a price is never typed into the environment).
+Every hosted call goes through the spend cap and is recorded, so a repeated identical request is
+replayed and not paid twice. The Wazuh lab objects are created only when their environment
 variables are set.
 """
 
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from pathlib import Path
+
+import yaml
 
 from app.api.main import AppContext
 from app.config import AppConfig, load_config
@@ -21,8 +28,16 @@ from components.c2_processing.indicators import load_benign_domains
 from components.c4_validation.corpus import TestSet, load_baseline, load_test_set
 from components.c4_validation.tier2 import LabError, LabManager
 from components.c5_deployment.adapter import WazuhAdapter
-from components.llm.client import LLMClient, OllamaClient
+from components.llm.client import (
+    CloudChatClient,
+    CostGuard,
+    GuardedClient,
+    LLMClient,
+    OllamaClient,
+    ReplayClient,
+)
 from components.llm.prompts import load_prompt_set
+from schemas.cost_model import PriceRegister, UnitKind
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -30,6 +45,51 @@ ROOT = Path(__file__).resolve().parents[1]
 def _path(cfg: AppConfig, key: str, default: str) -> Path:
     p = Path(cfg.settings.get("paths", {}).get(key, default))
     return p if p.is_absolute() else ROOT / p
+
+
+@dataclass
+class CloudSetup:
+    client: LLMClient            # ReplayClient(record) around GuardedClient around the hosted model
+    guard: CostGuard
+    currency: str                # the currency of the price entry, and so of the daily cap
+    price_entry: str
+    store: Path
+
+
+def build_cloud_setup(cfg: AppConfig, env: dict[str, str], config_dir: Path | str | None = None
+                      ) -> CloudSetup:
+    """Assemble a hosted-model client, or refuse with the first thing that is missing."""
+    if not cfg.policies.llm.cloud_enabled:
+        raise RuntimeError("cloud inference is off: set policies.llm.cloud_enabled with a "
+                           "positive daily_cost_limit to opt in")
+    need = ("ATIDEP_CLOUD_URL", "ATIDEP_CLOUD_MODEL", "ATIDEP_CLOUD_KEY",
+            "ATIDEP_CLOUD_PRICE_ENTRY")
+    missing = [k for k in need if not env.get(k)]
+    if missing:
+        raise RuntimeError(f"cloud inference needs {', '.join(missing)} (see .env.example)")
+    cfg_dir = Path(config_dir) if config_dir else ROOT / "config"
+    register = PriceRegister.model_validate(
+        yaml.safe_load((cfg_dir / "price_register.yaml").read_text(encoding="utf-8")))
+    entry = next((e for e in register.entries if e.id == env["ATIDEP_CLOUD_PRICE_ENTRY"]), None)
+    if entry is None:
+        raise RuntimeError(f"no price register entry {env['ATIDEP_CLOUD_PRICE_ENTRY']!r}")
+    if entry.status != "priced":
+        raise RuntimeError(f"price entry {entry.id!r} has no public price (status "
+                           f"{entry.status}); the spend cap needs a priced entry")
+    comps = {c.unit_kind: c for c in entry.components}
+    if UnitKind.MTOK_IN not in comps or UnitKind.MTOK_OUT not in comps:
+        raise RuntimeError(f"price entry {entry.id!r} must price both input and output tokens")
+    guard = CostGuard(cfg.policies.llm.daily_cost_limit,
+                      price_in_per_mtok=comps[UnitKind.MTOK_IN].price,
+                      price_out_per_mtok=comps[UnitKind.MTOK_OUT].price)
+    inner = CloudChatClient(env.get("ATIDEP_CLOUD_API_STYLE", "openai"),  # type: ignore[arg-type]
+                            env["ATIDEP_CLOUD_URL"], env["ATIDEP_CLOUD_MODEL"],
+                            env["ATIDEP_CLOUD_KEY"], ca_file=env.get("ATIDEP_CLOUD_CA_BUNDLE")
+                            or None)
+    store = Path(env.get("ATIDEP_REPLAY_STORE") or (ROOT / "data" / "llm_replay.jsonl"))
+    # replay outside, guard inside: a stored call is neither checked against nor charged to the cap
+    client = ReplayClient(store, GuardedClient(inner, guard), "record")
+    return CloudSetup(client, guard, entry.currency or "", entry.id, store)
 
 
 def build_context(config_dir: Path | str | None = None, env: dict[str, str] | None = None
@@ -49,7 +109,14 @@ def build_context(config_dir: Path | str | None = None, env: dict[str, str] | No
     model = env.get("ATIDEP_LLM_MODEL", "")
     base = env.get("ATIDEP_LLM_URL", "http://127.0.0.1:11434")
 
+    provider = env.get("ATIDEP_LLM_PROVIDER", "ollama")
+    if provider not in ("ollama", "cloud"):
+        raise RuntimeError("ATIDEP_LLM_PROVIDER must be 'ollama' or 'cloud'")
+    cloud = build_cloud_setup(cfg, env, config_dir) if provider == "cloud" else None
+
     def llm() -> LLMClient:
+        if cloud is not None:
+            return cloud.client                        # one client: the cap spans every call
         if not model:
             raise RuntimeError("set ATIDEP_LLM_MODEL to a model served by your local Ollama")
         return OllamaClient(model, base)
