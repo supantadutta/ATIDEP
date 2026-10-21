@@ -79,6 +79,18 @@ def test_the_reference_checklist_covers_every_entry_and_marks_no_paper_full_text
     assert (ROOT / "paper" / "verification_checklist.md").read_text() == text
 
 
+def test_a_flagged_sentence_is_shown_unresolved_until_a_rewording_is_recorded():
+    import reference_checklist as rc
+    entry = {"key": "k", "type": "article", "title": "T", "annote": "E-A: extract"}
+    check = {"status": "partly_supported", "excerpt": "an overstated sentence"}
+    rec = {"k": {"key": "k", "claim_checks": [check]}}
+    assert "an overstated sentence **Unresolved.**" in rc.render([entry], rec)
+    check["resolution"] = "reworded"
+    text = rc.render([entry], rec)
+    assert "**Resolution:** reworded" in text and "Unresolved" not in text
+    assert f"[ ] {rc.FULL_TEXT_PENDING}" in text          # a rewording is not a full-text check
+
+
 # ---- model probe (evidence for spike S3; it selects nothing) -----------------------------
 def _ollama_stub(reply_text):
     """A loopback server speaking the two Ollama routes the probe uses."""

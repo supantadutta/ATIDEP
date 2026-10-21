@@ -117,6 +117,8 @@ records:
     note: The abstract, as extracted, calls threat intelligence an increasingly valuable commodity and discusses
       the benefits and obstacles of sharing. 'Grown into an established topic of research and practice' is the thesis's
       own characterisation, which the extract does not state in those terms.
+    resolution: 'Reworded on 2026-10-21 to what the extract shows (Chapter 1): surveys describe threat intelligence
+      as an increasingly valuable resource and review the benefits of and obstacles to sharing.'
   - excerpt: Surveys of technical threat intelligence and of CTI sharing describe the standards, analytics and sharing
       approaches, and open problems of the field
     status: supported_by_extract
@@ -159,12 +161,15 @@ records:
     note: The abstract, as extracted, calls CTI sharing a novel weapon in the arsenal of cyber defenders. It says
       the survey draws on a considerable number of academic and gray-literature articles. This shows a substantial
       literature, but 'established topic of research and practice' is the thesis's own characterisation.
+    resolution: Reworded on 2026-10-21 (Chapter 1), as for tounsi2018survey.
   - excerpt: Surveys of technical threat intelligence and of CTI sharing describe the standards, analytics and sharing
       approaches, and open problems of the field
     status: partly_supported
     note: The extracts support the sharing focus, the technical and non-technical challenges, and research directions
       (open problems). Its keywords include trust, anonymity and relevance. No extract shows this survey covering
       standards or analytics specifically.
+    resolution: 'Reworded on 2026-10-21 (Chapter 2): the surveys review the benefits of sharing, its technical and
+      non-technical obstacles, and directions for research; ''standards'' and ''analytics'' removed.'
   discrepancies: []
   sources:
   - https://www.open-access.bcu.ac.uk/7852
@@ -251,10 +256,14 @@ records:
     note: The extract says poor coverage and small volume seemed less of a concern to customers, who appeared to
       optimise for analyst time. The paraphrase is close but drops the hedging. The conclusion that analyst effort
       is 'the right outcome to measure' is the thesis's own inference, not the paper's.
+    resolution: Sentence no longer in the chapters; Chapters 1 and 2 now use the hedged wording of the extract ('appeared
+      to optimise for analyst time').
   - excerpt: the same evidence supports an efficiency outcome based on analyst active time
     status: partly_supported
     note: The paper reports that customers optimise for analyst time. Using 'analyst active time' as the efficiency
       outcome is the thesis's own operationalisation and does not appear in the extracts.
+    resolution: Sentence no longer in the chapters; analyst active time is presented as the thesis's own outcome
+      measure, not as the paper's.
   - excerpt: Practitioners using commercial CTI were found to optimise for analyst time, which supports treating
       analyst labour as the principal cost driver
     status: supported_by_extract
@@ -264,6 +273,8 @@ records:
     status: partly_supported
     note: 'The extract supports a hedged finding from 14 interviews: customers appear to optimise for analyst time.
       The thesis''s unhedged general statement goes further than that. The rest of the sentence concerns other works.'
+    resolution: 'Reworded on 2026-10-21 (Chapter 2, remaining gap of the first theme): ''in one interview study,
+      customers appeared to optimise for analyst time''.'
   discrepancies:
   - field: pages
     bib_value: (absent)
@@ -299,6 +310,8 @@ records:
       as summarised) says the work evaluated 24 open-source feeds over several months with significant variation
       in performance; another (arXiv 2311.08807) says 17 feeds over 14 months plus 7 feeds over 7 months (consistent
       with 24 in total). A later search could not re-find the 24-feed wording in '
+    resolution: Hedged on 2026-10-21 ('is reported to have found'; Chapter 2 table marks the figures as from secondary
+      extracts) and a VERIFY(full-text) note added in Chapter 1; the claim still needs the paper.
   - excerpt: A multi-month evaluation of 24 open-source feeds found significant variation in quality, as well as
       biases towards certain countries and the risk of collateral damage when blocking listed IP addresses
     status: needs_full_text
@@ -306,6 +319,7 @@ records:
       DNS-filtering survey (arXiv 2401.03864). Two later searches returned nothing about country bias or collateral
       damage, and one summary said the survey's passage referred to other work. The extracts disagree, so only the
       paper itself can confirm this.
+    resolution: Country-bias and collateral-damage findings removed from the chapters; they are not used.
   discrepancies:
   - field: booktitle (volume/part)
     bib_value: Applied Cryptography and Network Security (ACNS 2020)
@@ -552,6 +566,7 @@ records:
     note: The validity/quality separation is stated in the abstract, and the evaluation is on the existing SigmaHQ
       corpus. That the work does not address governing rule generation is an inference from what the abstract does
       not mention, so only the full text could confirm it.
+    resolution: 'Hedged on 2026-10-21 (Chapter 2, Table 2.6): ''governing generation is not reported in the extracts''.'
   - excerpt: seeded-defect testing exists for linters [@tyagi2026sigmalint]
     status: supported_by_extract
     note: The abstract reports a seeded-defect benchmark for sigmalint's checks. The rest of the sentence is about

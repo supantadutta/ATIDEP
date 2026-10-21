@@ -92,17 +92,17 @@ Levels: **P** = source read directly (README or documentation; not a paper); **E
 
 ## Thesis sentences the extracts did not fully support
 
-Each must be checked against the full text, or reworded to what the extracts show.
+Each must be checked against the full text, or reworded to what the extracts show. A resolution records a rewording; it does not replace the full-text check.
 
-- `bouwman2020cup` (partly_supported): the interviews in the commercial-intelligence study found that customers value analyst time rather than detection coverage alone
-- `bouwman2020cup` (partly_supported): the same evidence supports an efficiency outcome based on analyst active time
-- `bouwman2020cup` (partly_supported): Analyst time is what practitioners value [@bouwman2020cup]
-- `griffioen2020quality` (partly_supported): A separate evaluation of 24 open-source feeds over several months found significant variation in their quality
-- `griffioen2020quality` (needs_full_text): A multi-month evaluation of 24 open-source feeds found significant variation in quality, as well as biases towards certain countries and the risk of collateral 
-- `tounsi2018survey` (partly_supported): Surveys of the field document how technical threat intelligence and its sharing have grown into an established topic of research and practice
-- `tyagi2026sigmalint` (partly_supported): The static-quality work does separate a binary validity gate from a weighted score, supporting the design principle, but it assesses existing rules and does not
-- `wagner2019sharing` (partly_supported): Surveys of the field document how technical threat intelligence and its sharing have grown into an established topic of research and practice
-- `wagner2019sharing` (partly_supported): Surveys of technical threat intelligence and of CTI sharing describe the standards, analytics and sharing approaches, and open problems of the field
+- `bouwman2020cup` (partly_supported): the interviews in the commercial-intelligence study found that customers value analyst time rather than detection coverage alone **Resolution:** Sentence no longer in the chapters; Chapters 1 and 2 now use the hedged wording of the extract ('appeared to optimise for analyst time').
+- `bouwman2020cup` (partly_supported): the same evidence supports an efficiency outcome based on analyst active time **Resolution:** Sentence no longer in the chapters; analyst active time is presented as the thesis's own outcome measure, not as the paper's.
+- `bouwman2020cup` (partly_supported): Analyst time is what practitioners value [@bouwman2020cup] **Resolution:** Reworded on 2026-10-21 (Chapter 2, remaining gap of the first theme): 'in one interview study, customers appeared to optimise for analyst time'.
+- `griffioen2020quality` (partly_supported): A separate evaluation of 24 open-source feeds over several months found significant variation in their quality **Resolution:** Hedged on 2026-10-21 ('is reported to have found'; Chapter 2 table marks the figures as from secondary extracts) and a VERIFY(full-text) note added in Chapter 1; the claim still needs the paper.
+- `griffioen2020quality` (needs_full_text): A multi-month evaluation of 24 open-source feeds found significant variation in quality, as well as biases towards certain countries and the risk of collateral  **Resolution:** Country-bias and collateral-damage findings removed from the chapters; they are not used.
+- `tounsi2018survey` (partly_supported): Surveys of the field document how technical threat intelligence and its sharing have grown into an established topic of research and practice **Resolution:** Reworded on 2026-10-21 to what the extract shows (Chapter 1): surveys describe threat intelligence as an increasingly valuable resource and review the benefits of and obstacles to sharing.
+- `tyagi2026sigmalint` (partly_supported): The static-quality work does separate a binary validity gate from a weighted score, supporting the design principle, but it assesses existing rules and does not **Resolution:** Hedged on 2026-10-21 (Chapter 2, Table 2.6): 'governing generation is not reported in the extracts'.
+- `wagner2019sharing` (partly_supported): Surveys of the field document how technical threat intelligence and its sharing have grown into an established topic of research and practice **Resolution:** Reworded on 2026-10-21 (Chapter 1), as for tounsi2018survey.
+- `wagner2019sharing` (partly_supported): Surveys of technical threat intelligence and of CTI sharing describe the standards, analytics and sharing approaches, and open problems of the field **Resolution:** Reworded on 2026-10-21 (Chapter 2): the surveys review the benefits of sharing, its technical and non-technical obstacles, and directions for research; 'standards' and 'analytics' removed.
 
 ## Works the economic-evaluation chapter may need that are NOT in the bibliography
 

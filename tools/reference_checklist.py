@@ -118,8 +118,11 @@ def render(entries: list[dict[str, str]], records: dict[str, dict] | None = None
                if c.get("status") in ("needs_full_text", "partly_supported",
                                       "contradicted_by_extract")]
     L += ["## Thesis sentences the extracts did not fully support", "",
-          "Each must be checked against the full text, or reworded to what the extracts show.", ""]
-    L += [f"- `{k}` ({c['status']}): {c.get('excerpt', '')[:160]}" for k, c in flagged]
+          "Each must be checked against the full text, or reworded to what the extracts show. A "
+          "resolution records a rewording; it does not replace the full-text check.", ""]
+    L += [f"- `{k}` ({c['status']}): {c.get('excerpt', '')[:160]}"
+          + (f" **Resolution:** {c['resolution']}" if c.get("resolution") else
+             " **Unresolved.**") for k, c in flagged]
     L += ["", "## Works the economic-evaluation chapter may need that are NOT in the bibliography",
           "", "Recalled from memory; **unverified; do not cite** until found and read, then add "
           "to the bibliography with the level actually reached.", ""]
