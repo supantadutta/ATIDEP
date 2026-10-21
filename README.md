@@ -2,7 +2,9 @@
 
 **Agentic Threat Intelligence and Detection Engineering Platform.** A governed, open-source pipeline that turns selected threat intelligence into validated, human-approved detection content for a laboratory Wazuh target. Master's final project, PMICS, University of Dhaka.
 
-The full design, hypotheses, experiment protocol and schedule are in [`docs/ATIDEP_Blueprint_v3.md`](docs/ATIDEP_Blueprint_v3.md) (version 3.1). The earlier version is kept at [`docs/archive/ATIDEP_Blueprint_v2.md`](docs/archive/ATIDEP_Blueprint_v2.md).
+ATIDEP is an open-source-oriented, LLM-assisted threat-intelligence-to-detection-engineering pipeline: it ingests threat reports, extracts security-relevant information, generates detection content, validates it through deterministic security and quality gates, supports human approval and controlled deployment, and records feedback, analyst effort and resource use from which operational cost is evaluated. A short overview for the supervisor (definition, problem, challenges, state of the art, research gap) is [`docs/supervisor_brief.md`](docs/supervisor_brief.md).
+
+The full design, hypotheses, experiment protocol and schedule are in [`docs/ATIDEP_Blueprint_v3.md`](docs/ATIDEP_Blueprint_v3.md) (version 3.2). The earlier version is kept at [`docs/archive/ATIDEP_Blueprint_v2.md`](docs/archive/ATIDEP_Blueprint_v2.md).
 
 The thesis evaluates ATIDEP on **two dimensions**: technical effectiveness (analyst effort, rule validity and quality, safety under attack) and economic cost-effectiveness (the cost of the workflow in physical and monetary units, compared with a manual workflow and a modelled paid configuration of the same functions). Neither conclusion is assumed: both are computed from measurements and sourced inputs.
 
@@ -22,7 +24,7 @@ The software and the evaluation tooling are built and tested. **No result on rea
 | Adversarial evaluation: 70 seeded defective rules, 24 clean controls and 16 prompt-injection reports written by independent agents, mechanical integrity checks, reviewer tooling, runner and summary | `research/adversarial/` |
 | Reproducibility: pinned lock, licence audit, freeze manifests, model probe, reference checklist | `requirements.txt`, `tools/`, `research/freeze.py`, `paper/verification_checklist.md` |
 | Real-data readiness: dataset checker, pre-registration pack, ethics drafts | `research/dataset/check.py`, `research/preregistration/`, `docs/ethics/` |
-| Early drafts of Chapters 1-2 and a 54-entry bibliography (every entry "pending" verification). **The rest of the paper is written after the experiments**, from the results (blueprint §34.4). | `paper/` |
+| Early drafts of Chapters 1-2 (definition, problem, challenges, themed state of the art, comparison matrix, research gap); a 69-entry bibliography with a verification record per source (no paper read in full: every paper is "Full-text verification pending"). **The rest of the paper is written after the experiments**, from the results (blueprint §34.4). | `paper/`, `tools/related_work_matrix.py` |
 
 ## What only a person can supply
 
@@ -70,9 +72,9 @@ schemas/      Pydantic models
 app/ ui/      configuration loader, database, services, REST API, Streamlit pages
 components/   the five pipeline components and the LLM clients
 research/     dataset, experiment runner, metrics, statistics, economics, adversarial evaluation, pre-registration
-tools/        licence audit, dependency lock, model probe, reference checklist
-docs/         blueprint v3.1, ADR-001 (Wazuh findings), ethics drafts, archive of v2
-paper/        chapters 1-2 (drafts), bibliography, verification checklist
+tools/        licence audit, dependency lock, model probe, reference checklist, related-work matrix
+docs/         blueprint v3.2, supervisor brief, ADR-001 (Wazuh findings), model selection, ethics drafts, archive of v2
+paper/        chapters 1-2 (drafts), bibliography, verification records and checklist, related-work matrix
 tests/unit/   unit tests
 ```
 

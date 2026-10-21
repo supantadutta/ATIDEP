@@ -1,13 +1,14 @@
 % ATIDEP thesis bibliography.
 %
-% Every entry was checked on 2 October 2026 against retrieved search extracts or an
-% author-supplied BibTeX record. The annote field states the level reached:
-%   V1 = authors, title, venue and year confirmed in retrieved extracts.
-%   V2 = core identity confirmed; the listed fields were NOT confirmed (taken from memory
-%        or inferred) and must be checked against the publisher record before submission.
-%   V3 = author-supplied BibTeX record.
-% Publisher sites (arXiv, USENIX, ACM, IEEE, Springer, DBLP, Crossref) were not reachable
-% from the authoring environment, so a publisher-side metadata pass is still pending.
+% Every entry was re-checked on 20-21 October 2026; the full record (fields found, discrepancies,
+% which thesis sentences each source supports, and the extracts' URLs) is in
+% paper/verification_records.yaml. The annote field states the level reached:
+%   P   = the source itself was read (software README or documentation hosted on GitHub).
+%   E-A = identity and abstract-level content confirmed through search-engine extracts.
+%   E-M = bibliographic data confirmed through search-engine extracts only.
+% The network policy of the authoring environment blocks publisher sites, DOI resolution and
+% arXiv, so NO paper has been checked against its full text: "Full-text verification pending"
+% applies to every paper.
 
 % ---------- Cyber threat intelligence ----------
 @online{bianco2013pyramid,
@@ -15,8 +16,8 @@
   title   = {The {Pyramid} of {Pain}},
   year    = {2013},
   url     = {https://detect-respond.blogspot.com/2013/03/the-pyramid-of-pain.html},
-  note    = {Blog post, updated 2014 to add the hash-value level},
-  annote  = {V2: author, title, 2013 date and the 2014 update confirmed; the URL is from memory (the Sqrrl mirror of the post was the retrieved copy).}
+  note = {Blog post (Enterprise Detection \& Response); presented again in 2014 and in a 2015 Sqrrl article},
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-20. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @techreport{johnson2016nist,
@@ -28,7 +29,8 @@
   year        = {2016},
   month       = oct,
   url         = {https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-150.pdf},
-  annote      = {V1}
+  doi = {10.6028/NIST.SP.800-150},
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-20. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @article{tounsi2018survey,
@@ -39,7 +41,7 @@
   pages   = {212--233},
   year    = {2018},
   doi     = {10.1016/j.cose.2017.09.001},
-  annote  = {V2: authors, title, journal, year confirmed; volume, pages and DOI from memory.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-20. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @article{wagner2019sharing,
@@ -50,7 +52,7 @@
   pages   = {101589},
   year    = {2019},
   doi     = {10.1016/j.cose.2019.101589},
-  annote  = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-20. Full-text verification pending.}
 }
 
 @inproceedings{li2019tea,
@@ -59,7 +61,8 @@
   booktitle = {28th USENIX Security Symposium (USENIX Security 19)},
   year      = {2019},
   url       = {https://www.usenix.org/conference/usenixsecurity19/presentation/li},
-  annote    = {V1: authors, title, venue, year confirmed. Findings were not retrieved, so none are quoted in the text.}
+  pages = {851--867},
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-20. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{bouwman2020cup,
@@ -68,7 +71,8 @@
   booktitle = {29th USENIX Security Symposium (USENIX Security 20)},
   year      = {2020},
   url       = {https://www.usenix.org/conference/usenixsecurity20/presentation/bouwman},
-  annote    = {V1}
+  pages = {433--450},
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-20. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{griffioen2020quality,
@@ -77,7 +81,7 @@
   booktitle = {Applied Cryptography and Network Security (ACNS 2020)},
   pages     = {277--296},
   year      = {2020},
-  annote    = {V1: authors, title, venue, pages, year confirmed (24 open-source feeds). LNCS volume and publisher not confirmed.}
+  annote = {E-M: bibliographic data confirmed through search extracts only, 2026-10-20. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @online{oasis2021stix,
@@ -85,7 +89,7 @@
   title        = {{STIX} Version 2.1},
   year         = {2021},
   url          = {https://docs.oasis-open.org/cti/stix/v2.1/stix-v2.1.html},
-  annote       = {V2: URL carried over from the project blueprint; year of the OASIS Standard from memory.}
+  annote = {E-M: bibliographic data confirmed through search extracts only, 2026-10-20. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 % ---------- ATT&CK, Sigma, detection engineering ----------
@@ -96,7 +100,8 @@
   year        = {2018},
   month       = jul,
   url         = {https://www.mitre.org/news-insights/publication/mitre-attck-design-and-philosophy},
-  annote      = {V1: authors, title, July 2018. Report number not confirmed.}
+  number = {MP180360 (revised March 2020 as MP180360R1)},
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-20. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @online{sigmahq2024spec,
@@ -104,7 +109,7 @@
   title   = {Sigma Specification: Generic Signature Format for {SIEM} Systems},
   url     = {https://sigmahq.io/sigma-specification/},
   urldate = {2026-10-02},
-  annote  = {V1: existence and description confirmed; specification repository at github.com/SigmaHQ/sigma-specification.}
+  annote = {P: source read directly (repository README), 2026-10-21. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @online{palantir2017ads,
@@ -112,7 +117,7 @@
   title   = {Alerting and Detection Strategy Framework},
   year    = {2017},
   url     = {https://blog.palantir.com/alerting-and-detection-strategy-framework-52dc33722df2},
-  annote  = {V2: title, URL and framework sections confirmed; the accompanying repository was created 19 December 2017. Exact publication date of the post not confirmed.}
+  annote = {P: source read directly (repository README), 2026-10-21. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @online{tyagi2026sigmalint,
@@ -121,7 +126,7 @@
   year    = {2026},
   url     = {https://papers.ssrn.com/abstract=6823718},
   note    = {SSRN preprint},
-  annote  = {V2: author, title, abstract confirmed; year inferred from the SSRN identifier and the surrounding 2026 literature. Not peer reviewed.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-20. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @misc{dhananjeyan2026exclusion,
@@ -131,7 +136,7 @@
   eprint        = {2608.31062},
   archiveprefix = {arXiv},
   url           = {https://arxiv.org/abs/2608.31062},
-  annote        = {V1: authors as given in the retrieved extract; name order of the second author to be checked.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @misc{maiorano2026probe,
@@ -141,7 +146,7 @@
   eprint        = {2606.05252},
   archiveprefix = {arXiv},
   url           = {https://arxiv.org/abs/2606.05252},
-  annote        = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @online{zshguy2026tyrian,
@@ -149,15 +154,19 @@
   title   = {Tyrian Detection Pack: {Sigma} detections compiled to {Wazuh}, {Splunk} and {Sentinel}},
   url     = {https://github.com/zshguy/tyrian-detection-pack},
   urldate = {2026-10-02},
-  annote  = {V1: repository README read. States that Wazuh rules cannot hold disjunctions (OR becomes sibling rules), that the compiler refuses what it cannot translate faithfully, a 96% compilation rate on the SigmaHQ corpus, and an MIT licence. Software project, not peer reviewed.}
+  year = {2026},
+  note = {Software repository; README checked 21 October 2026},
+  annote = {P: source read directly (repository README or documentation), 2026-10-21.}
 }
 
 @online{theflakes2024sigmatowazuh,
-  author  = {{theflakes}},
+  author = {Kellogg, Brian},
   title   = {sigma\_to\_wazuh: Convert {Sigma} rules to {Wazuh} rules},
   url     = {https://github.com/theflakes/sigma_to_wazuh},
   urldate = {2026-10-02},
-  annote  = {V1: repository README read. Documents partial support (OR logic conversion, no near/timeframe/aggregation) and that the Python version is no longer updated as the project moves to Go. Software project, not peer reviewed.}
+  year = {2021},
+  note = {Software repository (theflakes/sigma\_to\_wazuh); Python version no longer updated; last commit 13 September 2025},
+  annote = {P: source read directly (repository README or documentation), 2026-10-21. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @online{wazuh2026overview,
@@ -165,7 +174,7 @@
   title   = {Wazuh: Open Source {XDR}. Open Source {SIEM}},
   url     = {https://wazuh.com/platform/overview/},
   urldate = {2026-10-02},
-  annote  = {V1}
+  annote = {E-M: bibliographic data confirmed through search extracts only, 2026-10-21. Full-text verification pending.}
 }
 
 @online{wazuh2026docs,
@@ -175,7 +184,7 @@
   url     = {https://github.com/wazuh/wazuh-documentation/tree/4.14},
   urldate = {2026-10-02},
   note    = {Source read at commit 617f407, dated 2026-09-30},
-  annote  = {V1: read directly from the documentation repository.}
+  annote = {P: source read directly (repository README or documentation), 2026-10-21.}
 }
 
 % ---------- Extracting attack behaviour from CTI text ----------
@@ -184,7 +193,8 @@
   title     = {{TTPDrill}: Automatic and Accurate Extraction of Threat Actions from Unstructured Text of {CTI} Sources},
   booktitle = {Proceedings of the 33rd Annual Computer Security Applications Conference (ACSAC 2017)},
   year      = {2017},
-  annote    = {V1: authors, venue, year confirmed. Pages not confirmed.}
+  doi = {10.1145/3134600.3134646},
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @misc{legoy2020rcatt,
@@ -194,7 +204,8 @@
   eprint        = {2004.14322},
   archiveprefix = {arXiv},
   url           = {https://arxiv.org/abs/2004.14322},
-  annote        = {V2: one extract spelled the first author "Legov" and the second "Christin" Seifert; the spelling "Legoy" follows the author's repository handle. Check against the publisher record.}
+  note = {Presented at the 1st Cyber Threat Intelligence Symposium (CTI 2020); the rcATT tool is released},
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{alam2023ladder,
@@ -204,16 +215,16 @@
   year      = {2023},
   eprint    = {2211.01753},
   archiveprefix = {arXiv},
-  annote    = {V1: authors, title, venue (RAID '23, Hong Kong, 16-18 October 2023). The framework is named LADDER.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @inproceedings{satvat2021extractor,
   author    = {Satvat, Kiavash and Gjomemo, Rigel and Venkatakrishnan, V. N.},
   title     = {{EXTRACTOR}: Extracting Attack Behavior from Threat Reports},
   booktitle = {2021 IEEE European Symposium on Security and Privacy (EuroS\&P)},
-  pages     = {598--615},
+  pages = {598--615},
   year      = {2021},
-  annote    = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @misc{siracusano2023action,
@@ -223,7 +234,7 @@
   eprint        = {2307.10214},
   archiveprefix = {arXiv},
   url           = {https://arxiv.org/abs/2307.10214},
-  annote        = {V2: first author and NEC Laboratories Europe affiliation confirmed; full author list not retrieved.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @inproceedings{alam2024ctibench,
@@ -234,7 +245,7 @@
   pages     = {50805--50825},
   year      = {2024},
   note      = {Datasets and Benchmarks Track},
-  annote    = {V3: BibTeX from the authors' repository (github.com/xashru/cti-bench).}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 % ---------- LLMs for detection-rule generation ----------
@@ -245,7 +256,7 @@
   eprint        = {2407.05194},
   archiveprefix = {arXiv},
   url           = {https://arxiv.org/abs/2407.05194},
-  annote        = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @inproceedings{cai2026sigmerge,
@@ -254,7 +265,7 @@
   booktitle = {USENIX Security Symposium (USENIX Security 26)},
   year      = {2026},
   url       = {https://www.usenix.org/conference/usenixsecurity26/presentation/cai},
-  annote    = {V1: authors, title, venue from the USENIX presentation page as retrieved through search. The framework is named SIGMERGE. Full text not read.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @misc{ghaffarzadegan2026autosigma,
@@ -264,7 +275,7 @@
   eprint        = {2608.19011},
   archiveprefix = {arXiv},
   url           = {https://arxiv.org/abs/2608.19011},
-  annote        = {V1: authors and title confirmed. The system is named AutoSigma. Full text not read.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @misc{chakraborty2026ctirealm,
@@ -274,7 +285,7 @@
   eprint        = {2603.13517},
   archiveprefix = {arXiv},
   url           = {https://arxiv.org/abs/2603.13517},
-  annote        = {V1: authors (Microsoft Security AI) and title confirmed. Full text not read.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @misc{xu2024llmsecurity,
@@ -284,7 +295,7 @@
   eprint        = {2405.04760},
   archiveprefix = {arXiv},
   url           = {https://arxiv.org/abs/2405.04760},
-  annote        = {V1: first submitted May 2024; later versions exist (v5, September 2025). Cite the version used.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 % ---------- LLM reliability, safety, agents ----------
@@ -296,7 +307,7 @@
   number  = {12},
   pages   = {248:1--248:38},
   year    = {2023},
-  annote  = {V1: the spelling of the ninth-listed author's given name ("Yejin" in the retrieved extract) to be checked.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{greshake2023indirect,
@@ -304,7 +315,8 @@
   title     = {Not what you've signed up for: Compromising Real-World {LLM}-Integrated Applications with Indirect Prompt Injection},
   booktitle = {Proceedings of the 16th ACM Workshop on Artificial Intelligence and Security (AISec '23)},
   year      = {2023},
-  annote    = {V1: authors, title, venue (AISec at ACM CCS 2023); first posted February 2023.}
+  pages = {79--90},
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{perez2022ignore,
@@ -312,9 +324,9 @@
   title     = {Ignore Previous Prompt: Attack Techniques For Language Models},
   booktitle = {NeurIPS 2022 ML Safety Workshop},
   year      = {2022},
-  eprint    = {2211.09527},
+  eprint = {2211.09527},
   archiveprefix = {arXiv},
-  annote    = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @online{owasp2023llmtop10,
@@ -323,7 +335,7 @@
   year    = {2023},
   month   = aug,
   url     = {https://owasp.org/www-project-top-10-for-large-language-model-applications/assets/PDF/OWASP-Top-10-for-LLMs-2023-slides-v1_0.pdf},
-  annote  = {V1: version 1.0 published 1 August 2023 (from the document title). Later editions exist; cite the one used.}
+  annote = {E-M: bibliographic data confirmed through search extracts only, 2026-10-21. Full-text verification pending.}
 }
 
 @online{schluntz2024effective,
@@ -332,28 +344,28 @@
   year    = {2024},
   organization = {Anthropic},
   url     = {https://www.anthropic.com/engineering/building-effective-agents},
-  annote  = {V1: authors and content confirmed; December 2024 per secondary descriptions. Industry article, not peer reviewed.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{madaan2023selfrefine,
-  author    = {Madaan, Aman and others},
+  author = {Madaan, Aman and Tandon, Niket and Gupta, Prakhar and Hallinan, Skyler and Gao, Luyu and Wiegreffe, Sarah and Alon, Uri and Dziri, Nouha and Prabhumoye, Shrimai and Yang, Yiming and Gupta, Shashank and Majumder, Bodhisattwa Prasad and Hermann, Katherine and Welleck, Sean and Yazdanbakhsh, Amir and Clark, Peter},
   title     = {Self-Refine: Iterative Refinement with Self-Feedback},
   booktitle = {Advances in Neural Information Processing Systems},
   volume    = {36},
   year      = {2023},
   eprint    = {2303.17651},
   archiveprefix = {arXiv},
-  annote    = {V2: title, venue (NeurIPS 2023), first author confirmed; remaining authors not retrieved.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{chen2024selfdebug,
-  author    = {Chen, Xinyun and others},
+  author = {Chen, Xinyun and Lin, Maxwell and Sch{\"a}rli, Nathanael and Zhou, Denny},
   title     = {Teaching Large Language Models to Self-Debug},
   booktitle = {The Twelfth International Conference on Learning Representations (ICLR 2024)},
   year      = {2024},
-  eprint    = {2304.05128},
+  eprint = {2304.05128},
   archiveprefix = {arXiv},
-  annote    = {V2: title, venue (ICLR 2024) confirmed; authors not retrieved; first author from memory.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{zheng2023judge,
@@ -363,16 +375,16 @@
   volume    = {36},
   year      = {2023},
   note      = {Datasets and Benchmarks Track},
-  annote    = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{sainz2023contamination,
   author    = {Sainz, Oscar and Campos, Jon Ander and Garc{\'\i}a-Ferrero, Iker and Etxaniz, Julen and de Lacalle, Oier Lopez and Agirre, Eneko},
   title     = {{NLP} Evaluation in trouble: On the Need to Measure {LLM} Data Contamination for each Benchmark},
   booktitle = {Findings of the Association for Computational Linguistics: EMNLP 2023},
-  pages     = {10776--10787},
+  pages = {10776--10787},
   year      = {2023},
-  annote    = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 % ---------- Humans, automation, and evaluation methodology ----------
@@ -382,7 +394,7 @@
   booktitle = {31st USENIX Security Symposium (USENIX Security 22)},
   year      = {2022},
   url       = {https://www.usenix.org/conference/usenixsecurity22/presentation/alahmadi},
-  annote    = {V1: authors, title, venue, year, and the study design (survey n=20, interviews n=21) confirmed.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @article{parasuraman2010complacency,
@@ -393,7 +405,8 @@
   number  = {3},
   pages   = {381--410},
   year    = {2010},
-  annote  = {V1}
+  doi = {10.1177/0018720810376055},
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @article{goddard2012automation,
@@ -404,7 +417,7 @@
   number  = {1},
   pages   = {121--127},
   year    = {2012},
-  annote  = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @article{hevner2004design,
@@ -415,7 +428,7 @@
   number  = {1},
   pages   = {75--105},
   year    = {2004},
-  annote  = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @article{peffers2007dsrm,
@@ -426,7 +439,7 @@
   number  = {3},
   pages   = {45--77},
   year    = {2007},
-  annote  = {V2: authors, title, journal, volume, issue, year confirmed; pages from memory.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @article{schuirmann1987tost,
@@ -437,7 +450,7 @@
   number  = {6},
   pages   = {657--680},
   year    = {1987},
-  annote  = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @article{lakens2017equivalence,
@@ -449,7 +462,7 @@
   pages   = {355--362},
   year    = {2017},
   doi     = {10.1177/1948550617697177},
-  annote  = {V2: author, title, journal, year, DOI confirmed; volume, issue and pages from memory.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 % ---------- Economics, cost-aware LLM use, and open-source definitions ----------
@@ -460,7 +473,7 @@
   publisher = {IEEE Computer Society},
   year      = {2001},
   month     = dec,
-  annote    = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @article{gordon2002economics,
@@ -472,7 +485,7 @@
   pages   = {438--457},
   year    = {2002},
   doi     = {10.1145/581271.581274},
-  annote  = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @article{ellram1998tco,
@@ -483,7 +496,7 @@
   number  = {1},
   pages   = {55--84},
   year    = {1998},
-  annote  = {V2: surnames, title, journal, volume, issue, pages, year confirmed; second author's given name from memory.}
+  annote = {E-M: bibliographic data confirmed through search extracts only, 2026-10-21. Full-text verification pending.}
 }
 
 @article{ferrin2002tco,
@@ -494,7 +507,7 @@
   number  = {2},
   pages   = {18--29},
   year    = {2002},
-  annote  = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{sundaramurthy2015burnout,
@@ -502,7 +515,7 @@
   title     = {A Human Capital Model for Mitigating Security Analyst Burnout},
   booktitle = {Eleventh Symposium on Usable Privacy and Security (SOUPS 2015)},
   year      = {2015},
-  annote    = {V1}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @article{chen2024frugalgpt,
@@ -512,17 +525,17 @@
   year          = {2024},
   eprint        = {2305.05176},
   archiveprefix = {arXiv},
-  annote        = {V1: authors and title confirmed; first submitted 9 May 2023; the TMLR 2024 venue is from search extracts that said it "appears to have been published" there.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @inproceedings{ong2025routellm,
-  author        = {Ong, Isaac and others},
+  author = {Ong, Isaac and Almahairi, Amjad and Wu, Vincent and Chiang, Wei-Lin and Wu, Tianhao and Gonzalez, Joseph E. and Kadous, M. Waleed and Stoica, Ion},
   title         = {{RouteLLM}: Learning to Route {LLMs} from Preference Data},
   booktitle     = {The Thirteenth International Conference on Learning Representations (ICLR 2025)},
   year          = {2025},
   eprint        = {2406.18665},
   archiveprefix = {arXiv},
-  annote        = {V2: first author, title and venue confirmed; remaining authors not retrieved. The arXiv title reads "with Preference Data".}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending. Discrepancies recorded in paper/verification\_records.yaml.}
 }
 
 @online{osi2007osd,
@@ -530,7 +543,7 @@
   title   = {The {Open Source Definition}},
   url     = {https://opensource.org/osd},
   urldate = {2026-10-02},
-  annote  = {V1: ten criteria confirmed in retrieved extracts.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
 }
 
 @online{osi2024osaid,
@@ -539,5 +552,167 @@
   year    = {2024},
   url     = {https://opensource.org/ai},
   urldate = {2026-10-02},
-  annote  = {V1: version 1.0 released at All Things Open 2024; requires data information, code and parameters.}
+  annote = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
+}
+
+% ---------- Closely related work added 21 October 2026 (supervisor revision) ----------
+% Identified through search extracts; full texts not read (network policy). See
+% paper/verification_records.yaml for what each extract showed.
+
+@misc{wang2025rulepilot,
+  author        = {Wang, Hongtai and Xu, Ming and Guo, Yanpei and Han, Weili and Lim, Hoon Wei and Dong, Jin Song},
+  title         = {{RulePilot}: An {LLM}-Powered Agent for Security Rule Generation},
+  year          = {2025},
+  eprint        = {2511.12224},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2511.12224},
+  annote        = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
+}
+
+@misc{mitra2025falcon,
+  author        = {Mitra, Shaswata and Bazarov, Azim and Duclos, Martin and Mittal, Sudip and Piplai, Aritran and Rahman, Md Rayhanur and Zieglar, Edward and Rahimi, Shahram},
+  title         = {{FALCON}: Autonomous Cyber Threat Intelligence Mining with {LLMs} for {IDS} Rule Generation},
+  year          = {2025},
+  eprint        = {2508.18684},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2508.18684},
+  annote        = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Author order differs between sources and an earlier version has a different title and an extra author; check the version cited. Full-text verification pending.}
+}
+
+@misc{shukla2025rulegenie,
+  author        = {Shukla, Akansha and Gandhi, Parth Atulbhai and Elovici, Yuval and Shabtai, Asaf},
+  title         = {{RuleGenie}: {SIEM} Detection Rule Set Optimization},
+  year          = {2025},
+  eprint        = {2505.06701},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2505.06701},
+  annote        = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
+}
+
+@misc{tseng2024ctiagent,
+  author        = {Tseng, PeiYu and Yeh, ZihDwo and Dai, Xushu and Liu, Peng},
+  title         = {Using {LLMs} to Automate Threat Intelligence Analysis Workflows in Security Operation Centers},
+  year          = {2024},
+  eprint        = {2407.13093},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2407.13093},
+  note          = {A 2025 IEEE S\&P poster on the same work adds further authors},
+  annote        = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
+}
+
+@misc{meng2025ctivuln,
+  author        = {Meng, Yuqiao and Tang, Luoxi and Yu, Feiyang and Jia, Jinyuan and Yan, Guanhua and Yang, Ping and Xi, Zhaohan},
+  title         = {Uncovering Vulnerabilities of {LLM}-Assisted Cyber Threat Intelligence},
+  year          = {2025},
+  eprint        = {2509.23573},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2509.23573},
+  note          = {Latest version (v3) February 2026},
+  annote        = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
+}
+
+@inproceedings{schafhauzer2026context,
+  author    = {Schafhauzer, Priscila and Kapelinski, Cristhian and Pohlmann, Marcio and Kreutz, Diego},
+  title     = {Context-Aware {SIEM} Rule Generation with {LLMs}: When Site Profiles Are Not Enough},
+  booktitle = {Anais do XXVI Simp{\'o}sio Brasileiro de Ciberseguran{\c{c}}a (SBSeg 2026)},
+  publisher = {Sociedade Brasileira de Computa{\c{c}}{\~a}o},
+  address   = {Porto Alegre},
+  pages     = {1386--1392},
+  year      = {2026},
+  doi       = {10.5753/sbseg.2026.29389},
+  url       = {https://sol.sbc.org.br/index.php/sbseg/article/view/44366},
+  annote    = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
+}
+
+@misc{hadi2026genti,
+  author        = {Hadi, Hassan Jalil and Yasmin, Rehana and Shoker, Ali},
+  title         = {{GenTI}: Benchmarking {LLMs} for Autonomous {IDPS} Rule Generation for Unseen Attacks},
+  year          = {2026},
+  eprint        = {2606.05844},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.05844},
+  annote        = {E-A: identity and abstract-level content confirmed through search extracts (secondary listings), 2026-10-21. Full-text verification pending.}
+}
+
+@inproceedings{teuwen2025unruly,
+  author    = {Teuwen, Koen T. W. and Mulders, Tom and Zambon, Emmanuele and Allodi, Luca},
+  title     = {Ruling the Unruly: Designing Effective, Low-Noise Network Intrusion Detection Rules for Security Operations Centers},
+  booktitle = {Proceedings of the 20th ACM Asia Conference on Computer and Communications Security (ASIA CCS '25)},
+  year      = {2025},
+  eprint    = {2501.09808},
+  archiveprefix = {arXiv},
+  url       = {https://arxiv.org/abs/2501.09808},
+  annote    = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Conference edition number not confirmed. Full-text verification pending.}
+}
+
+@inproceedings{vermeer2023alchemy,
+  author    = {Vermeer, Mathew and Kadenko, Natalia and van Eeten, Michel and Ga{\~n}{\'a}n, Carlos and Parkin, Simon},
+  title     = {Alert Alchemy: {SOC} Workflows and Decisions in the Management of {NIDS} Rules},
+  booktitle = {Proceedings of the 2023 ACM SIGSAC Conference on Computer and Communications Security (CCS '23)},
+  pages     = {2770--2784},
+  year      = {2023},
+  doi       = {10.1145/3576915.3616581},
+  annote    = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Given names not all confirmed. Full-text verification pending.}
+}
+
+@misc{cheng2026ttprint,
+  author        = {Cheng, Yutong and Li, Changze and Basuki, Raihan Sultan Pasha and Cui, Qian and Ding, Wei and Gao, Peng},
+  title         = {{TTPrint}: Evidence-Grounded {TTP} Extraction via Diverge-then-Converge Verification},
+  year          = {2026},
+  eprint        = {2605.25836},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2605.25836},
+  annote        = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
+}
+
+@misc{valletta2026tracecti,
+  author        = {Valletta, Federico and Longo, Giacomo and Russo, Enrico and Merlo, Alessio},
+  title         = {{TRACE-CTI}: Auditable Post-Extraction Governance of {TTP} Claims with Knowledge Graphs},
+  year          = {2026},
+  eprint        = {2607.24563},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2607.24563},
+  annote        = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
+}
+
+@misc{pandey2026watchtower,
+  author        = {Pandey and Bhujang},
+  title         = {Poisoning the Watchtower: Prompt Injection Attacks Against {LLM}-Augmented Security Operations Through Adversarial Log Content},
+  year          = {2026},
+  eprint        = {2605.24421},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2605.24421},
+  annote        = {E-A: title and abstract-level content confirmed through search extracts, 2026-10-21. Authors' given names NOT confirmed (surnames only). Full-text verification pending.}
+}
+
+@inproceedings{saju2026autonomoussoc,
+  author    = {Saju, Md Hasan and Azim, Akramul},
+  title     = {Toward Autonomous {SOC} Operations: End-to-End {LLM} Framework for Threat Detection, Query Generation, and Resolution in Security Operations},
+  booktitle = {Proceedings of the 39th Canadian Conference on Artificial Intelligence},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {318},
+  year      = {2026},
+  eprint    = {2604.27321},
+  archiveprefix = {arXiv},
+  url       = {https://proceedings.mlr.press/v318/saju26a.html},
+  annote    = {E-A: identity and abstract-level content confirmed through search extracts, 2026-10-21. Full-text verification pending.}
+}
+
+@misc{habibzadeh2025socsurvey,
+  author        = {Habibzadeh, Ali and Feyzi, Farid and Ebrahimi Atani, Reza},
+  title         = {Large Language Models for Security Operations Centers: A Comprehensive Survey},
+  year          = {2025},
+  eprint        = {2509.10858},
+  archiveprefix = {arXiv},
+  url           = {https://arxiv.org/abs/2509.10858},
+  annote        = {E-M: bibliographic data confirmed through search extracts only, 2026-10-21. Full-text verification pending.}
+}
+
+@online{pham2025sigmagen,
+  author  = {Pham, Giang and Nguyen, Tung},
+  title   = {{SigmaGen}: {AI}-Powered Solution for Scalable {Sigma} Rule Generation},
+  year    = {2025},
+  url     = {https://ctid.mitre.org/events/apac-2025/07%20-%20SigmaGen.pdf},
+  note    = {Slides, Asia-Pacific ATT\&CK Community Workshop, 7 March 2025 (practitioner presentation; not peer reviewed)},
+  annote  = {E-A: content of the slide deck confirmed through search extracts, 2026-10-21. Practitioner presentation, not a research paper.}
 }

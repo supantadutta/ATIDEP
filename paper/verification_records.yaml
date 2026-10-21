@@ -1,0 +1,1681 @@
+description: 'Verification record for every bibliography entry. The network policy of the authoring environment
+  blocks publisher sites, DOI resolution and arXiv, so papers were checked only through search-engine extracts (abstract-level
+  or metadata-level). No paper has been checked against its full text: every paper is marked "Full-text verification
+  pending". Software and documentation sources hosted on GitHub were read directly.'
+levels:
+  primary_source_read: the source itself was read (repository README or documentation); applies to software and
+    documentation only
+  abstract_via_search_extract: the search extracts showed the content of the abstract (what was done and found)
+  metadata_via_search_extract: the search extracts showed bibliographic data only
+records:
+- key: bianco2013pyramid
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: The Pyramid of Pain (cited in one reference as "The pyramid of pain")
+  authors: David J. Bianco
+  year: 2013 (March 2013 per the /2013/03/ URL path); a 2014 update is reported by one secondary source only
+  venue: Blog post, Enterprise Detection & Response blog (detect-respond.blogspot.com)
+  identifier: https://detect-respond.blogspot.com/2013/03/the-pyramid-of-pain.html (URL given in a secondary reference
+    list; the post itself did not appear in any search result)
+  peer_reviewed: 'no'
+  claim_checks:
+  - excerpt: Indicators of compromise (IP addresses, domains, file hashes) are easy to match but, as the Pyramid
+      of Pain argues, also easy for an adversary to change, while TTPs are the hardest for an adversary to change
+      and so cause the most disruption
+    status: supported_by_extract
+    note: Secondary extracts say the model ranks indicators by how much detecting or denying them disrupts the attacker,
+      with hashes at the bottom (trivial to change) and TTPs at the top (most pain). The Sqrrl 2015 extract says
+      hashes and IPs are cheap to acquire and integrate. All of this comes from secondary sources or later Bianco/Sqrrl
+      material, not the original post.
+  - excerpt: 'The Pyramid of Pain ranks indicator types by how much it hurts an adversary to have them detected:
+      hash values and similar low-level indicators are trivial to change, whereas detecting TTPs forces the adversary
+      to change behaviour'
+    status: supported_by_extract
+    note: Extracts give the framing 'How much does detecting this hurt the attacker?' and say changing a hash is
+      trivial (Cisco). They say TTPs sit at the top because changing them forces fundamental operational changes
+      (Expel, a secondary summary). Secondary sources only.
+  discrepancies:
+  - field: note (2014 update adding the hash-value level)
+    bib_value: Blog post, updated 2014 to add the hash-value level
+    found_value: Only one secondary source (SOCRadar FAQ) says this. No exact update date confirmed, and the original
+      post text was not seen.
+  - field: annote (Sqrrl mirror)
+    bib_value: the Sqrrl mirror of the post was the retrieved copy
+    found_value: 'The Sqrrl document in the extracts is a separate, later article: ''A Framework for Cyber Threat
+      Hunting Part 1: The Pyramid of Pain'', dated 23 July 2015 per the extract and credited to Sqrrl Security Architect
+      David Bianco. It is not a mirror of the 2013 post.'
+  sources:
+  - https://socradar.io/cyber-faq/what-is-the-pyramid-of-pain/
+  - https://www.threathunting.net/files/A%20Framework%20for%20Cyber%20Threat%20Hunting%20Part%201_%20The%20Pyramid%20of%20Pain%20_%20Sqrrl.pdf
+  - https://speakerdeck.com/davidjbianco/the-pyramid-of-pain-intel-driven-detection-and-response-to-increase-your-adversarys-cost-of-operations?slide=19
+  - https://pentesec.com/?p=2401
+  - https://gblogs.cisco.com/ca/?p=7316
+  - https://netlas.io/blog/pyramid_of_pain/
+  notes: 'The author, the 2013 date, the title and the blogspot URL all match the BibTeX. The URL comes from a secondary
+    reference, because no search returned the blogspot page itself. Bianco also presented the model in June 2014
+    (RVASec; FireEye slide deck ''Intel-Driven Detection & Response to Increase Your Adversary''s Cost of Operations'').
+    The BibTeX annote should be corrected: the Sqrrl piece is a 2015 article, not a mirror of the post. If the original
+    post cannot be retrieved, consider citing the 2014 slides or the 2015 Sqrrl article as well.'
+- key: johnson2016nist
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: Guide to Cyber Threat Information Sharing
+  authors: Chris Johnson, Lee Badger, David Waltermire (NIST Computer Security Division), Julie Snyder, Clem Skorupka
+    (The MITRE Corporation)
+  year: 2016 (October 2016, final version; a draft was released in October 2014)
+  venue: NIST Special Publication 800-150, National Institute of Standards and Technology
+  identifier: 'https://doi.org/10.6028/NIST.SP.800-150 (DOI shown in the extract of the PDF front matter); PDF:
+    https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-150.pdf'
+  peer_reviewed: 'no'
+  claim_checks:
+  - excerpt: Guidance such as the NIST guide to cyber threat information sharing describes how organisations establish
+      sharing relationships, the benefits and difficulties of sharing, and the automated exchange of threat information
+    status: supported_by_extract
+    note: The NIST release notice, as extracted, says the guide gives guidelines for establishing, participating
+      in and maintaining sharing relationships. It says the guide covers the benefits and challenges of sharing,
+      trust, the handling of sensitive information, and the automated exchange of cyber threat information.
+  - excerpt: '...and under organisational guidance on how to share it responsibly [@johnson2016nist]'
+    status: supported_by_extract
+    note: The extracts mention handling sensitive information, building trust, and developing rules that control
+      the publication and distribution of threat information. Together these support 'guidance on how to share it
+      responsibly'.
+  discrepancies:
+  - field: doi
+    bib_value: (absent)
+    found_value: 10.6028/NIST.SP.800-150 (per the extract of the NIST PDF; consider adding it)
+  sources:
+  - https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-150.pdf
+  - https://csrc.nist.gov/News/2016/Special-Publication-800-178-and-Special-Publicatio
+  - https://csrc.nist.gov/News/2014/NIST-Released-Draft-Special-Publication-800-150
+  - https://www.isao.org/?p=5981
+  - https://ndisac.org/dibscc/links/ra-l3-3-11-2e/nist-sp-800-150-guide-to-cyber-threat-information-sharing/
+  notes: 'All BibTeX fields are confirmed: the five authors in order, the title, NIST as institution, SP 800-150,
+    October 2016, and the URL. Some third-party pages (for example ISAO) still call it a draft. The 2016 PDF is
+    the final version. It is a government guidance document, not peer reviewed in the academic sense.'
+- key: tounsi2018survey
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: A survey on technical threat intelligence in the age of sophisticated cyber attacks
+  authors: Wiem Tounsi, Helmi Rais (two authors per the dblp listing and an arXiv reference list; a Typeset page
+    shows '+1 more', which is unexplained)
+  year: '2018'
+  venue: Computers & Security, vol. 72, pp. 212-233 (per the dblp listing and an arXiv survey's reference list,
+    as extracted)
+  identifier: 'DOI not confirmed (a search for 10.1016/j.cose.2017.09.001 returned no matching record); metadata
+    record: https://gssd.mit.edu/node/61600'
+  peer_reviewed: 'yes'
+  claim_checks:
+  - excerpt: Surveys of the field document how technical threat intelligence and its sharing have grown into an
+      established topic of research and practice
+    status: partly_supported
+    note: The abstract, as extracted, calls threat intelligence an increasingly valuable commodity and discusses
+      the benefits and obstacles of sharing. 'Grown into an established topic of research and practice' is the thesis's
+      own characterisation, which the extract does not state in those terms.
+  - excerpt: Surveys of technical threat intelligence and of CTI sharing describe the standards, analytics and sharing
+      approaches, and open problems of the field
+    status: supported_by_extract
+    note: The extracts cover standardised representation of threat information and automated analytics on large,
+      non-uniform data (Typeset TL;DR), sharing benefits and barriers such as trust and reputation, and limits of
+      traditional approaches against APTs and zero-days (a later survey's description). The keywords include ontologies
+      and threat sharing.
+  discrepancies:
+  - field: doi
+    bib_value: 10.1016/j.cose.2017.09.001
+    found_value: not confirmed (an exact-string search for this DOI returned no record of the paper)
+  sources:
+  - https://gssd.mit.edu/node/61600
+  - https://cyberir.mit.edu/site/survey-technical-threat-intelligence-age-sophisticated-cyber-attacks
+  - https://typeset.io/authors/helmi-rais-jfiblbos41
+  - https://dblp1.uni-trier.de/pid/35/8298.html
+  - https://arxiv.org/pdf/2304.07411
+  - https://arxiv.org/pdf/2206.14539
+  notes: The title, both authors, the year, the journal, the volume (72) and the pages (212-233) are confirmed by
+    extracts of dblp and an arXiv reference list. The DOI is still unconfirmed and should be checked against the
+    publisher record. A Typeset author page shows '+1 more' author, but dblp and the reference list give only two
+    authors. One extract expands TTI as 'Tactical Threat Intelligence'. In the paper it most likely means Technical
+    Threat Intelligence, so do not quote that expansion.
+- key: wagner2019sharing
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Cyber threat intelligence sharing: Survey and research directions'
+  authors: Thomas D. Wagner, Khaled Mahbub, Esther Palomar, Ali E. Abdallah
+  year: 2019 (November 2019)
+  venue: Computers & Security, vol. 87, article 101589
+  identifier: 'https://doi.org/10.1016/j.cose.2019.101589 (DOI shown in the extracts of the BCU and UAH repository
+    records); accepted version: https://www.open-access.bcu.ac.uk/7852'
+  peer_reviewed: 'yes'
+  claim_checks:
+  - excerpt: Surveys of the field document how technical threat intelligence and its sharing have grown into an
+      established topic of research and practice
+    status: partly_supported
+    note: The abstract, as extracted, calls CTI sharing a novel weapon in the arsenal of cyber defenders. It says
+      the survey draws on a considerable number of academic and gray-literature articles. This shows a substantial
+      literature, but 'established topic of research and practice' is the thesis's own characterisation.
+  - excerpt: Surveys of technical threat intelligence and of CTI sharing describe the standards, analytics and sharing
+      approaches, and open problems of the field
+    status: partly_supported
+    note: The extracts support the sharing focus, the technical and non-technical challenges, and research directions
+      (open problems). Its keywords include trust, anonymity and relevance. No extract shows this survey covering
+      standards or analytics specifically.
+  discrepancies: []
+  sources:
+  - https://www.open-access.bcu.ac.uk/7852
+  - https://pureportal.bcu.ac.uk/en/publications/cyber-threat-intelligence-sharing-survey-and-research-directions-2/
+  - https://portalcientifico.uah.es/documentos/626428076a1a3a48920240ab?lang=en
+  - https://dblp.org/pid/92/3852
+  notes: 'All BibTeX fields are confirmed: the four authors in order, the title, the journal, volume 87, article
+    number 101589, the 2019 date and the DOI. The accepted version is open access (CC BY-NC-ND) in the Birmingham
+    City University repository. One search summary wrongly called that repository ''Bournemouth University''.'
+- key: li2019tea
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Reading the Tea Leaves: A Comparative Analysis of Threat Intelligence (USENIX page capitalises it ''Reading
+    the Tea leaves'')'
+  authors: Vector Guo Li, Matthew Dunn, Paul Pearce, Damon McCoy, Geoffrey M. Voelker, Stefan Savage, Kirill Levchenko
+  year: 2019 (August 2019)
+  venue: 28th USENIX Security Symposium (USENIX Security 19), Santa Clara, CA, pp. 851-867, USENIX Association
+  identifier: https://www.usenix.org/conference/usenixsecurity19/presentation/li
+  peer_reviewed: 'yes'
+  claim_checks:
+  - excerpt: Comparative analyses of threat intelligence data sources have examined how the sources relate to one
+      another
+    status: supported_by_extract
+    note: Per the abstract extract, the paper defines metrics for characterising TI feeds and applies them to a
+      broad range of public and commercial sources. Another extract reports that a few sources overlap significantly
+      but most do not, and that most indicators are unique.
+  - excerpt: Comparative analyses of threat intelligence sources examine what different providers contribute and
+      how they relate to each other
+    status: supported_by_extract
+    note: The extracts show a systematic comparison of public and commercial sources, overlap results (most sources
+      do not overlap) and coverage results (most indicators are unique). The names of the specific metrics, such
+      as 'differential contribution', were not shown in any extract.
+  discrepancies:
+  - field: title (capitalisation only)
+    bib_value: 'Reading the Tea Leaves: ...'
+    found_value: 'Reading the Tea leaves: ... (on the USENIX page)'
+  - field: pages
+    bib_value: (absent)
+    found_value: 851-867 (per the USENIX bibliography extract; optional addition)
+  sources:
+  - https://www.usenix.org/conference/usenixsecurity19/presentation/li
+  - https://usenix.org/biblio-2895
+  - https://par.nsf.gov//servlets/purl/10094544
+  - https://par.nsf.gov/biblio/10100961-reading-tea-leaves-comparative-analysis-threat-intelligence
+  - https://dblp.dagstuhl.de/pid/224/2345.html
+  notes: The authors (7, in order), the venue, the year and the URL are confirmed. The abstract says the authors
+    find significant limitations and challenges in using existing TI data for its purported goals, including coverage
+    and accuracy (false positives). A full-text copy is listed on NSF PAR, but it was not read.
+- key: bouwman2020cup
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'A Different Cup of TI? The Added Value of Commercial Threat Intelligence (USENIX page: ''A different cup
+    of TI? The added value of commercial threat intelligence'')'
+  authors: Xander Bouwman, Harm Griffioen, Jelle Egbers, Christian Doerr, Bram Klievink, Michel van Eeten
+  year: 2020 (August 2020)
+  venue: 29th USENIX Security Symposium (USENIX Security 20), pp. 433-450
+  identifier: https://www.usenix.org/conference/usenixsecurity20/presentation/bouwman
+  peer_reviewed: 'yes'
+  claim_checks:
+  - excerpt: found almost no overlap between their indicators, or with four large open feeds; for 22 threat actors
+      tracked by both vendors, the average overlap was only 2.5% to 4.0%
+    status: supported_by_extract
+    note: 'The abstract, as extracted, says: ''There is almost no overlap between them, nor with four large open
+      threat intelligence feeds.'' It reports an average overlap of 2.5% to 4.0% for the 22 threat actors both vendors
+      claim to track.'
+  - excerpt: in 14 interviews with practitioners, customers were found to optimise for analyst time rather than
+      for threat detection as such
+    status: supported_by_extract
+    note: The extract says that, in 14 interviews with security professionals, customers appeared to optimise for
+      analyst time rather than threat detection. The abstract hedges this ('seem', 'appear'); the thesis states
+      it as a finding. The 'frames the motivation' part is the thesis's own framing.
+  - excerpt: '...with an average overlap of 2.5% to 4.0% for 22 threat actors tracked by both, and overlapping indicators
+      appearing in the other vendor''s feed with an average delay of about a month'
+    status: supported_by_extract
+    note: The extract says the few overlapping indicators show up in the other vendor's feed with a delay of, on
+      average, a month.
+  - excerpt: the interviews in the commercial-intelligence study found that customers value analyst time rather
+      than detection coverage alone
+    status: partly_supported
+    note: The extract says poor coverage and small volume seemed less of a concern to customers, who appeared to
+      optimise for analyst time. The paraphrase is close but drops the hedging. The conclusion that analyst effort
+      is 'the right outcome to measure' is the thesis's own inference, not the paper's.
+  - excerpt: the same evidence supports an efficiency outcome based on analyst active time
+    status: partly_supported
+    note: The paper reports that customers optimise for analyst time. Using 'analyst active time' as the efficiency
+      outcome is the thesis's own operationalisation and does not appear in the extracts.
+  - excerpt: Practitioners using commercial CTI were found to optimise for analyst time, which supports treating
+      analyst labour as the principal cost driver
+    status: supported_by_extract
+    note: The first clause matches the abstract (hedged there as 'appear to'). Treating analyst labour as the principal
+      cost driver is the thesis's inference, not a finding of the paper.
+  - excerpt: Analyst time is what practitioners value [@bouwman2020cup]
+    status: partly_supported
+    note: 'The extract supports a hedged finding from 14 interviews: customers appear to optimise for analyst time.
+      The thesis''s unhedged general statement goes further than that. The rest of the sentence concerns other works.'
+  discrepancies:
+  - field: pages
+    bib_value: (absent)
+    found_value: 433-450 (per the USENIX bibliography and dblp extracts; optional addition)
+  sources:
+  - https://www.usenix.org/conference/usenixsecurity20/presentation/bouwman
+  - https://www.usenix.org/biblio-4537
+  - https://repository.tudelft.nl/file/File_abea0807-b858-41e9-beea-cf87ab95e05b?preview=1
+  - https://research.tudelft.nl/en/publications/e49fe0cb-edb4-4a07-a503-2ddeab8b4a92
+  - https://dblp.dagstuhl.de/pid/272/7083.html
+  - https://www.darkreading.com/threat-intelligence/research-casts-doubt-on-value-of-threat-intel-feeds
+  notes: The authors (6, in order), the title, the venue, the year and the URL are confirmed. The abstract also
+    says customers judge the service mostly through informal heuristics rather than quantitative metrics. Dark Reading
+    adds vendor-to-vendor coverage figures (13% and 1.3%), which come from press coverage and were not checked against
+    the paper. An accepted manuscript is on TU Delft's repository, but it was not read.
+- key: griffioen2020quality
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: metadata_via_search_extract
+  full_text: Full-text verification pending
+  title: Quality Evaluation of Cyber Threat Intelligence Feeds
+  authors: Harm Griffioen; Tim M. Booij; Christian Doerr
+  year: '2020'
+  venue: 'ACNS 2020 (Applied Cryptography and Network Security, 18th International Conference, Rome, October 19-22,
+    2020), Proceedings Part II, pp. 277-296 (DBLP: ''ACNS (2) 2020: 277-296'')'
+  identifier: DOI not confirmed. DBLP record seen via https://dblp.org/pid/245/4471
+  peer_reviewed: 'yes'
+  claim_checks:
+  - excerpt: A separate evaluation of 24 open-source feeds over several months found significant variation in their
+      quality
+    status: partly_supported
+    note: 'No abstract from the paper itself was found. Secondary extracts only: one citing source (arXiv 2401.03864,
+      as summarised) says the work evaluated 24 open-source feeds over several months with significant variation
+      in performance; another (arXiv 2311.08807) says 17 feeds over 14 months plus 7 feeds over 7 months (consistent
+      with 24 in total). A later search could not re-find the 24-feed wording in '
+  - excerpt: A multi-month evaluation of 24 open-source feeds found significant variation in quality, as well as
+      biases towards certain countries and the risk of collateral damage when blocking listed IP addresses
+    status: needs_full_text
+    note: The country-bias and collateral-damage findings appeared only in a secondary summary attributed to the
+      DNS-filtering survey (arXiv 2401.03864). Two later searches returned nothing about country bias or collateral
+      damage, and one summary said the survey's passage referred to other work. The extracts disagree, so only the
+      paper itself can confirm this.
+  discrepancies:
+  - field: booktitle (volume/part)
+    bib_value: Applied Cryptography and Network Security (ACNS 2020)
+    found_value: ACNS 2020 Proceedings Part II ('ACNS (2) 2020' in DBLP); the TUM catalogue record also describes
+      the Part 2 volume
+  - field: series/volume
+    bib_value: (absent)
+    found_value: One extract names Lecture Notes in Computer Science 12147, but my query contained that number,
+      so it is not independently confirmed
+  - field: publisher
+    bib_value: (absent)
+    found_value: Springer (LNCS) named only in a search summary, not in a publisher page; not confirmed
+  - field: doi
+    bib_value: (absent)
+    found_value: not confirmed; searches for 10.1007/978-3-030-57878-7_14 found no matching page
+  sources:
+  - https://dblp.org/pid/245/4471
+  - https://dblp.uni-trier.de/pid/248/1711.html
+  - https://search.ub.tum.de/vufind/Record/DE-604.BV046909447
+  - https://arxiv.org/pdf/2311.08807
+  - https://arxiv.org/pdf/2401.03864
+  notes: DBLP extract confirms authors, title, ACNS (2) 2020, pp. 277-296. The paper was published in the ACNS conference
+    proceedings (peer-reviewed venue), but no extract states its review process. One search summary suggested ESORICS
+    2020 proceedings; that contradicts DBLP and is unsupported, so I disregarded it. Suggest adding 'Part II', LNCS
+    volume, publisher and DOI after checking the Springer record directly. The extracts also named four quality
+    dimensions (originality, impact, sensitivity, timeliness) via arXiv 2311.08807, again secondary.
+- key: oasis2021stix
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: metadata_via_search_extract
+  full_text: Full-text verification pending
+  title: STIX Version 2.1
+  authors: Edited by Bret Jordan, Rich Piazza, and Trey Darley (OASIS Cyber Threat Intelligence (CTI) TC); issuing
+    body OASIS Open
+  year: '2021'
+  venue: OASIS Standard, 10 June 2021
+  identifier: https://docs.oasis-open.org/cti/stix/v2.1/stix-v2.1.html
+  peer_reviewed: 'no'
+  claim_checks:
+  - excerpt: STIX is the OASIS standard for representing it [threat intelligence]
+    status: supported_by_extract
+    note: Extracts confirm that OASIS approved STIX Version 2.1 as an OASIS Standard on 10 June 2021. An OASIS TC
+      request describes STIX as a language for expressing cyber threat and observable information. The exact phrase
+      'language and serialization format used to exchange cyber threat intelligence' was not found in the extracts.
+  discrepancies:
+  - field: author
+    bib_value: '{OASIS Open}'
+    found_value: 'The specification''s own citation format credits editors: ''STIX Version 2.1. Edited by Bret Jordan,
+      Rich Piazza, and Trey Darley. 10 June 2021. OASIS Standard.'''
+  - field: date/type
+    bib_value: year = 2021 (no month, no document stage)
+    found_value: OASIS Standard approved/effective 10 June 2021 (call for consent, 13 affirmative, no objections)
+  - field: url
+    bib_value: https://docs.oasis-open.org/cti/stix/v2.1/stix-v2.1.html
+    found_value: Confirmed. The extract describes it as the 'latest stage' link, which points to the 2021 OASIS
+      Standard. A search summary named an /os/stix-v2.1-os.html stage URL, but that URL did not appear as a result,
+      so it is not confirmed.
+  sources:
+  - https://www.oasis-open.org/?p=7287
+  - https://docs.oasis-open.org/cti/stix/v2.1/stix-v2.1.html
+  - https://lists.xml.org/archive/lists/voting/months/202106/messages/3
+  - https://issues.oasis-open.org/browse/TCADMIN-4006
+  - https://docs.oasis-open.org/cti/stix/v2.1/csprd01/stix-v2.1-csprd01.html
+  - https://docs.oasis-open.org/cti/stix/v2.1/cs02/stix-v2.1-cs02.pdf
+  notes: 'The V2 annote said the year came from memory; the 10 June 2021 date is now confirmed by the OASIS announcement
+    and voting-list extracts. This is a standard: it went through committee and public review, not academic peer
+    review. A later non-material ''STIX Version 2.1 Errata 01'' (02 April 2025; editors Piazza, Ratliff, Relitz,
+    Studer) exists and does not change conformance requirements. Consider adding the editors and ''OASIS Standard,
+    10 June 2021'' to the entry.'
+- key: strom2018attack
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'MITRE ATT&CK: Design and Philosophy'
+  authors: Blake E. Strom; Andy Applebaum; Doug P. Miller; Kathryn C. Nickels; Adam G. Pennington; Cody B. Thomas
+  year: 2018 (originally published July 2018; revised March 2020)
+  venue: The MITRE Corporation technical report (MP180360; revised edition MP180360R1). DTIC copy AD1108016
+  identifier: https://www.mitre.org/news-insights/publication/mitre-attck-design-and-philosophy
+  peer_reviewed: 'no'
+  claim_checks:
+  - excerpt: MITRE ATT&CK provides a common taxonomy of adversary behaviour that is used to convey threat intelligence,
+      to test defences, and to improve them
+    status: supported_by_extract
+    note: 'The abstract extract says ATT&CK ''provides a common taxonomy for both offense and defense'' and is used
+      ''to convey threat intelligence, perform testing through red teaming or adversary emulation, and improve network
+      and system defenses''. Caveat: the extract may come from the March 2020 revision; the July 2018 wording was
+      not separately confirmed.'
+  - excerpt: '| Tactics, techniques and procedures (TTP) | Adversary behaviour, expressed using the MITRE ATT&CK
+      taxonomy'
+    status: supported_by_extract
+    note: The abstract describes ATT&CK as a 'globally-accessible knowledge base of adversary tactics and techniques
+      based on real-world observations' and as a common taxonomy.
+  - excerpt: ATT&CK supplies a shared vocabulary for that behaviour
+    status: supported_by_extract
+    note: Consistent with the abstract's 'common taxonomy' of adversary tactics and techniques.
+  discrepancies:
+  - field: number
+    bib_value: (absent)
+    found_value: 'MP180360 (revision MP180360R1). Public-release codes: 18-0944-11 (July 2018 edition), 19-01075-28
+      (revised edition), per one extract'
+  - field: edition/version
+    bib_value: year = 2018, month = jul
+    found_value: July 2018 original confirmed. The MITRE-hosted PDF linked from the URL is the March 2020 revision,
+      so the URL and the 2018 date refer to different editions
+  sources:
+  - https://www.mitre.org/news-insights/publication/mitre-attck-design-and-philosophy
+  - https://www.mitre.org/sites/default/files/publications/pr-18-0944-11-mitre-attack-design-and-philosophy.pdf
+  - https://apps.dtic.mil/sti/trecms/pdf/AD1108016.pdf
+  notes: Institutional technical report, not peer reviewed. All six authors and the title match the BibTeX. The
+    report number (V1 'not confirmed') is MP180360 per the extract. To match the 2018 date, cite the July 2018 edition
+    (the DTIC copy AD1108016 is dated July 2018), or cite the March 2020 revision (MP180360R1) if that is the version
+    used.
+- key: sigmahq2024spec
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (independent workflow agent)
+  level: primary_source_read
+  full_text: README of the specification repository read in full (primary source), 2026-10-21
+  title: 'Sigma Specification - Generic Signature Format for SIEM Systems (landing page); component document: Sigma
+    Rules Specification'
+  authors: SigmaHQ (individual specification authors not confirmed)
+  year: 'not confirmed for the landing page. Extracts: Sigma Specification v2.0 released August 2024 (Graylog);
+    correlation and filter specifications at version 2.1.0, released 2025-08-02'
+  venue: Project specification (SigmaHQ), web page and GitHub repository
+  identifier: 'https://sigmahq.io/sigma-specification/ (repository: https://github.com/SigmaHQ/sigma-specification)'
+  peer_reviewed: 'no'
+  claim_checks:
+  - excerpt: Sigma is a generic, open, YAML-based rule format that is compiled to the query language of a particular
+      SIEM, which lets one rule serve many platforms
+    status: supported_by_extract
+    note: 'README extract: ''a generic and open signature format that allows you to describe relevant log events''.
+      The rules specification page gives YAML file conventions. Extracts say conversion tools (Sigma CLI, pySigma,
+      sigconverter.io) translate rules into native query languages for various SIEMs such as Elasticsearch and Splunk.
+      Conversion is described in the README and tooling material rather than in t'
+  - excerpt: '| Sigma rule | A YAML detection rule in the open Sigma format, independent of any one SIEM''s query
+      language'
+    status: supported_by_extract
+    note: The extracts show an open format written in YAML that is converted to each SIEM's query language.
+  - excerpt: Sigma provides the portable rule format, describing log events in YAML independently of the SIEM that
+      will run the rule
+    status: supported_by_extract
+    note: Matches the README wording ('describe relevant log events') and the YAML structure shown on the rules
+      specification page.
+  discrepancies:
+  - field: title
+    bib_value: 'Sigma Specification: Generic Signature Format for {SIEM} Systems'
+    found_value: Page title shown as 'Sigma Specification - Generic Signature Format for SIEM Systems' (separator
+      differs only)
+  - field: year/version
+    bib_value: no year field (key implies 2024); urldate 2026-10-02
+    found_value: v2.0 released August 2024 per a Graylog article; correlation and filter specifications at 2.1.0
+      (2025-08-02) per sigmahq.io extract. Version of the rules specification itself not confirmed
+  sources:
+  - https://sigmahq.io/sigma-specification/
+  - https://sigmahq.io/sigma-specification/specification/sigma-rules-specification.html
+  - https://sigmahq.io/sigma-specification/specification/sigma-correlation-rules-specification.html
+  - https://github.com/SigmaHQ/sigma-specification/blob/main/sigmahq/sigmahq_conventions.md
+  - https://cdn.jsdelivr.net/gh/sigmahq/sigma@master/README.md
+  - https://github.com/sigmahq/sigma
+  notes: 'Community specification, not peer reviewed. The URL exists and is the specification hub. Consider adding
+    a version (for example the rules specification version consulted) or year, since the key says 2024 and some
+    component specs show 2.1.0 (2025). A description of conversion to SIEM queries could also cite the pySigma/sigma-cli
+    tooling. The extract''s index date for the rules specification page was stale (about 444 days), so check the
+    current version on the live page. Repository README read directly on 2026-10-21: title "Sigma Specification
+    - Generic Signature Format for SIEM Systems"; version notes 1.0 to 2.0 and 2.0 to 2.1.'
+- key: palantir2017ads
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (independent workflow agent)
+  level: primary_source_read
+  full_text: README of the framework repository read in full (primary source), 2026-10-21
+  title: Alerting and Detection Strategy Framework
+  authors: Palantir (corporate byline; GitHub licence reads 'Copyright (c) 2017 Palantir Technologies Inc.'); no
+    individual author found
+  year: not confirmed for the blog post; companion GitHub repository created 2017-12-19 (MIT licence dated 2017)
+  venue: Palantir blog (blog.palantir.com, Medium-hosted); companion repository github.com/palantir/alerting-detection-strategy-framework
+  identifier: 'https://blog.palantir.com/alerting-and-detection-strategy-framework-52dc33722df2 (repository: https://github.com/palantir/alerting-detection-strategy-framework)'
+  peer_reviewed: 'no'
+  claim_checks:
+  - excerpt: Practitioner frameworks such as Palantir's Alerting and Detection Strategy framework prescribe what
+      a detection should document, including its goal, technical context, blind spots and assumptions, false positives,
+      and validation
+    status: supported_by_extract
+    note: Extracts of ADS-Framework.md in the companion repository describe the Goal, Technical Context, Blind Spots
+      and Assumptions, False Positives and Validation sections. The README extract says each section must be completed
+      before production deployment. The detail comes from the repository; the blog post body was not seen.
+  - excerpt: The Alerting and Detection Strategy framework asks authors to record a detection's goal, categorisation,
+      strategy abstract, technical context, blind spots and assumptions, false positives, validation, priority and
+      response
+    status: supported_by_extract
+    note: 'Across two GitHub-restricted searches, extracts of ADS-Framework.md separately describe all nine sections:
+      Goal, Categorization (maps to MITRE ATT&CK), Strategy Abstract, Technical Context, Blind Spots and Assumptions,
+      False Positives, Validation, Priority and Response. Caveat: my queries named the sections, but the extracts
+      gave independent descriptions of each one. The source is the repository t'
+  discrepancies:
+  - field: year
+    bib_value: '2017'
+    found_value: Post date not confirmed; 2017 is supported only indirectly by the repository creation date (2017-12-19)
+      and the 2017 licence
+  - field: author
+    bib_value: '{Palantir Technologies}'
+    found_value: Blog byline shown only as 'Palantir'; 'Palantir Technologies Inc.' appears in the repository licence.
+      Consistent, not a substantive discrepancy
+  sources:
+  - https://blog.palantir.com/alerting-and-detection-strategy-framework-52dc33722df2
+  - https://github.com/palantir/alerting-detection-strategy-framework
+  - https://github.com/palantir/alerting-detection-strategy-framework/blob/master/ADS-Framework.md
+  - https://github.com/palantir/alerting-detection-strategy-framework/blob/master/README.md
+  - https://awesome.ecosyste.ms/projects/github.com%2Fpalantir%2Falerting-detection-strategy-framework
+  - https://github.com/vot3k/alerting-detection-strategy-framework
+  notes: 'Practitioner blog post and repository, not peer reviewed. Blog extract: the post ''details how Palantir''s
+    IR team develops ADS, the process framework we use, and the pitfalls we have experienced in early alert development'',
+    and gives lack of rigor, documentation and peer review as the motivation. Because the section details come from
+    the repository''s ADS-Framework.md, consider citing the repository as well (or instead). The exact publication
+    date of the post is still not confirmed. Repository README read directly on 2026-10-21: sections Goal, Categorization,
+    Strategy Abstract, Technical Context, Blind Spots and Assumptions, False Positives, Validation, Priority, Response.'
+- key: tyagi2026sigmalint
+  checked_on: '2026-10-20'
+  checked_by: search-extract review (independent workflow agent)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Static Quality Assessment of Sigma Detection Rules: Framework and Empirical Evaluation'
+  authors: Nishant Tyagi
+  year: 2026 (SSRN date shown as May 24, 2026 in two extracts; one extract says posted June 2026)
+  venue: SSRN preprint
+  identifier: https://papers.ssrn.com/abstract=6823718 (abstract also cites DOI 10.5281/zenodo.20371761)
+  peer_reviewed: preprint
+  claim_checks:
+  - excerpt: A static quality framework for Sigma rules, implemented in a tool called sigmalint and applied to the
+      3,132 rules of the public SigmaHQ corpus, separates validity, a binary conformance gate, from quality, a weighted
+      score across six dimensi
+    status: supported_by_extract
+    note: 'The abstract extract states: the framework is implemented in the open-source tool sigmalint; it is evaluated
+      on the full SigmaHQ corpus (3,132 rules at commit 994da16); validity is a binary spec-conformance gate; quality
+      is a weighted score over six dimensions (ATT&CK alignment, taxonomy correctness, false-positive risk, metadata
+      completeness, redundancy, style); and a seeded-defect benchmark uses'
+  - excerpt: '| sigmalint | Static quality assessment of rules | Corpus study; seeded-defect recall | Not applicable
+      | Seeded defects (linter, not a pipeline) |'
+    status: supported_by_extract
+    note: The abstract describes a corpus study of the SigmaHQ rules and seeded-defect recall evidence. The 'Not
+      applicable' and 'not a pipeline' entries are the thesis's own characterisation, consistent with the abstract.
+  - excerpt: The static-quality work does separate a binary validity gate from a weighted score, supporting the
+      design principle, but it assesses existing rules and does not govern generation
+    status: partly_supported
+    note: The validity/quality separation is stated in the abstract, and the evaluation is on the existing SigmaHQ
+      corpus. That the work does not address governing rule generation is an inference from what the abstract does
+      not mention, so only the full text could confirm it.
+  - excerpt: seeded-defect testing exists for linters [@tyagi2026sigmalint]
+    status: supported_by_extract
+    note: The abstract reports a seeded-defect benchmark for sigmalint's checks. The rest of the sentence is about
+      the thesis's own consulted sources, not about this work.
+  discrepancies:
+  - field: doi
+    bib_value: (absent)
+    found_value: 10.5281/zenodo.20371761 (Zenodo DOI given in the abstract per extracts; what it resolves to, paper
+      or software, not confirmed)
+  - field: date
+    bib_value: year = 2026 (inferred)
+    found_value: 2026 confirmed; extracts disagree on month (dated May 24, 2026 vs posted June 2026)
+  sources:
+  - https://papers.ssrn.com/abstract=6823718
+  notes: Only the SSRN abstract page appeared; full text not read. Two early extracts said the snippet did not show
+    the author, but later extracts of the same SSRN page name Nishant Tyagi. The abstract also says every SigmaHQ
+    rule passes the validity gate (corpus mean quality 99.18/100), that the false-positive-risk dimension discriminates
+    most strongly, and it discloses a 99.3% false-positive rate in the authors' own rule STY003. No sigmalint code
+    repository was found. Consider adding the Zenodo DOI after confirming what it points to.
+- key: dhananjeyan2026exclusion
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'The Exclusion Ratchet: False-Positive Suppression Accumulates and Persists in Detection Rule Repositories'
+  authors: Sudaroli Dhananjeyan, Kumaran U
+  year: '2026'
+  venue: arXiv preprint 2608.31062 (August 2026 per secondary source)
+  identifier: https://arxiv.org/abs/2608.31062
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies:
+  - field: author
+    bib_value: Dhananjeyan, Sudaroli and {Kumaran U}
+    found_value: Sudaroli Dhananjeyan and Kumaran U (order consistent; given/family split of the second author not
+      confirmed)
+  sources:
+  - https://arxiv.org/pdf/2608.31062
+  - https://blog.pebblous.ai/blog/detection-rule-exclusion-ratchet/en/
+  notes: 'Nine years of SigmaHQ: exclusions added about 5.4 times per withdrawal; 86% of rules that changed exclusions
+    ended narrower; Kaplan-Meier: 86.7% of exclusions remain three years later; structural diffs miss about 31%
+    of narrowing; deterministic semantic suppression test (precision 0.828, recall 0.911); data and pipeline released.'
+- key: maiorano2026probe
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'From Attack Simulation to SIEM Rule: Deterministic Detection-as-Code Synthesis with Probe-Level Traceability'
+  authors: Alexandre Cristovão Maiorano
+  year: '2026'
+  venue: arXiv preprint 2606.05252 (3 June 2026)
+  identifier: https://arxiv.org/abs/2606.05252
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/pdf/2606.05252
+  - https://papers.cool/arxiv/2606.05252
+  notes: 'Deterministic mapping from breach-and-attack-simulation findings to starter Sigma rules with a 23-template
+    library keyed to OWASP LLM and Web Top 10; each rule traces to its finding and ATT&CK technique; 17/17 rules
+    parse and convert to Splunk and Elasticsearch; replay on OpenSearch: LLM rules fire on 30% of held-out AdvBench
+    subset and 14% of HarmBench at 7.7% false positives on a benign baseline; no model used for synthesis.'
+- key: zshguy2026tyrian
+  checked_on: '2026-10-21'
+  checked_by: repository read directly (authoring assistant)
+  level: primary_source_read
+  full_text: README / documentation read in full (primary source); not a paper
+  title: 'Tyrian Detection Pack (README: SigmaHQ detections compiled to Wazuh; Splunk and Sentinel backends)'
+  authors: Tyrian / zshguy (MIT licence, copyright 2026 Tyrian)
+  year: 2026 (last commit 2 October 2026 at time of check)
+  venue: GitHub software repository
+  identifier: https://github.com/zshguy/tyrian-detection-pack
+  peer_reviewed: no (software)
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://github.com/zshguy/tyrian-detection-pack
+  notes: 'README read in full from the repository (21 Oct 2026): about 3,600 SigmaHQ detections for Wazuh; compiler
+    refuses rules that can never fire and reports refusals; disjunctions rewritten to DNF as sibling rules (3,144
+    Sigma rules become 3,609 Wazuh rules); Wazuh backend translates 3,007 and declines 137 (96%); MIT.'
+- key: theflakes2024sigmatowazuh
+  checked_on: '2026-10-21'
+  checked_by: repository read directly (authoring assistant)
+  level: primary_source_read
+  full_text: README / documentation read in full (primary source); not a paper
+  title: 'sigma_to_wazuh: Convert Sigma rules to Wazuh rules'
+  authors: Brian Kellogg (theflakes; MIT licence 2021)
+  year: 2021-2025 (licence 2021; last commit 13 September 2025)
+  venue: GitHub software repository
+  identifier: https://github.com/theflakes/sigma_to_wazuh
+  peer_reviewed: no (software)
+  claim_checks: []
+  discrepancies:
+  - field: author
+    bib_value: '{theflakes}'
+    found_value: Brian Kellogg (per LICENSE)
+  - field: year
+    bib_value: (absent)
+    found_value: 2021 (licence); last commit 2025-09-13
+  sources:
+  - https://github.com/theflakes/sigma_to_wazuh
+  notes: 'README read in full (21 Oct 2026): project moving to Go, Python version no longer updated; some OR-logic
+    conversion still broken; one Sigma rule can produce several Wazuh rules; near and timeframe rules skipped.'
+- key: wazuh2026overview
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: metadata_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Wazuh: Open Source XDR. Open Source SIEM.'
+  authors: Wazuh, Inc.
+  year: (web page, no date)
+  venue: Vendor web page
+  identifier: https://wazuh.com/platform/overview/
+  peer_reviewed: no (vendor page)
+  claim_checks: []
+  discrepancies: []
+  sources: []
+  notes: Vendor self-description, used only to say what the product is. The page host is blocked by the network
+    policy in this session; not re-checked.
+- key: wazuh2026docs
+  checked_on: '2026-10-21'
+  checked_by: repository read directly (authoring assistant)
+  level: primary_source_read
+  full_text: README / documentation read in full (primary source); not a paper
+  title: Wazuh documentation, branch 4.14
+  authors: Wazuh, Inc.
+  year: '2026'
+  venue: Documentation repository (GitHub, branch 4.14)
+  identifier: https://github.com/wazuh/wazuh-documentation/tree/4.14
+  peer_reviewed: no (documentation)
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://github.com/wazuh/wazuh-documentation/tree/4.14
+  notes: Read directly from the documentation repository in the 2 October 2026 session (recorded in ADR-001); branch
+    4.14 confirmed to exist on 21 Oct 2026 (git ls-remote, head 5f46573).
+- key: husari2017ttpdrill
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'TTPDrill: Automatic and Accurate Extraction of Threat Actions from Unstructured Text of CTI Sources'
+  authors: Ghaith Husari, Ehab Al-Shaer, Mohiuddin Ahmed, Bill Chu, Xi Niu
+  year: '2017'
+  venue: ACSAC 2017 (33rd Annual Computer Security Applications Conference)
+  identifier: https://doi.org/10.1145/3134600.3134646
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: doi
+    bib_value: (absent)
+    found_value: 10.1145/3134600.3134646 (per extract)
+  sources:
+  - https://pure.kfupm.edu.sa/en/publications/ttpdrill-automatic-and-accurate-extraction-of-threat-actions-from/
+  - https://acsac.org/2017/program-files/s297.html
+  notes: Threat-action ontology and text mining (NLP plus information retrieval) extracting threat actions, mapped
+    to techniques, tactics and kill-chain phases, exportable to STIX; evaluated on Symantec reports with more than
+    82% precision and recall.
+- key: legoy2020rcatt
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: Automated Retrieval of ATT&CK Tactics and Techniques for Cyber Threat Reports
+  authors: Valentine Legoy, Marco Caselli, Christin Seifert, Andreas Peter
+  year: '2020'
+  venue: arXiv 2004.14322; presented at the 1st Cyber Threat Intelligence Symposium (CTI 2020)
+  identifier: https://arxiv.org/abs/2004.14322
+  peer_reviewed: preprint (symposium presentation)
+  claim_checks: []
+  discrepancies:
+  - field: venue
+    bib_value: arXiv only
+    found_value: also presented at CTI 2020 symposium (per extract)
+  sources:
+  - https://arxiv.org/abs/2004.14322v1
+  - https://research.utwente.nl/en/publications/automated-retrieval-of-attampck-tactics-and-techniques-for-cyber-/
+  notes: Evaluates classification approaches to retrieve TTPs from unstructured text with ATT&CK labels; releases
+    the rcATT tool (Python), which outputs STIX.
+- key: alam2023ladder
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Looking Beyond IoCs: Automatically Extracting Attack Patterns from External CTI'
+  authors: Md Tanvirul Alam, Dipkamal Bhusal, Youngja Park, Nidhi Rastogi
+  year: '2023'
+  venue: RAID 2023 (26th International Symposium on Research in Attacks, Intrusions and Defenses); arXiv 2211.01753
+  identifier: https://arxiv.org/abs/2211.01753
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/html/2211.01753v2
+  notes: LADDER extracts text-based attack patterns from CTI at scale, models attack phases (Android and enterprise)
+    and maps them to ATT&CK; releases an open benchmark dataset.
+- key: satvat2021extractor
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'EXTRACTOR: Extracting Attack Behavior from Threat Reports'
+  authors: Kiavash Satvat, Rigel Gjomemo, V. N. Venkatakrishnan
+  year: '2021'
+  venue: IEEE EuroS&P 2021, pp. 598-615; arXiv 2104.08618
+  identifier: https://arxiv.org/abs/2104.08618
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: pages
+    bib_value: (absent)
+    found_value: 598-615 (per dblp extract)
+  sources:
+  - https://ar5iv.labs.arxiv.org/html/2104.08618
+  - https://dblp.org/pid/90/5014
+  notes: Extracts concise attack behaviours from CTI reports as provenance graphs from unstructured text, without
+    strong assumptions on the text; evaluated on real incident reports and DARPA engagement reports; graphs usable
+    for threat hunting.
+- key: siracusano2023action
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Time for aCTIon: Automated Analysis of Cyber Threat Intelligence in the Wild'
+  authors: Giuseppe Siracusano and eight co-authors (NEC Laboratories Europe, NEC)
+  year: '2023'
+  venue: arXiv preprint 2307.10214 (14 July 2023)
+  identifier: https://arxiv.org/abs/2307.10214
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://www.arxiv.org/abs/2307.10214
+  notes: Dataset of 204 public CTI reports with STIX annotations (about two orders of magnitude larger than earlier
+    open datasets) and the aCTIon tool using GPT-3.5 in two extraction pipelines; reports higher F1 than 10 earlier
+    approaches, gains of roughly 10 to 50 points.
+- key: alam2024ctibench
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'CTIBench: A Benchmark for Evaluating LLMs in Cyber Threat Intelligence'
+  authors: Md Tanvirul Alam, Dipkamal Bhusal, Le Nguyen, Nidhi Rastogi
+  year: '2024'
+  venue: NeurIPS 2024, Datasets and Benchmarks Track
+  identifier: https://proceedings.neurips.cc/paper_files/paper/2024/hash/5acd3c628aa1819fbf07c39ef73e7285-Abstract.html
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://proceedings.neurips.cc/paper_files/paper/2024/hash/5acd3c628aa1819fbf07c39ef73e7285-Abstract.html
+  notes: 'Benchmark of CTI tasks for LLMs, motivated by reliability and hallucination concerns: CTI-MCQ (2,500 questions),
+    CTI-RCM (CVE to CWE), CTI-VSP (CVSS prediction) and further tasks; code and data on GitHub.'
+- key: schwartz2024llmcloudhunter
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'LLMCloudHunter: Harnessing LLMs for Automated Extraction of Detection Rules from Cloud-Based CTI'
+  authors: Yuval Schwartz, Lavi Ben-Shimol, Dudu Mimran, Yuval Elovici, Asaf Shabtai
+  year: '2024'
+  venue: arXiv preprint 2407.05194 (6 July 2024)
+  identifier: https://arxiv.org/abs/2407.05194
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/abs/2407.05194v1
+  - https://www.bgu.ac.il/en/researcher/yuval-elovici/publications/272353365/
+  notes: 'Generates generic-signature (Sigma) detection-rule candidates from text and images in open-source cloud
+    CTI; on 12 annotated reports: 92% precision / 98% recall for API calls, 99% / 98% for IoCs; 99.18% of rule candidates
+    compile and convert to Splunk queries.'
+- key: cai2026sigmerge
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'From Texts to Rules: Generating Sigma Rules with Large Language Models from Cyber Threat Reports'
+  authors: Yongxin Cai, Jing Qiu, Qingming Li, Du Cheng, Lei Chen
+  year: '2026'
+  venue: USENIX Security Symposium 2026 (programme page)
+  identifier: https://www.usenix.org/conference/usenixsecurity26/presentation/cai
+  peer_reviewed: yes (accepted; USENIX programme)
+  claim_checks:
+  - excerpt: 'generation of Sigma from report text: supported by abstract extract'
+    status: see note
+    note: ''
+  discrepancies: []
+  sources:
+  - https://www.usenix.org/conference/usenixsecurity26/presentation/cai
+  notes: 'SIGMERGE: end-to-end framework with a semantic intermediate layer; modules: information extraction (ATT&CK
+    TTPs and commands), attack-description generation, Sigma rule generation; premise that shell commands in reports
+    can be converted to Sigma rules; evaluated with 23 metrics against 16 baselines and 13 LLMs, plus 10 case studies
+    integrated with real security systems.'
+- key: ghaffarzadegan2026autosigma
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'From Threat Intelligence to Detection: Knowledge-driven Enrichment and Template-based Rule Grounding for
+    Automated Sigma Rule Generation'
+  authors: Sepehr Ghaffarzadegan, Boubakr Nour, Makan Pourzandi, Mourad Debbabi, Chadi Assi
+  year: '2026'
+  venue: arXiv preprint 2608.19011 (posted 2026-08-19)
+  identifier: https://arxiv.org/abs/2608.19011
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies:
+  - field: title
+    bib_value: '... Rule Grounding (truncated in bib?)'
+    found_value: full title ends "for Automated Sigma Rule Generation"
+  sources:
+  - https://arxiv.org/pdf/2608.19011
+  - https://deeplearn.org/arxiv/809387/
+  notes: 'AUTOSIGMA: knowledge base enriches partial inputs; matches enriched content against a repository of existing
+    Sigma rules (template grounding); LLM-as-a-Judge iteratively validates rules; evaluated on real-world APT reports
+    and security blogs; claims gains in validity, relevancy and ATT&CK coverage, minimal manual intervention; future
+    work: broader datasets and operational environments with live alert streams.'
+- key: chakraborty2026ctirealm
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'CTI-REALM: Benchmark to Evaluate Agent Performance on Security Detection Rule Generation Capabilities'
+  authors: Arjun Chakraborty, Sandra Ho, Adam Cook, Manuel Meléndez (Microsoft Security AI)
+  year: '2026'
+  venue: arXiv preprint 2603.13517 (v1 13 March 2026, v2 17 March 2026)
+  identifier: https://arxiv.org/abs/2603.13517
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/abs/2603.13517v2
+  - https://www.microsoft.com/en-us/research/?p=1166851
+  notes: 'Benchmark environment mirroring the analyst workflow: agents read CTI reports, run queries, explore schemas
+    and build detection rules; emulated attacks on Linux, cloud and AKS with ground truth; CTI-REALM-25 and -50;
+    16 frontier models; best overall reward 0.637; trajectory-based rewards; ablation shows CTI-specific tools help;
+    variance analysis across runs.'
+- key: xu2024llmsecurity
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Large Language Models for Cyber Security: A Systematic Literature Review'
+  authors: Hanxiang Xu and eight co-authors (incl. Haoyu Wang)
+  year: 2024 (v1 8 May 2024; v5 22 September 2025)
+  venue: arXiv preprint 2405.04760 (no journal venue confirmed)
+  identifier: https://arxiv.org/abs/2405.04760
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/abs/2405.04760
+  notes: 'Systematic review: over 30k papers collected, 127 analysed from top security and software-engineering
+    venues (LLM4Security).'
+- key: ji2023hallucination
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: Survey of Hallucination in Natural Language Generation
+  authors: Ziwei Ji, Nayeon Lee, Rita Frieske, Tiezheng Yu, Dan Su, Yan Xu, Etsuko Ishii, Yejin Bang, Andrea Madotto,
+    Pascale Fung
+  year: '2023'
+  venue: ACM Computing Surveys 55(12), article 248, pp. 1-38; arXiv 2202.03629
+  identifier: arXiv 2202.03629 (journal DOI not shown in extracts)
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: author 8
+    bib_value: check spelling
+    found_value: Yejin Bang (per DBLP/BibSonomy extract)
+  sources:
+  - https://www.bibsonomy.org/bibtex/160f61926094d421495723d955c57a0f1
+  - https://arxiv.org/abs/2202.03629v4
+  notes: 'Survey of hallucination in deep-learning generation: metrics, mitigation; tasks incl. summarisation, dialogue,
+    QA, data-to-text, MT, vision-language, and LLMs (published version).'
+- key: greshake2023indirect
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Not what you''ve signed up for: Compromising Real-World LLM-Integrated Applications with Indirect Prompt
+    Injection'
+  authors: Kai Greshake, Sahar Abdelnabi, Shailesh Mishra, Christoph Endres, Thorsten Holz, Mario Fritz
+  year: '2023'
+  venue: Proceedings of the 16th ACM Workshop on Artificial Intelligence and Security (AISec), pp. 79-90; arXiv
+    2302.12173
+  identifier: arXiv 2302.12173
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: pages
+    bib_value: (absent)
+    found_value: 79-90 (per extract)
+  sources:
+  - https://arxiv.org/pdf/2302.12173
+  notes: 'Indirect prompt injection: attackers exploit LLM-integrated applications remotely by injecting prompts
+    into data likely to be retrieved; demonstrated on Bing GPT-4 chat, code completion, synthetic GPT-4 apps; taxonomy
+    incl. data theft, worming, information-ecosystem contamination.'
+- key: perez2022ignore
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Ignore Previous Prompt: Attack Techniques For Language Models'
+  authors: Fábio Perez, Ian Ribeiro
+  year: '2022'
+  venue: NeurIPS 2022 ML Safety Workshop; arXiv 2211.09527
+  identifier: arXiv 2211.09527
+  peer_reviewed: yes (workshop)
+  claim_checks: []
+  discrepancies:
+  - field: eprint
+    bib_value: (absent)
+    found_value: arXiv 2211.09527
+  sources:
+  - https://mlanthology.org/neuripsw/2022/perez2022neuripsw-ignore
+  - https://arxiv.org/abs/2211.09527v1
+  notes: PromptInject framework; goal hijacking and prompt leaking against GPT-3; simple handcrafted inputs misalign
+    the model; code public.
+- key: owasp2023llmtop10
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: metadata_via_search_extract
+  full_text: Full-text verification pending
+  title: OWASP Top 10 for Large Language Model Applications (2023 list, v1.0 August 2023)
+  authors: OWASP Foundation
+  year: '2023'
+  venue: OWASP project document
+  identifier: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+  peer_reviewed: 'no'
+  claim_checks:
+  - excerpt: 'recommendations paraphrase: needs full text of v1.0'
+    status: see note
+    note: ''
+  discrepancies: []
+  sources:
+  - https://owasp.org/www-project-top-10-for-large-language-model-applications/assets/PDF/OWASP-Top-10-for-LLMs-2023-v09.pdf
+  - https://sdtimes.com/security/owasp-releases-top-10-list-for-llms/
+  notes: 'Version 1.0 list (August 2023): LLM01 Prompt Injection ... LLM08 Excessive Agency (least-privilege mitigation).
+    Later editions renumbered (2025: Excessive Agency LLM06). The specific recommendations the thesis paraphrases
+    (restrict access, human approval for privileged operations, limit untrusted content) need the document text.'
+- key: schluntz2024effective
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: Building effective agents
+  authors: Erik Schluntz, Barry Zhang (attribution from secondary coverage)
+  year: 2024 (20 December 2024 per coverage)
+  venue: Anthropic engineering article
+  identifier: https://www.anthropic.com/research/building-effective-agents
+  peer_reviewed: no (industry article)
+  claim_checks: []
+  discrepancies:
+  - field: url
+    bib_value: anthropic.com/engineering/building-effective-agents
+    found_value: search shows anthropic.com/research/building-effective-agents (both paths may resolve)
+  sources:
+  - https://simonwillison.net/2024/Dec/20/building-effective-agents
+  - https://www.anthropic.com/research/building-effective-agents
+  notes: Agentic systems split into workflows (LLMs and tools orchestrated through predefined code paths) and agents
+    (LLM directs its own process); recommends the simplest solution first.
+- key: madaan2023selfrefine
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Self-Refine: Iterative Refinement with Self-Feedback'
+  authors: Aman Madaan, Niket Tandon, Prakhar Gupta, Skyler Hallinan, Luyu Gao, Sarah Wiegreffe, Uri Alon, Nouha
+    Dziri, Shrimai Prabhumoye, Yiming Yang, Shashank Gupta, Bodhisattwa Prasad Majumder, Katherine Hermann, Sean
+    Welleck, Amir Yazdanbakhsh, Peter Clark
+  year: '2023'
+  venue: NeurIPS 2023 (Advances in Neural Information Processing Systems 36)
+  identifier: https://proceedings.neurips.cc/paper_files/paper/2023/hash/91edff07232fb1b55a505a9e9f6c0ff3-Abstract.html
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: author
+    bib_value: Madaan, Aman and others
+    found_value: 16 authors listed (proceedings)
+  sources:
+  - https://proceedings.neurips.cc/paper_files/paper/2023/hash/91edff07232fb1b55a505a9e9f6c0ff3-Abstract.html
+  notes: One LLM as generator, feedback provider and refiner; evaluated on 7 tasks with GPT-3.5, ChatGPT and GPT-4.
+- key: chen2024selfdebug
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: Teaching Large Language Models to Self-Debug
+  authors: Xinyun Chen, Maxwell Lin, Nathanael Schärli, Denny Zhou
+  year: '2024'
+  venue: ICLR 2024; arXiv 2304.05128
+  identifier: arXiv 2304.05128
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: author
+    bib_value: Chen, Xinyun and others
+    found_value: Chen, Lin, Schärli, Zhou (four authors)
+  sources:
+  - https://iclr.cc/virtual/2024/poster/18880
+  - https://arxiv.org/abs/2304.05128v2
+  notes: 'Few-shot self-debugging: the model executes its code and explains it, with feedback from execution results;
+    up to 12% gains on TransCoder and MBPP; 2-3% on Spider.'
+- key: zheng2023judge
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena
+  authors: Lianmin Zheng and co-authors
+  year: '2023'
+  venue: NeurIPS 2023 Datasets and Benchmarks Track
+  identifier: https://proceedings.neurips.cc/paper_files/paper/2023/hash/91f18a1287b398d378ef22505bf41832-Abstract.html
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: booktitle
+    bib_value: NeurIPS
+    found_value: Datasets and Benchmarks Track (per proceedings)
+  sources:
+  - https://proceedings.neurips.cc/paper_files/paper/2023/hash/91f18a1287b398d378ef22505bf41832-Abstract.html
+  notes: Examines position, verbosity and self-enhancement biases and limited reasoning of LLM judges; strong judges
+    (GPT-4) reach over 80% agreement with humans, about human-human agreement; MT-Bench and Chatbot Arena.
+- key: sainz2023contamination
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'NLP Evaluation in trouble: On the Need to Measure LLM Data Contamination for each Benchmark'
+  authors: Oscar Sainz, Jon Ander Campos, Iker García-Ferrero, Julen Etxaniz, Oier Lopez de Lacalle, Eneko Agirre
+  year: '2023'
+  venue: 'Findings of ACL: EMNLP 2023, pp. 10776-10787; arXiv 2310.18018'
+  identifier: arXiv 2310.18018
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: pages
+    bib_value: (absent)
+    found_value: 10776-10787
+  sources:
+  - https://arxiv.org/abs/2310.18018v1
+  - https://ekoizpen-zientifikoa.ehu.eus/documentos/65c35d23d2edca1267d6ab7c
+  notes: 'Position paper: training on a benchmark test split inflates performance and can produce wrong conclusions;
+    defines levels of contamination; calls for detection methods and flagging compromised papers.'
+- key: alahmadi2022false
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: '99% False Positives: A Qualitative Study of SOC Analysts'' Perspectives on Security Alarms'
+  authors: Bushra A. Alahmadi, Louise Axon, Ivan Martinovic
+  year: '2022'
+  venue: 31st USENIX Security Symposium (USENIX Security 22)
+  identifier: https://www.usenix.org/conference/usenixsecurity22/presentation/alahmadi
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://www.usenix.org/conference/usenixsecurity22/presentation/alahmadi
+  - https://www.cs.ox.ac.uk/publications/publication14673-abstract.html
+  notes: Survey of 20 SOC practitioners confirmed high false-positive rates requiring manual validation; interviews
+    with 21 practitioners from 7 SOCs; most false positives attributed to benign triggers; alarm validation is human-centric;
+    five properties of good alarms (Reliable, Explainable, Analytical, Contextual, Transferable).
+- key: parasuraman2010complacency
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Complacency and Bias in Human Use of Automation: An Attentional Integration'
+  authors: Raja Parasuraman, Dietrich H. Manzey
+  year: '2010'
+  venue: Human Factors 52(3), 381-410
+  identifier: https://doi.org/10.1177/0018720810376055
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: doi
+    bib_value: (absent)
+    found_value: 10.1177/0018720810376055
+  sources:
+  - https://journals.sagepub.com/doi/10.1177/0018720810376055
+  - https://depositonce.tu-berlin.de/handle/11303/8923
+  notes: Complacency and automation bias as overlapping automation-induced phenomena with attention central; both
+    occur in experts and are not removed by practice; automation bias yields omission and commission errors.
+- key: goddard2012automation
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Automation bias: a systematic review of frequency, effect mediators, and mitigators'
+  authors: Kate Goddard, Abdul Roudsari, Jeremy C. Wyatt
+  year: '2012'
+  venue: Journal of the American Medical Informatics Association 19(1), 121-127
+  identifier: https://academic.oup.com/jamia/article/19/1/121/732254
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://pmc.ncbi.nlm.nih.gov/articles/PMC3240751
+  notes: 'Systematic review (74 of 13,821 papers) of automation bias in clinical decision support: frequency, mediators
+    (experience, trust, workload, complexity, time), mitigators.'
+- key: hevner2004design
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: Design Science in Information Systems Research
+  authors: Alan R. Hevner, Salvatore T. March, Jinsoo Park, Sudha Ram
+  year: '2004'
+  venue: MIS Quarterly 28(1), 75-105
+  identifier: MIS Quarterly 28(1):75-105
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://experts.arizona.edu/en/publications/design-science-in-information-systems-research/
+  notes: Contrasts behavioural science and design science; framework and guidelines for executing and evaluating
+    design-science research (artefact creation).
+- key: peffers2007dsrm
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: A Design Science Research Methodology for Information Systems Research
+  authors: Ken Peffers, Tuure Tuunanen, Marcus A. Rothenberger, Samir Chatterjee
+  year: '2007'
+  venue: Journal of Management Information Systems 24(3), 45-77 (issue dated Winter 2007-8)
+  identifier: JMIS 24(3):45-77
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://jmis-web.org/articles/765
+  notes: 'Six-step process: problem identification, objectives, design and development, demonstration, evaluation,
+    communication.'
+- key: schuirmann1987tost
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: A comparison of the Two One-Sided Tests Procedure and the Power Approach for assessing the equivalence
+    of average bioavailability
+  authors: Donald J. Schuirmann
+  year: '1987'
+  venue: Journal of Pharmacokinetics and Biopharmaceutics 15(6), 657-680
+  identifier: https://doi.org/10.1007/BF01068419
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: doi
+    bib_value: (absent)
+    found_value: 10.1007/BF01068419 (per one reference extract)
+  sources:
+  - https://zenodo.org/record/1232484
+  notes: TOST equals the Westlake 1-2alpha confidence-interval approach; with alpha = 0.05 TOST has uniformly superior
+    properties to the power approach in most cases.
+- key: lakens2017equivalence
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Equivalence Tests: A Practical Primer for t Tests, Correlations, and Meta-Analyses'
+  authors: Daniël Lakens
+  year: '2017'
+  venue: Social Psychological and Personality Science 8(4), 355-362
+  identifier: https://doi.org/10.1177/1948550617697177
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://pmc.ncbi.nlm.nih.gov/articles/PMC5502906
+  notes: Non-significance is not evidence of absence; TOST with bounds from the smallest effect size of interest;
+    TOSTER package.
+- key: anderson2001hard
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Why Information Security is Hard: An Economic Perspective'
+  authors: Ross Anderson
+  year: '2001'
+  venue: 17th Annual Computer Security Applications Conference (ACSAC 2001), IEEE, pp. 358-365 (pages from a single
+    citing reference)
+  identifier: https://www.cl.cam.ac.uk/ftp/users/rja14/econ.pdf
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: pages
+    bib_value: (absent)
+    found_value: 358-365 (single secondary citation; unconfirmed)
+  sources:
+  - https://acsac.org/2001/abstracts/thu-1530-b-anderson.html
+  - https://cyber.harvard.edu/cybersecurity/Why_Information_Security_is_Hard
+  notes: Information insecurity is at least as much due to perverse incentives as to technical design.
+- key: gordon2002economics
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: The Economics of Information Security Investment
+  authors: Lawrence A. Gordon, Martin P. Loeb
+  year: '2002'
+  venue: ACM Transactions on Information and System Security 5(4), 438-457
+  identifier: https://doi.org/10.1145/581271.581274
+  peer_reviewed: 'yes'
+  claim_checks:
+  - excerpt: '"does not exceed about 37% of the expected loss": supported for the paper''s two breach-function classes;
+      should be qualified'
+    status: see note
+    note: ''
+  discrepancies: []
+  sources:
+  - https://en.wikipedia.org/wiki/Gordon%E2%80%93Loeb_model
+  - https://link.springer.com/doi/10.1007/s10796-006-9011-6
+  notes: Optimal investment does not exceed 1/e (about 37%) of the expected loss for the two classes of breach function
+    studied; later work shows the cap does not hold for all breach functions.
+- key: ellram1998tco
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: metadata_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Total Cost of Ownership: A Key Concept in Strategic Cost Management Decisions'
+  authors: Lisa M. Ellram, Sue P. Siferd
+  year: '1998'
+  venue: Journal of Business Logistics 19(1), 55-84
+  identifier: J. Bus. Logistics 19(1):55-84
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://scm-blog.com/2007/12/supply_chain_cost_management_l.html
+  notes: Citation confirmed by several reference lists; abstract and contents not retrieved.
+- key: ferrin2002tco
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Total Cost of Ownership Models: An Exploratory Study'
+  authors: Bruce G. Ferrin, Richard E. Plank
+  year: '2002'
+  venue: Journal of Supply Chain Management 38(3), 18-29 (one reference gives issue 2)
+  identifier: J. Supply Chain Manag. 38(3):18-29
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: issue
+    bib_value: '3'
+    found_value: 2 or 3 (sources differ)
+  sources:
+  - https://nevi.nl/kennislab/vakkennis/total-cost-of-ownership-models-an-exploratory-stud
+  notes: Exploratory study of how organisations use TCO models to value purchase opportunities; first data on the
+    cost drivers used in TCO computations.
+- key: sundaramurthy2015burnout
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: A Human Capital Model for Mitigating Security Analyst Burnout
+  authors: Sathya Chandran Sundaramurthy, Alexandru G. Bardas, Jacob Case, Xinming Ou, Michael Wesch, John McHugh,
+    S. Raj Rajagopalan
+  year: '2015'
+  venue: Eleventh Symposium on Usable Privacy and Security (SOUPS 2015)
+  identifier: https://www.usenix.org/conference/soups2015/proceedings/presentation/sundaramurthy
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://usenix.org/conference/soups2015/proceedings/presentation/sundaramurthy
+  notes: Six-month anthropological study of a corporate SOC with Grounded Theory; burnout as a human-capital management
+    problem from cyclic interaction of human, technical and managerial factors.
+- key: chen2024frugalgpt
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance'
+  authors: Lingjiao Chen, Matei Zaharia, James Zou
+  year: '2024'
+  venue: Transactions on Machine Learning Research (2024); arXiv 2305.05176 (May 2023)
+  identifier: arXiv 2305.05176
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: venue
+    bib_value: TMLR 2024 (from extracts that hedged)
+    found_value: TMLR 2024 confirmed by MLAnthology listing
+  sources:
+  - https://mlanthology.org/tmlr/2024/chen2024tmlr-frugalgpt
+  - https://arxiv.org/abs/2305.05176
+  notes: LLM API fees differ by two orders of magnitude; prompt adaptation, LLM approximation, LLM cascade; FrugalGPT
+    matches the best single LLM with up to 98% cost reduction or improves accuracy by 4% at the same cost.
+- key: ong2025routellm
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'RouteLLM: Learning to Route LLMs from Preference Data'
+  authors: Isaac Ong, Amjad Almahairi, Vincent Wu, Wei-Lin Chiang, Tianhao Wu, Joseph E. Gonzalez, M Waleed Kadous,
+    Ion Stoica
+  year: '2025'
+  venue: ICLR 2025; arXiv 2406.18665 ("with Preference Data")
+  identifier: https://proceedings.iclr.cc/paper_files/paper/2025/hash/5503a7c69d48a2f86fc00b3dc09de686-Abstract-Conference.html
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies:
+  - field: author
+    bib_value: Ong, Isaac and others
+    found_value: eight authors listed
+  sources:
+  - https://proceedings.iclr.cc/paper_files/paper/2025/hash/5503a7c69d48a2f86fc00b3dc09de686-Abstract-Conference.html
+  notes: Routers between stronger and weaker models trained on preference data; cost reduced by over 2x without
+    loss of response quality on public benchmarks.
+- key: osi2007osd
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: The Open Source Definition
+  authors: Open Source Initiative
+  year: (version history not confirmed)
+  venue: OSI web page
+  identifier: https://opensource.org/osd
+  peer_reviewed: no (definition)
+  claim_checks:
+  - excerpt: 'ten criteria: official page lists them; exact wording of every criterion not all shown in extracts'
+    status: see note
+    note: ''
+  discrepancies: []
+  sources:
+  - https://opensource.org/osd
+  notes: Criteria include free redistribution, source code, derived works, no discrimination against persons, groups
+    or fields of endeavour, technology neutrality; derived from the Debian Free Software Guidelines.
+- key: osi2024osaid
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: The Open Source AI Definition 1.0
+  authors: Open Source Initiative
+  year: '2024'
+  venue: OSI web page; announced at All Things Open 2024
+  identifier: https://opensource.org/ai
+  peer_reviewed: no (definition)
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://www.infoworld.com/article/3593266/osi-unveils-open-source-ai-definition-1-0.html
+  - https://www.infoq.com/news/2024/11/open-source-ai-definition
+  notes: Requires data information (sufficiently detailed information about training data so a skilled person can
+    build a substantially equivalent system), code (OSI-approved licences) and parameters (OSI-approved terms).
+    Final-text wording seen only through drafts and press.
+- key: wang2025rulepilot
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'RulePilot: An LLM-Powered Agent for Security Rule Generation'
+  authors: Hongtai Wang, Ming Xu, Yanpei Guo, Weili Han, Hoon Wei Lim, Jin Song Dong
+  year: 2025 (15 Nov 2025)
+  venue: arXiv 2511.12224
+  identifier: https://arxiv.org/abs/2511.12224
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/abs/2511.12224v1
+  notes: LLM agent for rule creation and conversion from natural-language descriptions; intermediate representation
+    simplifying configuration rules; evaluated on textual similarity and execution success; up to 107.4% better
+    textual similarity than baselines. End of abstract not seen.
+- key: mitra2025falcon
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'FALCON: Autonomous Cyber Threat Intelligence Mining with LLMs for IDS Rule Generation'
+  authors: Shaswata Mitra, Azim Bazarov, Martin Duclos, Sudip Mittal, Aritran Piplai, Md Rayhanur Rahman, Edward
+    Zieglar, Shahram Rahimi (order differs between sources)
+  year: '2025'
+  venue: arXiv 2508.18684 (an earlier version titled "...Transforming Cyber Threat Intelligence into Deployable
+    IDS Rules with Self-Reflection" lists an extra author)
+  identifier: https://arxiv.org/abs/2508.18684
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/html/2508.18684v1
+  notes: Autonomous agentic framework generating deployable IDS rules (Snort, YARA) from CTI in real time with built-in
+    multi-phased validators; average 95% accuracy; qualitative evaluation with 84% inter-rater agreement among cybersecurity
+    analysts.
+- key: shukla2025rulegenie
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'RuleGenie: SIEM Detection Rule Set Optimization'
+  authors: Akansha Shukla, Parth Atulbhai Gandhi, Yuval Elovici, Asaf Shabtai
+  year: 2025 (May 2025)
+  venue: arXiv 2505.06701
+  identifier: https://arxiv.org/abs/2505.06701
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/abs/2505.06701
+  notes: LLM-aided recommender finding redundant or overlapping SIEM rules (embeddings plus LLM assessment); Splunk,
+    Sigma, AQL; 2,347 Sigma and 1,640 Splunk rules; proprietary model >90% recall, 65% precision; local open-source
+    model >80% recall, 75% precision, noted as helping privacy and cost.
+- key: tseng2024ctiagent
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: Using LLMs to Automate Threat Intelligence Analysis Workflows in Security Operation Centers
+  authors: PeiYu Tseng, ZihDwo Yeh, Xushu Dai, Peng Liu (2025 S&P poster adds Lan Zhang, Anoop Singhal, Xiaoyan
+    Sun)
+  year: '2024'
+  venue: arXiv 2407.13093; IEEE S&P 2025 poster
+  identifier: https://arxiv.org/abs/2407.13093
+  peer_reviewed: preprint (poster)
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/html/2407.13093v1
+  - https://sp2025.ieee-security.org/downloads/posters/sp25posters-final24.pdf
+  notes: GPT-4-based agent reads CTI reports, extracts IoCs (filenames, registry keys), generates regular expressions
+    for SIEM use and relation graphs; consensus across several LLM instances and checks against a vector database
+    to reduce errors.
+- key: meng2025ctivuln
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: Uncovering Vulnerabilities of LLM-Assisted Cyber Threat Intelligence
+  authors: Yuqiao Meng, Luoxi Tang, Feiyang Yu, Jinyuan Jia, Guanhua Yan, Ping Yang, Zhaohan Xi
+  year: 2025 (v3 Feb 2026)
+  venue: arXiv 2509.23573
+  identifier: https://arxiv.org/abs/2509.23573
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/abs/2509.23573v3
+  notes: Large-scale evaluation on CTI benchmarks and real reports; three failure modes (spurious correlations,
+    contradictory knowledge, constrained generalisation); human-in-the-loop supervision in the failure analysis;
+    targeted mitigations reduce failure rates.
+- key: schafhauzer2026context
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Context-Aware SIEM Rule Generation with LLMs: When Site Profiles Are Not Enough'
+  authors: Priscila Schafhauzer, Cristhian Kapelinski, Marcio Pohlmann, Diego Kreutz
+  year: '2026'
+  venue: SBSeg 2026, pp. 1386-1392
+  identifier: https://doi.org/10.5753/sbseg.2026.29389
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://sol.sbc.org.br/index.php/sbseg/article/view/44366
+  notes: LLM given a short organisation profile and a catalogue of native Wazuh rule IDs writes local Wazuh rules;
+    on 1,000 SSH authentication events from two production servers the LLM-augmented setup was worse than the native
+    baseline (accuracy -4.4 points, weighted F1 -3.1); negative result; dataset, prompts, rules and scripts released.
+- key: hadi2026genti
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'GenTI: Benchmarking LLMs for Autonomous IDPS Rule Generation for Unseen Attacks'
+  authors: Hassan Jalil Hadi, Rehana Yasmin, Ali Shoker
+  year: 2026 (4 June 2026)
+  venue: arXiv 2606.05844
+  identifier: https://arxiv.org/abs/2606.05844
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://papers.cool/arxiv/2606.05844
+  notes: LLM-driven benchmark and fine-tuned generator for IDPS and YARA rules for unseen attacks; reports composite
+    rule quality 89.4%, unseen-attack detection 45% to 87.4%, false positives 8.5% to 2.3% (secondary listings).
+- key: teuwen2025unruly
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Ruling the Unruly: Designing Effective, Low-Noise Network Intrusion Detection Rules for Security Operations
+    Centers'
+  authors: Koen T. W. Teuwen, Tom Mulders, Emmanuele Zambon, Luca Allodi
+  year: '2025'
+  venue: ASIA CCS 2025; arXiv 2501.09808
+  identifier: https://arxiv.org/abs/2501.09808
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://www.arxiv.org/abs/2501.09808
+  notes: Rules from a commercial managed SOC; six design principles; some design choices add unnecessary analyst
+    workload; specificity versus coverage trade-off.
+- key: vermeer2023alchemy
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Alert Alchemy: SOC Workflows and Decisions in the Management of NIDS Rules'
+  authors: Mathew Vermeer, Natalia Kadenko, Michel van Eeten, Carlos Gañán, Simon Parkin
+  year: '2023'
+  venue: ACM CCS 2023, pp. 2770-2784
+  identifier: https://doi.org/10.1145/3576915.3616581
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://research.tudelft.nl/en/publications/alert-alchemy-soc-workflows-and-decisions-in-the-management-of-ni/
+  notes: 17 interviews (MSSPs and in-house monitoring) on how NIDS rules are created, evaluated and managed; specificity
+    and alert volume shape management; recommends more specific rules, explicit feedback loops from detection to
+    rule development, and tacit-knowledge transfer.
+- key: cheng2026ttprint
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'TTPrint: Evidence-Grounded TTP Extraction via Diverge-then-Converge Verification'
+  authors: Yutong Cheng, Changze Li, Raihan Sultan Pasha Basuki, Qian Cui, Wei Ding, Peng Gao
+  year: 2026 (May 2026)
+  venue: arXiv 2605.25836
+  identifier: https://arxiv.org/abs/2605.25836
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/pdf/2605.25836
+  notes: Divergent proposal of candidate techniques, deterministic span localisation to source text, convergent
+    filtering against evidence and ATT&CK definitions; macro-F1 76.48% (TRAM-Clean) and 87.39% (own benchmark).
+    Naming differs between abstract and conclusion.
+- key: valletta2026tracecti
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'TRACE-CTI: Auditable Post-Extraction Governance of TTP Claims with Knowledge Graphs'
+  authors: Federico Valletta, Giacomo Longo, Enrico Russo, Alessio Merlo
+  year: 2026 (28 July 2026)
+  venue: arXiv 2607.24563
+  identifier: https://arxiv.org/abs/2607.24563
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://www.alphaxiv.org/abs/2607.24563
+  notes: Keeps per-run predictions, aggregates to assertions, exposes only those backed by policy-compliant validation,
+    with evidence, provenance, versioned trust decisions and revocation history; 65 reports; unanimity raises precision
+    25.3% to 90.6% while recall falls 88.2% to 16.3%; artefacts on GitHub.
+- key: pandey2026watchtower
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Poisoning the Watchtower: Prompt Injection Attacks Against LLM-Augmented Security Operations Through Adversarial
+    Log Content'
+  authors: Pandey, Bhujang (given names not confirmed)
+  year: 2026 (May 2026)
+  venue: arXiv 2605.24421
+  identifier: https://arxiv.org/abs/2605.24421
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://www.alphaxiv.org/abs/2605.24421
+  notes: 'Log-substrate prompt injection: attacker-controlled log fields carry instructions; four attack classes
+    (direct override, persona hijack, context manipulation, obfuscated payloads); 48 strategy-defence-task combinations
+    with gpt-4o-mini.'
+- key: saju2026autonomoussoc
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Toward Autonomous SOC Operations: End-to-End LLM Framework for Threat Detection, Query Generation, and
+    Resolution in Security Operations'
+  authors: Md Hasan Saju, Akramul Azim
+  year: '2026'
+  venue: 39th Canadian Conference on AI, PMLR 318; arXiv 2604.27321
+  identifier: https://proceedings.mlr.press/v318/saju26a.html
+  peer_reviewed: 'yes'
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://proceedings.mlr.press/v318/saju26a.html
+  notes: Ensemble LLM detection on SIEM logs (82.8% accuracy, 0.120 FPR), syntax-constrained query generation, retrieval-augmented
+    resolution; 88% of inputs yield executable SIEM queries; triage time from about four hours to under ten minutes
+    (authors' claims).
+- key: habibzadeh2025socsurvey
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: metadata_via_search_extract
+  full_text: Full-text verification pending
+  title: 'Large Language Models for Security Operations Centers: A Comprehensive Survey'
+  authors: Ali Habibzadeh, Farid Feyzi, Reza Ebrahimi Atani
+  year: '2025'
+  venue: arXiv 2509.10858
+  identifier: https://arxiv.org/abs/2509.10858
+  peer_reviewed: preprint
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://arxiv.org/abs/2509.10858v2
+  notes: Survey of LLMs in SOCs; content not retrieved beyond a general statement that LLMs can reduce workload
+    and alert fatigue.
+- key: pham2025sigmagen
+  checked_on: '2026-10-21'
+  checked_by: search-extract review (authoring assistant)
+  level: abstract_via_search_extract
+  full_text: Full-text verification pending
+  title: 'SigmaGen: AI-Powered Solution for Scalable Sigma Rule Generation'
+  authors: Giang Pham, Tung Nguyen (FPT Software)
+  year: 2025 (7 March 2025)
+  venue: Slides, Asia-Pacific ATT&CK Community Workshop (CTID event page)
+  identifier: https://ctid.mitre.org/events/apac-2025/07%20-%20SigmaGen.pdf
+  peer_reviewed: no (practitioner talk)
+  claim_checks: []
+  discrepancies: []
+  sources:
+  - https://ctid.mitre.org/events/apac-2025/07%20-%20SigmaGen.pdf
+  notes: Pipeline extracting attack patterns from security blogs, mapping to ATT&CK and generating Sigma with fine-tuned
+    LLMs; no paper, repository or benchmark found.

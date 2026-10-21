@@ -1,0 +1,828 @@
+preamble: Rows are works that build, benchmark, validate or govern part of the path from threat intelligence to
+  deployed detection content. Each row was profiled by one reader (the authoring assistant) from search-engine extracts
+  or, for the two software projects, from their READMEs; a second, independent reading against the full texts is
+  pending. Empirical studies of rule management without a system (Vermeer et al. 2023; Teuwen et al. 2025) and work
+  on LLM reliability and prompt injection are discussed in the text, not tabulated. ATIDEP's own row states its
+  design, not results; its open-source cell is Partial because the stack is open-source while the repository's public
+  release is not yet decided.
+rows:
+- key: cai2026sigmerge
+  name: SIGMERGE
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: 'Closest generator: report text to Sigma rules through an intermediate semantic layer, with a broad
+    evaluation (23 metrics, 16 baselines, 13 LLMs).'
+  limitation: Governance, approval, adversarial robustness, analyst effort and cost are not reported in the extracts;
+    no deterministic gate is described.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Generates Sigma rules from the texts of cyber threat reports.
+      source: https://www.usenix.org/conference/usenixsecurity26/presentation/cai
+    structured_extraction:
+      value: 'Yes'
+      evidence: An information-extraction module extracts MITRE ATT&CK TTPs and commands.
+      source: https://www.usenix.org/conference/usenixsecurity26/presentation/cai
+    ioc_generation: &id001
+      value: Not reported
+    behavioural_detection:
+      value: 'Yes'
+      evidence: Premise that shell commands described in reports can be converted into Sigma detection rules; attack-description
+        generation module.
+      source: https://www.usenix.org/conference/usenixsecurity26/presentation/cai
+    rule_generation:
+      value: 'Yes'
+      evidence: Sigma rule generation module.
+      source: https://www.usenix.org/conference/usenixsecurity26/presentation/cai
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback:
+      value: Partial
+      evidence: Ten case studies integrated with real security systems; no deployment or rollback procedure described
+        in the extract.
+      source: https://www.usenix.org/conference/usenixsecurity26/presentation/cai
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: ghaffarzadegan2026autosigma
+  name: AutoSigma
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Generation from CTI with knowledge-base enrichment, retrieval of existing Sigma rules as templates
+    and iterative validation; reports validity, relevancy and ATT&CK coverage.
+  limitation: Validation is by an LLM-as-a-Judge rather than deterministic gates; operational deployment is stated
+    as future work; approval, adversarial testing, effort and cost are not reported.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Turns unstructured CTI reports (real-world APT reports and security blogs) into Sigma rules.
+      source: https://arxiv.org/pdf/2608.19011
+    structured_extraction:
+      value: Partial
+      evidence: Leverages a structured knowledge base to enrich partial inputs.
+      source: https://arxiv.org/pdf/2608.19011
+    ioc_generation: *id001
+    behavioural_detection:
+      value: Partial
+      evidence: Claims gains in MITRE ATT&CK technique coverage.
+      source: https://arxiv.org/pdf/2608.19011
+    rule_generation:
+      value: 'Yes'
+      evidence: Automated Sigma rule generation grounded in a repository of existing rules.
+      source: https://arxiv.org/pdf/2608.19011
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback:
+      value: 'No'
+      evidence: Future work will involve validation in operational environments involving live alert streams.
+      source: https://arxiv.org/pdf/2608.19011
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: schwartz2024llmcloudhunter
+  name: LLMCloudHunter
+  year: '2024'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Generates Sigma rule candidates from text and images of cloud CTI and measures extraction precision
+    and recall and compilation to Splunk.
+  limitation: Compilation is the only validity measure reported; governance, approval, deployment, adversarial testing,
+    effort and cost are not reported.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Uses text and images in open-source cloud CTI.
+      source: https://arxiv.org/abs/2407.05194v1
+    structured_extraction:
+      value: 'Yes'
+      evidence: Extracts API calls made by the threat actor (92% precision, 98% recall).
+      source: https://arxiv.org/abs/2407.05194v1
+    ioc_generation:
+      value: 'Yes'
+      evidence: Extracts IoCs with 99% precision and 98% recall for detection-rule candidates.
+      source: https://arxiv.org/abs/2407.05194v1
+    behavioural_detection:
+      value: 'Yes'
+      evidence: Rule candidates built from the API calls made by the threat actor.
+      source: https://arxiv.org/abs/2407.05194v1
+    rule_generation:
+      value: 'Yes'
+      evidence: Produces generic-signature (Sigma) detection-rule candidates.
+      source: https://arxiv.org/abs/2407.05194v1
+    deterministic_validation:
+      value: Partial
+      evidence: 99.18% of the candidates compiled and converted into Splunk queries (a compilation check, reported
+        as an evaluation result).
+      source: https://arxiv.org/abs/2407.05194v1
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: chakraborty2026ctirealm
+  name: CTI-REALM
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Benchmark of agents that read CTI reports, explore schemas, run queries and write detections against
+    emulated attacks with ground truth; evaluates 16 models with trajectory-based rewards.
+  limitation: 'A benchmark of the generation task, not a governed workflow: approval, deployment, adversarial robustness
+    of the pipeline, effort and cost are not reported.'
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Agents examine CTI reports.
+      source: https://arxiv.org/abs/2603.13517v2
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection:
+      value: Partial
+      evidence: Emulated attacks on Linux, cloud and AKS, from atomic attacks to multi-step intrusions.
+      source: https://arxiv.org/abs/2603.13517v2
+    rule_generation:
+      value: 'Yes'
+      evidence: Agents build detection rules; scoring covers the final detection output.
+      source: https://arxiv.org/abs/2603.13517v2
+    deterministic_validation:
+      value: Partial
+      evidence: Agents run queries against telemetry and outputs are scored against ground truth (part of the benchmark
+        environment).
+      source: https://arxiv.org/abs/2603.13517v2
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: maiorano2026probe
+  name: Detection-as-code from attack simulation
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Deterministic, traceable synthesis of starter Sigma rules with replay against a live SIEM and a benign
+    baseline; shows the value of determinism and traceability.
+  limitation: Starts from breach-and-attack-simulation findings, not threat reports; no LLM generation, approval,
+    adversarial testing, effort or cost reported.
+  cells:
+    cti_ingestion:
+      value: 'No'
+      evidence: Input is breach-and-attack-simulation findings mapped by a deterministic function, not threat reports.
+      source: https://arxiv.org/pdf/2606.05252
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection:
+      value: Partial
+      evidence: Template library keyed to OWASP LLM and Web Top 10 categories; each rule linked to an ATT&CK technique.
+      source: https://arxiv.org/pdf/2606.05252
+    rule_generation:
+      value: 'Yes'
+      evidence: Each finding yields a starter Sigma rule from 23 templates.
+      source: https://arxiv.org/pdf/2606.05252
+    deterministic_validation:
+      value: Partial
+      evidence: 17/17 emitted rules parse and convert to Splunk and Elasticsearch; replay against a live OpenSearch
+        SIEM with false positives measured on a benign baseline (evaluation).
+      source: https://arxiv.org/pdf/2606.05252
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback:
+      value: Partial
+      evidence: Described as a path to an operator-deployable starter rule; replayed on a live SIEM.
+      source: https://arxiv.org/pdf/2606.05252
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: tyagi2026sigmalint
+  name: Static quality assessment of Sigma rules
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Separates a binary validity gate from a weighted quality score for Sigma rules, evaluated on the SigmaHQ
+    corpus; close to ATIDEP's gates-before-score principle.
+  limitation: Assesses existing rules; does not generate rules from CTI or govern their approval and deployment.
+  cells:
+    cti_ingestion: *id001
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation:
+      value: 'Yes'
+      evidence: Static quality framework that separates a binary validity gate from a weighted score, evaluated
+        on the SigmaHQ corpus.
+      source: https://papers.ssrn.com/abstract=6823718
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: dhananjeyan2026exclusion
+  name: The Exclusion Ratchet
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Empirical evidence from nine years of SigmaHQ that false-positive exclusions accumulate and persist;
+    relevant to the feedback loop and to auditing changes.
+  limitation: An empirical study of a rule repository, not a generation or deployment system.
+  cells:
+    cti_ingestion: *id001
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement:
+      value: Partial
+      evidence: Studies how false-positive suppression (exclusions) is added to and persists in rules over time;
+        deterministic semantic suppression test.
+      source: https://arxiv.org/pdf/2608.31062
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source:
+      value: 'Yes'
+      evidence: The analysis pipeline and data are released publicly.
+      source: https://arxiv.org/pdf/2608.31062
+- key: zshguy2026tyrian
+  name: Tyrian Detection Pack
+  year: '2026'
+  level: primary_source_read
+  read_note: README read directly from the repository on 2026-10-21 (software, not a paper)
+  relevance: Open-source Sigma-to-Wazuh compiler that refuses rules that can never fire and rewrites disjunctions
+    into sibling rules; the closest prior art for ATIDEP's converter.
+  limitation: 'A compiler and rule pack, not a CTI-to-detection workflow: no extraction, generation from reports,
+    approval or evaluation of effort and cost.'
+  cells:
+    cti_ingestion: *id001
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation:
+      value: Partial
+      evidence: Compiles SigmaHQ rules to Wazuh (and Splunk and Sentinel); 3,007 translated, 137 declined (96%).
+      source: https://github.com/zshguy/tyrian-detection-pack
+    deterministic_validation:
+      value: 'Yes'
+      evidence: The compiler refuses to emit a rule that can never fire and reports every refusal; CI validates
+        and compiles.
+      source: https://github.com/zshguy/tyrian-detection-pack
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback:
+      value: Partial
+      evidence: Detections installed on a Wazuh manager in one command; no rollback described.
+      source: https://github.com/zshguy/tyrian-detection-pack
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source:
+      value: 'Yes'
+      evidence: MIT licence.
+      source: https://github.com/zshguy/tyrian-detection-pack
+- key: theflakes2024sigmatowazuh
+  name: sigma_to_wazuh
+  year: '2021'
+  level: primary_source_read
+  read_note: README read directly from the repository on 2026-10-21 (software, not a paper)
+  relevance: Community Sigma-to-Wazuh converter; documents why OR logic and near/timeframe constructs are hard to
+    translate.
+  limitation: A converter only; conversion of some OR logic is still broken by its own account and the Python version
+    is no longer maintained.
+  cells:
+    cti_ingestion: *id001
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation:
+      value: Partial
+      evidence: Converts Sigma rules to Wazuh rules; one Sigma rule can produce several Wazuh rules.
+      source: https://github.com/theflakes/sigma_to_wazuh
+    deterministic_validation:
+      value: Partial
+      evidence: Reports rules skipped (near, timeframe) and rules that error out on loading.
+      source: https://github.com/theflakes/sigma_to_wazuh
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source:
+      value: 'Yes'
+      evidence: MIT licence.
+      source: https://github.com/theflakes/sigma_to_wazuh
+- key: husari2017ttpdrill
+  name: TTPDrill
+  year: '2017'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Early extraction of threat actions from unstructured CTI mapped to techniques and tactics, exportable
+    to STIX.
+  limitation: Extraction only; no detection content, validation or deployment.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Extracts threat actions from unstructured text of CTI sources (Symantec reports).
+      source: https://pure.kfupm.edu.sa/en/publications/ttpdrill-automatic-and-accurate-extraction-of-threat-actions-from/
+    structured_extraction:
+      value: 'Yes'
+      evidence: Threat-action ontology; maps actions to techniques, tactics and kill-chain phases; STIX output;
+        more than 82% precision and recall.
+      source: https://pure.kfupm.edu.sa/en/publications/ttpdrill-automatic-and-accurate-extraction-of-threat-actions-from/
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: legoy2020rcatt
+  name: rcATT
+  year: '2020'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Classification of reports into ATT&CK tactics and techniques; released tool.
+  limitation: Extraction only; no detection content.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Retrieves TTPs from unstructured cyber threat reports.
+      source: https://arxiv.org/abs/2004.14322v1
+    structured_extraction:
+      value: 'Yes'
+      evidence: Predicts ATT&CK tactics and techniques; results in STIX.
+      source: https://arxiv.org/abs/2004.14322v1
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source:
+      value: 'Yes'
+      evidence: rcATT is freely distributed to the security community.
+      source: https://arxiv.org/abs/2004.14322v1
+- key: alam2023ladder
+  name: LADDER
+  year: '2023'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Extraction of attack patterns beyond IoCs, mapped to ATT&CK; supports the case for behaviour-based
+    detection.
+  limitation: Extraction only; no detection content.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Extracts attack patterns from CTI reports at scale.
+      source: https://arxiv.org/html/2211.01753v2
+    structured_extraction:
+      value: 'Yes'
+      evidence: Models attack phases and maps them to MITRE ATT&CK.
+      source: https://arxiv.org/html/2211.01753v2
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source:
+      value: Partial
+      evidence: Releases an open-access benchmark dataset (code release not confirmed in the extract).
+      source: https://arxiv.org/html/2211.01753v2
+- key: satvat2021extractor
+  name: EXTRACTOR
+  year: '2021'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Extraction of attack behaviour from reports as provenance graphs usable for threat hunting.
+  limitation: Extraction for hunting; no rule generation, validation or deployment.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Extracts attack behaviour from real incident reports and DARPA engagement reports.
+      source: https://ar5iv.labs.arxiv.org/html/2104.08618
+    structured_extraction:
+      value: 'Yes'
+      evidence: Produces concise provenance graphs from unstructured text.
+      source: https://ar5iv.labs.arxiv.org/html/2104.08618
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: siracusano2023action
+  name: aCTIon
+  year: '2023'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: LLM-based (GPT-3.5) structured extraction of CTI to STIX with a 204-report dataset.
+  limitation: Extraction only; no detection content.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Automated analysis of public CTI reports.
+      source: https://www.arxiv.org/abs/2307.10214
+    structured_extraction:
+      value: 'Yes'
+      evidence: Two LLM extraction pipelines producing STIX-format output; higher F1 than ten earlier approaches.
+      source: https://www.arxiv.org/abs/2307.10214
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: alam2024ctibench
+  name: CTIBench
+  year: '2024'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Benchmark of LLMs on CTI tasks, motivated by reliability and hallucination concerns.
+  limitation: Evaluates LLM knowledge and task performance; does not produce or govern detection content.
+  cells:
+    cti_ingestion:
+      value: Partial
+      evidence: Works from prepared CTI task datasets (multiple-choice questions, CVE descriptions).
+      source: https://proceedings.neurips.cc/paper_files/paper/2024/hash/5acd3c628aa1819fbf07c39ef73e7285-Abstract.html
+    structured_extraction:
+      value: Partial
+      evidence: Tasks include mapping CVEs to CWE categories and predicting CVSS scores.
+      source: https://proceedings.neurips.cc/paper_files/paper/2024/hash/5acd3c628aa1819fbf07c39ef73e7285-Abstract.html
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source:
+      value: 'Yes'
+      evidence: Code and dataset on GitHub (xashru/cti-bench).
+      source: https://arxiv.org/html/2406.07599v3
+- key: wang2025rulepilot
+  name: RulePilot
+  year: '2025'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: LLM agent for security-rule creation and conversion through an intermediate representation; evaluated
+    on textual similarity and execution success.
+  limitation: Starts from analysts' natural-language descriptions rather than threat reports; approval, deployment,
+    adversarial testing and cost are not reported.
+  cells:
+    cti_ingestion: *id001
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation:
+      value: 'Yes'
+      evidence: LLM-based agent handles rule creation and conversion from natural-language descriptions.
+      source: https://arxiv.org/abs/2511.12224v1
+    deterministic_validation:
+      value: Partial
+      evidence: Evaluates execution success of generated rules (evaluation metric).
+      source: https://arxiv.org/abs/2511.12224v1
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: mitra2025falcon
+  name: FALCON
+  year: '2025'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Agentic generation of deployable IDS rules (Snort, YARA) from CTI with built-in multi-phase validators
+    and analyst assessment.
+  limitation: Targets network and file signatures rather than SIEM rules; human approval, deployment and rollback,
+    effort and cost are not reported in the extracts.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Generates IDS rules from CTI data in real time.
+      source: https://arxiv.org/html/2508.18684v1
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation:
+      value: 'Yes'
+      evidence: Snort (network) and YARA (host-based) rules.
+      source: https://arxiv.org/html/2508.18684v1
+    deterministic_validation:
+      value: Partial
+      evidence: Built-in multi-phased validators (their nature is not stated in the extract).
+      source: https://arxiv.org/html/2508.18684v1
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: shukla2025rulegenie
+  name: RuleGenie
+  year: '2025'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: LLM-aided optimisation of existing SIEM rule sets (redundancy and overlap), with a local open-source
+    model compared with a proprietary one.
+  limitation: Optimises existing rule sets; does not generate rules from CTI; cost is only remarked on, not analysed.
+  cells:
+    cti_ingestion: *id001
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement:
+      value: Partial
+      evidence: Recommends refinements to redundant or overlapping rules that cause false alerts.
+      source: https://arxiv.org/abs/2505.06701
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: tseng2024ctiagent
+  name: CTI analysis agent for SOCs
+  year: '2024'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: LLM agent that extracts IoCs from CTI reports and generates regular expressions for SIEM use, with
+    consensus and retrieval checks against hallucination.
+  limitation: Indicator-level only; approval, deployment, adversarial testing, effort and cost are not reported
+    in the extracts.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Analyses CTI reports.
+      source: https://arxiv.org/html/2407.13093v1
+    structured_extraction:
+      value: 'Yes'
+      evidence: Extracts IoCs such as filenames and registry keys and builds relation graphs.
+      source: https://arxiv.org/html/2407.13093v1
+    ioc_generation:
+      value: 'Yes'
+      evidence: Generates regular expressions for use in SIEM systems.
+      source: https://arxiv.org/html/2407.13093v1
+    behavioural_detection: *id001
+    rule_generation:
+      value: Partial
+      evidence: Regular expressions for SIEM matching rather than full detection rules.
+      source: https://arxiv.org/html/2407.13093v1
+    deterministic_validation:
+      value: Partial
+      evidence: Consensus across several LLM instances and checks against a vector database; generated regular expressions
+        are tested.
+      source: https://arxiv.org/html/2407.13093v1
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: schafhauzer2026context
+  name: Context-aware SIEM rule generation
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: 'LLM-written local Wazuh rules from an organisation profile and the native rule catalogue, evaluated
+    on production events: a negative result for an open-source SIEM target.'
+  limitation: Not CTI-driven; the LLM-augmented rules were worse than the native baseline; no approval or deployment
+    workflow reported.
+  cells:
+    cti_ingestion: *id001
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation:
+      value: 'Yes'
+      evidence: An LLM writes local Wazuh rules conditioned on an organisation profile and a catalogue of native
+        rule IDs.
+      source: https://sol.sbc.org.br/index.php/sbseg/article/view/44366
+    deterministic_validation:
+      value: Partial
+      evidence: Evaluated on 1,000 stratified SSH authentication events from two production servers against the
+        native baseline (evaluation).
+      source: https://sol.sbc.org.br/index.php/sbseg/article/view/44366
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source:
+      value: 'Yes'
+      evidence: Dataset, prompts, generated rules and evaluation scripts are released.
+      source: https://sol.sbc.org.br/index.php/sbseg/article/view/44366
+- key: hadi2026genti
+  name: GenTI
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: secondary listings of the abstract; full-text verification pending
+  relevance: Benchmark and fine-tuned generator of IDPS and YARA rules for unseen attacks, reporting detection and
+    false-positive rates.
+  limitation: Network and file signatures; approval, deployment and cost not reported; figures seen only through
+    secondary listings.
+  cells:
+    cti_ingestion:
+      value: Partial
+      evidence: Reports 94.8% CTI coverage.
+      source: https://papers.cool/arxiv/2606.05844
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation:
+      value: 'Yes'
+      evidence: LLM-driven generation of IDPS rules aimed at unseen attacks.
+      source: https://papers.cool/arxiv/2606.05844
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: cheng2026ttprint
+  name: TTPrint
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: 'Evidence-grounded ATT&CK extraction: deterministic span localisation ties each candidate technique
+    to source text, close to ATIDEP''s quotation verification.'
+  limitation: Extraction only; no detection content.
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Extracts ATT&CK techniques from threat reports.
+      source: https://arxiv.org/pdf/2605.25836
+    structured_extraction:
+      value: 'Yes'
+      evidence: Candidates kept only when backed by a deterministically localised evidence span and the ATT&CK definition.
+      source: https://arxiv.org/pdf/2605.25836
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+- key: valletta2026tracecti
+  name: TRACE-CTI
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: Governance of extracted TTP claims with evidence, provenance, policy-compliant validation, versioned
+    trust decisions and revocation; close to ATIDEP's evidence and audit design.
+  limitation: Governs extraction output, not detection rules; no generation or deployment.
+  cells:
+    cti_ingestion: *id001
+    structured_extraction:
+      value: Partial
+      evidence: Aggregates per-run TTP predictions into assertions.
+      source: https://www.alphaxiv.org/abs/2607.24563
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation: *id001
+    deterministic_validation:
+      value: Partial
+      evidence: Exposes only assertions backed by policy-compliant validation.
+      source: https://www.alphaxiv.org/abs/2607.24563
+    adversarial_evaluation: *id001
+    human_approval:
+      value: Partial
+      evidence: Keeps evidence, provenance, versioned trust decisions and revocation history (governance of claims).
+      source: https://www.alphaxiv.org/abs/2607.24563
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source:
+      value: 'Yes'
+      evidence: Code, schema and audit queries on GitHub.
+      source: https://arxiv.org/pdf/2607.24563
+- key: saju2026autonomoussoc
+  name: End-to-end LLM SOC framework
+  year: '2026'
+  level: abstract_via_search_extract
+  read_note: abstract-level search extracts; full-text verification pending
+  relevance: End-to-end LLM framework for alert detection, syntax-constrained SIEM query generation and resolution,
+    reporting time savings.
+  limitation: Addresses alert triage and query generation rather than CTI-to-detection engineering; governance and
+    cost are not reported.
+  cells:
+    cti_ingestion: *id001
+    structured_extraction: *id001
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation:
+      value: Partial
+      evidence: Syntax-constrained generation of SIEM queries; 88% of inputs yield executable queries.
+      source: https://proceedings.mlr.press/v318/saju26a.html
+    deterministic_validation:
+      value: Partial
+      evidence: Queries constrained by syntax and checked for executability.
+      source: https://proceedings.mlr.press/v318/saju26a.html
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort:
+      value: Partial
+      evidence: Reports average triage time falling from about four hours to under ten minutes (authors' claim).
+      source: https://proceedings.mlr.press/v318/saju26a.html
+    economic_analysis: *id001
+    open_source: *id001
+- key: pham2025sigmagen
+  name: SigmaGen (practitioner talk)
+  year: '2025'
+  level: abstract_via_search_extract
+  read_note: slide deck seen through search extracts; not a research paper
+  relevance: Practitioner pipeline extracting attack patterns from security blogs and generating Sigma with fine-tuned
+    LLMs.
+  limitation: 'A workshop presentation: no paper, repository or benchmark found; evidence is weak.'
+  cells:
+    cti_ingestion:
+      value: 'Yes'
+      evidence: Extracts attack patterns from security blogs.
+      source: https://ctid.mitre.org/events/apac-2025/07%20-%20SigmaGen.pdf
+    structured_extraction:
+      value: Partial
+      evidence: Maps attack patterns to MITRE ATT&CK.
+      source: https://ctid.mitre.org/events/apac-2025/07%20-%20SigmaGen.pdf
+    ioc_generation: *id001
+    behavioural_detection: *id001
+    rule_generation:
+      value: 'Yes'
+      evidence: Automated Sigma rule generation with fine-tuned LLMs.
+      source: https://ctid.mitre.org/events/apac-2025/07%20-%20SigmaGen.pdf
+    deterministic_validation: *id001
+    adversarial_evaluation: *id001
+    human_approval: *id001
+    deployment_rollback: *id001
+    feedback_improvement: *id001
+    analyst_effort: *id001
+    economic_analysis: *id001
+    open_source: *id001
+atidep:
+  cti_ingestion: 'Yes'
+  structured_extraction: 'Yes'
+  ioc_generation: 'Yes'
+  behavioural_detection: 'Yes'
+  rule_generation: 'Yes'
+  deterministic_validation: 'Yes'
+  adversarial_evaluation: 'Yes'
+  human_approval: 'Yes'
+  deployment_rollback: 'Yes'
+  feedback_improvement: 'Yes'
+  analyst_effort: 'Yes'
+  economic_analysis: 'Yes'
+  open_source: Partial

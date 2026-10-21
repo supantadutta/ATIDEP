@@ -2,14 +2,32 @@
 
 ## Agentic Threat Intelligence and Detection Engineering Platform
 
+### What ATIDEP is
+
+**ATIDEP (Agentic Threat Intelligence and Detection Engineering Platform) is an open-source-oriented, LLM-assisted threat-intelligence-to-detection-engineering pipeline that ingests threat reports, extracts security-relevant information, generates detection content, validates generated rules through deterministic security and quality gates, supports human approval and controlled deployment, and records feedback, analyst effort and resource use from which operational cost is evaluated.**
+
+In practical terms, ATIDEP converts threat intelligence into reviewed and deployable detection content while maintaining traceability and human control: a report goes in, and what comes out is a Sigma rule (for a behaviour) or an indicator list (for indicators of compromise) that is tied to quotations from the report, has passed deterministic checks, and has been approved by a named person before it can be deployed to a laboratory Wazuh manager. Language models read and draft; deterministic code decides whether anything they produce may proceed.
+
+Its five components, in order of the data flow (§11, §17):
+
+| Component | What it does |
+|---|---|
+| **C1 Ingest** (deterministic) | Collects reports from approved feeds, uploads and allow-listed URLs through an SSRF-safe fetcher; strips hidden and invisible text; stores original and sanitised text with checksums; removes duplicates |
+| **C2 Intelligence processing** | Extracts indicators deterministically (refanged, benign domains excluded); an Extraction Agent identifies behaviours and entities, each of which must carry a quotation found verbatim in the report; ATT&CK mapping against a pinned release; a transparent priority score |
+| **C3 Detection engineering** | An Opportunity Agent, overridden deterministically by the telemetry catalogue, decides whether and what to detect; a Rule Agent drafts Sigma rules with a bounded repair loop (at most two revisions); an indicator builder produces Wazuh CDB lists |
+| **C4 Validation and governance** (deterministic) | Eleven hard pass/fail gates G1-G11; a Wazuh-compatible Sigma subset and a converter that refuses what it cannot translate; a human approval bound to the SHA-256 of the exact content and of its validation report; a hash-chained audit trail |
+| **C5 Deployment and feedback** | Wazuh packages for export, dry-run or laboratory deployment through a least-privilege API account, with rollback; alerts and dispositions; an Improvement Agent whose proposals re-enter validation and approval |
+
+ATIDEP is not a SIEM, not an autonomous response system and not a production deployment: it connects intelligence to portable detection content and a controlled laboratory target, and every deployment is a human decision.
+
 > **Project positioning:** ATIDEP is the technical solution: a governed, open-source pipeline that turns selected threat intelligence into validated, human-approved detection content for a laboratory Wazuh target. The research contribution is a controlled evaluation of that pipeline on **two dimensions**: *technical effectiveness* against a manual workflow and a single-prompt LLM baseline, and *economic cost-effectiveness* against a manual workflow and a modelled paid configuration of the same functions. Both dimensions are measured or modelled from stated inputs; neither conclusion is assumed (see §2.4 and §22).
 
 **Program:** Professional Master's in Information and Cyber Security (PMICS)  
 **Institution:** University of Dhaka  
 **Project Type:** Master's Final Project in Cybersecurity  
 **Prepared for:** Supanta Dutta  
-**Document version:** 3.1 (supersedes 2.0, archived at `docs/archive/ATIDEP_Blueprint_v2.md`; revised from 3.0 on 15 October 2026 for the two-dimension evaluation, change-log row 25)  
-**Date:** 2 October 2026 (3.0); 15 October 2026 (3.1)
+**Document version:** 3.2 (supersedes 2.0, archived at `docs/archive/ATIDEP_Blueprint_v2.md`; 3.1 of 15 October 2026 added the two-dimension evaluation, change-log row 25; 3.2 of 21 October 2026 adds the supervisor's revision: definition first, problem, challenges, state of the art and research gap, change-log row 26)  
+**Date:** 2 October 2026 (3.0); 15 October 2026 (3.1); 21 October 2026 (3.2)
 
 ---
 
@@ -46,6 +64,7 @@ v3 keeps the v2 architecture and governance ideas (evidence grounding, determini
 | 23 | Editorial: subsection numbers did not match sections; "a open-source" typo; success statement near-unfalsifiable; cost positioned as both secondary and central. | Renumbered; fixed; success split into engineering criteria and reported-either-way research outcomes; one cost lane. | throughout |
 | 24 | Cost story blurred between the solution and the paper, and "cost-effective with open source" was never defined measurably. | One cost story in two registers with a fixed interface; three pre-registered cost-effectiveness checks (C1-C3); a dedicated paper chapter; local-first inference with a cloud opt-in cap; an open-source claim audit. *Superseded in part by row 25: the checks C1-C3 are replaced by E1-E3 and the pre-registered decision rule H7; "one cost lane" stays, but cost is no longer a secondary dimension.* | 2.4, 22 |
 | 25 | Cost was a "secondary, descriptive" dimension; no paid comparator was defined; "without significant spending" was asserted; `cost_rates.yaml` held invented numbers (an analyst rate, an electricity price, a hardware price) that the cost tab silently used; token usage did not record whether the provider or an estimate supplied it; local compute time was discarded; only a local model client existed. | **Two-dimension evaluation** (§2.2, §2.4, §6, §8 RQ8-RQ9, §9 H7): technical effectiveness and economic cost-effectiveness. A **modelled paid scenario** built from the same nine functions (FN1-FN9) by component substitution, never run, with technical performance assumed equal. A **pre-registered decision rule** (H7), outside the Holm family. Every price, rate, tariff and volume is **sourced or null**; unpriced items read exactly `Vendor quote required / public price unavailable`; an incomplete total is a lower bound and is never completed with zero. Usage provenance, compute time, a hosted-model client behind a spend cap, and four separate kinds of time are recorded (§22.2). Open source is not zero cost: twelve ledger categories keep licence, threat-intelligence data, infrastructure, hardware, electricity, storage, inference, analyst labour, maintenance, development, onboarding and other apart. | 2.2, 2.4, 2.5, 5-9, 10.2, 22, 23, 28, 29, 31, 34.2, 35, 38, 41, 42 |
+| 26 | Supervisor feedback: the concept is sound, but the document must say what ATIDEP is at the very beginning, set out the challenges of the problem, and review the state of the art with the relevance of existing work. The earlier review said that no work targeted Wazuh and grouped generation systems without per-source detail; abstract-level checks were not distinguished from full-text verification. | **Definition first** ("What ATIDEP is", before §0, and at the start of Chapter 1 and of `docs/supervisor_brief.md`). **Problem statement** as a nine-activity chain, with why a single prompt is not automatically sufficient (§5.1-5.3). **Sixteen challenges**, each with the component designed to address it and how the experiment evaluates the response (§5.4; full table in Chapter 1). **Themed state of the art** with per-source tables, a **comparison matrix** whose every marked cell carries its evidence and source, the **limitations** of existing approaches, a carefully worded **research gap**, and **traceability** from challenge to metric (§5.5-5.8; Chapter 2). Fifteen closely related works added, including FALCON, RulePilot, TTPrint, TRACE-CTI and a negative result for LLM-generated Wazuh rules (Schafhauzer et al.), which removes the earlier claim that no work targets Wazuh. Every reference re-checked and recorded with its verification level; **no paper has been read in full** and every paper is marked "Full-text verification pending". | front matter, 4, 5, 34.2, 35 |
 
 ### 0.2 How to read the status of claims about Wazuh
 
@@ -171,17 +190,85 @@ Security teams normally perform these activities by hand:
 10. Test and deploy approved content.
 11. Monitor results and tune rules.
 
-These tasks are repetitive, time-consuming, and dependent on experienced personnel. Commercial platforms automate parts of the process, but licensing, integration, infrastructure, and support costs can be difficult for resource-constrained organisations. Whether that difference is large, small or absent for a given workload is an empirical question that depends on prices, labour rates and volumes, none of which this project assumes.
+These tasks are repetitive, time-consuming, and dependent on experienced personnel. Commercial products offer to automate parts of the process. Whether their licensing, integration, infrastructure and support costs are affordable for a resource-constrained organisation, and whether they are larger or smaller than the full cost of an open-source alternative, is an empirical question that depends on prices, labour rates and volumes, none of which this project assumes; this blueprint makes no claim about the performance or the price of any commercial product.
 
 This project investigates whether a governed agentic workflow built mainly from open-source components can operationalise threat intelligence with less analyst effort, while maintaining rule quality, evidence traceability, and human oversight, and whether, on measured quantities and sourced inputs, it does so at a substantially lower cost than a comparable paid configuration of the same functions.
 
 ---
 
-## 5. Problem Statement
+## 5. Problem Statement, Challenges and State of the Art
 
-Organisations may collect substantial threat intelligence without an efficient process to convert relevant intelligence into reliable detections. Indicators can be old, duplicated, invalid, context-free, or unrelated to the monitored environment. Reports may describe behaviour without providing detection logic. Analysts must interpret the intelligence, identify suitable telemetry, write and test rules, and tune them after deployment.
+### 5.1 The problem in practice
 
-A language model can assist with extraction and rule drafting, but an unconstrained model can hallucinate evidence, produce invalid rules, reference unavailable fields, follow instructions hidden in a report, or create excessive false positives. The research problem is therefore not whether an LLM can draft a rule. It is whether a controlled, auditable workflow, with deterministic validation around bounded LLM steps, can reliably turn heterogeneous intelligence into useful detection content with less analyst effort and no loss of quality or safety, and whether the controls themselves (rather than the model alone) are responsible for that safety.
+Turning a threat report into operational detection content is a chain of activities, each of which needs judgement: (1) collecting and reviewing reports whose quality and reliability differ; (2) identifying the relevant behaviours and indicators and setting aside what is stale, duplicated, vague or irrelevant; (3) determining what is observable, that is, which log source and fields would reveal the behaviour and whether they are collected; (4) translating narrative intelligence into detection logic; (5) validating the logic's syntax, meaning and compatibility with the target platform; (6) assessing false-positive risk against ordinary activity; (7) obtaining analyst review and an accountable approval; (8) deploying safely, with rollback; and (9) monitoring the results and improving the detection. Organisations may collect substantial intelligence without an efficient process for this chain. Indicators can be old, duplicated, invalid, context-free or unrelated to the monitored environment, and reports may describe behaviour without giving detection logic.
+
+### 5.2 Why a single prompt is not automatically sufficient
+
+A language model can assist with extraction and rule drafting, but an unconstrained model can hallucinate evidence, produce invalid rules, reference unavailable fields, follow instructions hidden in a report, or create excessive false positives. Asking a model for a rule in one prompt can yield a plausible rule, but nothing in that arrangement checks that each condition is supported by the report, that the fields and log sources exist in the organisation's telemetry, that a syntactically valid rule detects the right thing on the target platform without matching normal activity, that the report's own text has not steered the output, that a second run would give the same answer, or that someone accountable approved it on recorded evidence. This is a reason to add controls, not a finding that a single prompt performs badly: the experiment tests the difference directly with condition C (§27.1, H5).
+
+### 5.3 Research problem
+
+The research problem is therefore not whether an LLM can draft a rule. It is whether a controlled, auditable workflow, with deterministic validation around bounded LLM steps, can reliably turn heterogeneous intelligence into useful detection content with less analyst effort and no loss of quality or safety; whether the controls themselves (rather than the model alone) are responsible for that safety; and what such a workflow costs compared with the manual workflow and with a comparable paid configuration (§2.4).
+
+### 5.4 Challenges
+
+Each challenge shapes a part of the design and of the experiment. The full explanation (why each occurs and why it matters) is in Chapter 1 of the paper (`paper/chapters/01_introduction.md`, section "Challenges"). The entries name what ATIDEP is *designed to address*; whether it succeeds is what the experiment evaluates.
+
+| # | Challenge | Part of ATIDEP designed to address it | How the experiment evaluates the response |
+|---|---|---|---|
+| 1 | Unstructured, heterogeneous reports | C1 collectors and sanitiser; C2 deterministic extraction and Extraction Agent | Extraction precision, recall and F1 (RQ1) |
+| 2 | Incomplete, ambiguous or conflicting evidence | C2 verbatim-quote verification; C3 non-generating decisions; declared assumptions | Opportunity accuracy and macro-F1 incl. unsuitable items (RQ2); unsupported-extraction rate |
+| 3 | Narrative to observable detection logic | C3 Opportunity Agent with telemetry catalogue and deterministic override; G5, G6 | Telemetry-requirement accuracy; held-out detection rate; rubric (RQ6) |
+| 4 | Hallucination and unsupported output | Quote verification; G4, G5, G7 | Seeded D3, D4, D8; invented-field rate; B versus C (H5) |
+| 5 | Syntactic versus semantic correctness | G1-G3 structure; G8-G10 behaviour on events; blinded rubric | H2 (with B-R); H4; held-out detection and false positives |
+| 6 | Event schema, field mapping, platform compatibility | Wazuh-compatible Sigma subset; refusing converter; measured field map (ADR-001) | Seeded D3, D6; Tier 1 versus Tier 2 conversion fidelity |
+| 7 | False positives, over-broad rules, noise | G10, G11; Improvement Agent with revalidation | Seeded D7, D9; benign false-positive rate; H6 |
+| 8 | Prompt injection, untrusted report content | C1 sanitiser; untrusted-data framing; tool-less agents; schema output; quote check; allow-list; gates; approval | Injection set under B, B-V, C with an obedient stand-in; success rate per family (H3) |
+| 9 | Validation before approval and deployment | Fail-closed gates; state machine; G6 blocks | Seeded defective rules: escape, rejection and gate-miss rates under B, B-V, C (H3) |
+| 10 | Human governance and accountability | Hash-bound approval; named reviewer; audit | Seeded D10 (three tamper routes); re-review of sampled approvals; H1 |
+| 11 | Provenance, auditability, reproducibility | Evidence store; claim evidence IDs; hash-chained audit; model-call log; replay store; freeze manifests | Audit verification (§31); every table regenerated from exports |
+| 12 | Safe deployment, rollback, lifecycle | Least-privilege API adapter; allow-listed endpoint; dry-run default; versions and rollback | Acceptance criteria (§31); D10 deployment refusal; H6 |
+| 13 | Model variability, reproducibility | Pinned model and settings; at least three runs; hashed prompts; post-cutoff reports | Run-to-run variance; SigmaHQ similarity; memorisation probe (§27.9) |
+| 14 | Ground truth and fair evaluation | Labelling guide; second labeller; blinded raters; counterbalanced crossover; information parity for C; pre-registration | κ, Jaccard, inter-rater reliability; order and first-exposure analyses (§29) |
+| 15 | Comparing open-source and paid cost | FN1-FN9 shared by every scenario; component-substitution S-PAID; sourced price register; H7 fixed in advance | H7 at the primary cell and its robustness grid (§22.6) |
+| 16 | Open source is not free | Twelve ledger categories; hardware allocation; measured power; token provenance; labour hours; lower bounds | E1 cost composition and evidence shares; E2 unit costs |
+
+### 5.5 State of the art and its relevance
+
+The full review is Chapter 2 of the paper (`paper/chapters/02_literature_review.md`), organised by theme, with a per-source table (problem, approach, findings, relevance, limitation) in each theme and a comparison matrix generated from `paper/related_work.yaml` by `tools/related_work_matrix.py` (`paper/related_work_matrix.md` holds the evidence and source for every marked cell). Every paper was checked through abstract-level or metadata search extracts only, because the authoring environment's network policy blocks publisher sites, DOI resolution and arXiv; **full-text verification is pending for every paper** (`paper/verification_records.yaml`, `paper/verification_checklist.md`). The closest work, by group:
+
+| Group | Closest works | What they establish | Relevance to ATIDEP |
+|---|---|---|---|
+| Extraction of attack knowledge from reports | TTPDrill, rcATT, LADDER, EXTRACTOR, aCTIon, CTIBench, TTPrint | Reports can be turned into structured ATT&CK knowledge; TTPrint ties each technique to a located span of the source | C2 extraction and quotation verification build on this; TTPrint is the nearest precedent for evidence-located extraction |
+| Generation of detection content from intelligence | SIGMERGE, AutoSigma, LLMCloudHunter, FALCON, Tseng et al., GenTI, RulePilot, SigmaGen (practitioner) | LLM generation of Sigma, SIEM, IDS and YARA rules from intelligence is established and often strong; validate-and-revise loops, retrieval and intermediate representations help | ATIDEP does not claim a better generator; C3 uses the same ideas inside a governed workflow |
+| Benchmarks and realistic evaluation | CTI-REALM, detection-as-code from attack simulation | Agents can be scored on the whole task in controlled environments; behaviour on data is measurable | Supports evaluating rules on events (G8-G10, held-out events), not only by similarity |
+| Validation, conversion and quality | Sigma linting with seeded defects, the SigmaHQ exclusion study, Tyrian Detection Pack, sigma_to_wazuh | Deterministic quality checks are feasible; Sigma-to-Wazuh conversion is constrained and a faithful converter must refuse constructs | C4 gates, the Wazuh-compatible subset and the refusing converter have direct precedents |
+| Wazuh as a target for LLM-generated rules | Schafhauzer et al. | The one study found reports a **negative result**: the rule set augmented with LLM-written Wazuh rules performed worse than the native rules on production events | A positive result for this target cannot be presumed; the experiment must be able to show a negative one |
+| Governance and SOC automation | TRACE-CTI, an end-to-end LLM SOC framework | Evidence, provenance and revocable trust decisions can be placed around extracted claims; LLMs are applied to triage and query generation with reported time savings | C4 approval and audit extend governance from claims to deployable rules |
+| Reliability and attack surface of LLM components | Hallucination surveys, Self-Debug and related repair work, prompt-injection studies, OWASP LLM Top 10 | Ungrounded output and indirect prompt injection are documented; validator-driven repair has precedent | Motivates quotation verification, tool-less agents, the repair loop's restriction to defect reports, and the injection set |
+| Economics | Security-economics framing, inference-cost optimisation; vendor material excluded as evidence | Cost is either framed generally or optimised for inference alone | Motivates the full-workflow cost model of §22; no vendor estimate is used as evidence |
+
+### 5.6 Limitations of existing approaches
+
+As far as the extracts show (Chapter 2, section "Limitations of existing approaches"): (1) stages are addressed separately, and no work carries an item from report to an approved, deployed and tuned rule under one set of controls; (2) validation is mostly compilation, similarity, an LLM judge or unstated validators, not hard gates that block a rule from approval and deployment regardless of any score; (3) effectiveness is measured on rules rather than on work, with no bias-controlled measurement of analyst effort against manual detection engineering and no blinded, non-inferiority judgement of quality; (4) the controls themselves are not attacked with seeded defects or injected reports; (5) open-source SIEM targets are rare and, for Wazuh, the only LLM result found is negative; (6) cost is asserted, optimised for inference only, or claimed by vendors, rather than evaluated for the whole workflow against a comparable paid configuration.
+
+### 5.7 Research gap
+
+The reviewed literature indicates limited evidence of an integrated approach that jointly evaluates the technical and the economic side of LLM-assisted detection engineering. Existing studies commonly address individual stages, and several address two or three of them strongly; evidence concerning the integrated workflow remains limited. The gap is **not** that no system generates detection rules from threat intelligence: several do. It is the absence, in the evidence found, of a governed, fail-closed, end-to-end workflow for an open-source target that is evaluated *as a workflow*: on analyst effort, independently judged quality, resistance to attacks on its own controls, and cost. ATIDEP's intended contribution is the integration, the fail-closed placement of deterministic gates before approval and deployment, and the evaluation design; several of its components have precedents (§35). If the pending full-text reading shows that a close work already covers a point, the corresponding contribution is narrowed.
+
+### 5.8 Traceability from challenge to evaluation
+
+Chapter 2, Table 2.11, traces each challenge of §5.4 through six columns: challenge, existing approaches, remaining limitation, ATIDEP component, experimental condition and metric. The conditions are those of §27.1 (A manual; B full; B-V validators logged but not enforced; B-R no repair loop; C single prompt) and the economic scenarios of §22 (S-MANUAL, S-OSS-LOCAL, S-PAID). Abbreviated:
+
+| Challenge (§5.4) | Existing approaches | Remaining limitation | ATIDEP component | Condition | Metric |
+|---|---|---|---|---|---|
+| 2, 4 Unsupported or hallucinated content | Evidence-located extraction (TTPrint); claim governance (TRACE-CTI) | Not carried through to the rules that are deployed | C2 quotation verification; G4, G5, G7 | B vs C; B vs B-V | Unsupported-extraction rate; invented-field rate; D3, D4, D8 escapes |
+| 5 Syntactic vs semantic correctness | Compilation, similarity or LLM judge (SIGMERGE, AutoSigma, LLMCloudHunter) | Behaviour on events and blinded expert judgement rarely combined | G1-G3, G8-G10; blinded rubric | A, B, C; B-R | H2 first-pass and post-repair validity; H4 non-inferiority; held-out detection and FP rates |
+| 6 Platform compatibility | Converters that refuse (Tyrian, sigma_to_wazuh); negative LLM result for Wazuh (Schafhauzer et al.) | No generation pipeline evaluated end to end on Wazuh | Sigma subset; refusing converter; ADR-001 field map | B | Tier 1 vs Tier 2 conversion fidelity; D3, D6 |
+| 8, 9 Injection and validation before deployment | Injection studied for general apps and SOC log analysis; linter seeded defects | Gates of a CTI-to-rule pipeline not attacked | C1 sanitiser; tool-less agents; C4 fail-closed gates; approval | B, B-V, C | H3 escape, rejection and gate-miss rates; attack success per family |
+| 10 Governance and accountability | Claim governance; SOC frameworks without approval binding | Approval not bound to exact deployed content | Hash-bound approval; audit chain | B | D10 tamper detection; approval re-review agreement |
+| Effort (problem statement) | Authors' time-saving figures for triage | No bias-controlled comparison with manual detection engineering | Timer with idle accounting; counterbalanced crossover | A vs B; C | H1 active time per item; order effects |
+| 15, 16 Cost | Inference-cost optimisation; vendor claims (excluded) | No full-workflow cost against a comparable paid configuration | Ledger (twelve categories); sourced price register; H7 | S-MANUAL, S-OSS-LOCAL, S-PAID | H7; E1 composition and evidence shares; E2 unit costs; E3 tipping points |
 
 ---
 
@@ -1555,8 +1642,8 @@ The minimum viable project is successful when all of the following hold (each is
 
 ### 34.2 Research paper structure
 
-1. **Introduction:** context, problem, aim, objectives, questions, scope, contributions.
-2. **Literature Review:** CTI operationalisation, detection engineering, Sigma, ATT&CK, LLM agents and hallucination control, prompt injection, human oversight, evaluation of detection content.
+1. **Introduction:** what ATIDEP is (definition first), problem context, problem statement, challenges, the state of the art and research gap in brief, aim, objectives, questions, scope, contributions.
+2. **Literature Review and State of the Art:** themed review (threat-intelligence quality; extraction; generation of detection content; Sigma and conversion to Wazuh; validation and quality; LLMs in SOC work; reliability; prompt injection; human oversight; deployment and lifecycle; open source; economics), each with a per-source table, a remaining gap per theme, a comparison matrix, the limitations of existing approaches, the research gap, and the traceability table from challenge to metric.
 3. **Research Methodology:** design-science approach, pre-registered experiment, conditions and ablations, ground truth, metrics, statistical plan, the economic-evaluation design (scenarios and functional equivalence, perimeters and views, the ledger and its twelve categories, the price register and its selection rule, the decision rule H7, the joint assessment), ethics.
 4. **Requirements and Architecture:** requirements, components, data flow, threat model, governance.
 5. **Implementation:** stack, schemas, prompts, validators, converter and subset, Wazuh adapter, interface.
@@ -1586,7 +1673,7 @@ The software records physical quantities, enforces its budget cap, and shows con
 
 ## 35. Expected Contributions
 
-*Positioning (from the literature review, `paper/chapters/02_literature_review.md`).* LLM-based Sigma generation from threat reports already exists and is strong (SIGMERGE, AutoSigma, LLMCloudHunter), and CTI-REALM benchmarks agents on the task. ATIDEP therefore does not claim a more accurate generator. Its contributions are the governed, fail-closed workflow for an open-source target and an evaluation that measures analyst effort, independently judged quality and gate effectiveness under attack. This positioning rests on abstract-level reading of the 2024-2026 works and must be re-checked against their full texts before the thesis is submitted.
+*Positioning (from the literature review, `paper/chapters/02_literature_review.md`, and §5.5-5.7).* LLM-based generation of detection content from threat intelligence already exists and is often strong (SIGMERGE, AutoSigma, LLMCloudHunter, FALCON, Tseng et al., GenTI), CTI-REALM benchmarks agents on the whole task, and the one LLM study found that targets Wazuh reports a negative result (Schafhauzer et al.). Several of ATIDEP's components have precedents: evidence-located extraction (TTPrint), governance of extracted claims (TRACE-CTI), validity gates with seeded defects (Sigma linting), refusing converters (Tyrian, sigma_to_wazuh) and validator-driven repair (Self-Debug). ATIDEP therefore claims neither a more accurate generator nor a new component. Its contributions are the integration of these ideas into one governed, fail-closed workflow for an open-source target, and an evaluation that measures the workflow as a workflow: analyst effort, independently judged quality, gate effectiveness under attack, and cost. This positioning rests on abstract-level reading and must be re-checked against the full texts before the thesis is submitted; a contribution that a close work turns out to cover is narrowed.
 
 1. A reference architecture for governed CTI-to-detection automation with deterministic gates around bounded LLM steps.
 2. A **documented Wazuh-compatible Sigma subset and a conservative converter** that refuses what it cannot translate faithfully, plus a conversion-fidelity measurement method.
@@ -1990,6 +2077,8 @@ These could not be confirmed from primary documentation while v3 was written. Do
 ---
 
 ## 43. References and Official Technical Sources
+
+The scholarly references behind §5.5-5.8 are in `paper/references.bib`, each with its verification level, and are not repeated here; the list below holds official technical sources and software.
 
 1. MISP Project. **MISP OpenAPI Specification**. https://www.misp-project.org/openapi/ (future work)
 2. CIRCL. **Automation and MISP API**. https://www.circl.lu/doc/misp/automation/ (future work)

@@ -59,17 +59,24 @@ def test_the_audit_writes_a_bill_of_materials(tmp_path):
     assert (tmp_path / "python_packages.csv").exists()
 
 
-def test_the_reference_checklist_covers_every_entry_and_marks_none_verified(tmp_path):
+def test_the_reference_checklist_covers_every_entry_and_marks_no_paper_full_text_verified():
     import reference_checklist as rc
     bib = (ROOT / "paper" / "references.bib").read_text()
     entries = rc.parse(bib)
+    records = rc.load_records(ROOT / "paper" / "verification_records.yaml")
     assert len(entries) == len(re.findall(r"^@\w+\{", bib, flags=re.M))
-    text = rc.render(entries)
+    assert {e["key"] for e in entries} == set(records)          # one record per entry
+    text = rc.render(entries, records)
     assert all(f"`{e['key']}`" in text for e in entries)
-    assert text.count("[ ] pending") >= len(entries)
-    assert "[x]" not in text and "verified" in text.lower()
+    papers = [e for e in entries if rc.level(e.get("annote", "")) != "P"]
+    assert text.count(f"[ ] {rc.FULL_TEXT_PENDING}") == len(papers)
     assert "do not cite" in text.lower() and "Drummond" in text
-    assert {rc.level(e.get("annote", "")) for e in entries} <= {"V1", "V2", "V3"}
+    assert {rc.level(e.get("annote", "")) for e in entries} <= {"P", "E-A", "E-M"}
+    # a source read directly is software or documentation, never a paper
+    for e in entries:
+        if rc.level(e.get("annote", "")) == "P":
+            assert e["type"] in ("online", "misc") and records[e["key"]]["peer_reviewed"].startswith("no")
+    assert (ROOT / "paper" / "verification_checklist.md").read_text() == text
 
 
 # ---- model probe (evidence for spike S3; it selects nothing) -----------------------------
@@ -150,3 +157,92 @@ def test_model_probe_requires_items_or_smoke():
     import model_probe
     with pytest.raises(SystemExit):
         model_probe.main(["--provider", "ollama", "--model", "x"])
+
+
+# ---- related-work matrix: no capability marked without evidence --------------------------
+def _row(**over):
+    import related_work_matrix as rw
+    cells = {c: {"value": "Not reported"} for c, _ in rw.COLUMNS}
+    row = {"key": "k1", "year": "2026", "name": "System", "level": "abstract_via_search_extract",
+           "relevance": "close", "limitation": "no deployment reported", "cells": cells}
+    row.update(over)
+    return row
+
+
+def test_the_matrix_refuses_a_marked_cell_without_evidence_or_source():
+    import related_work_matrix as rw
+    r = _row()
+    r["cells"]["rule_generation"] = {"value": "Yes"}
+    with pytest.raises(rw.MatrixError, match="needs evidence"):
+        rw.validate([r])
+    r["cells"]["rule_generation"] = {"value": "Yes", "evidence": "generates Sigma rules",
+                                     "source": "https://example.invalid/x"}
+    rw.validate([r])
+    r["cells"]["human_approval"] = {"value": "No"}                    # absence also needs a source
+    with pytest.raises(rw.MatrixError):
+        rw.validate([r])
+
+
+def test_the_matrix_refuses_unknown_values_levels_keys_and_duplicates():
+    import related_work_matrix as rw
+    bad = _row()
+    bad["cells"]["open_source"] = {"value": "Probably"}
+    with pytest.raises(rw.MatrixError, match="value must be"):
+        rw.validate([bad])
+    with pytest.raises(rw.MatrixError, match="level"):
+        rw.validate([_row(level="skimmed")])
+    with pytest.raises(rw.MatrixError, match="bibliography"):
+        rw.validate([_row()], bib_keys={"other"})
+    with pytest.raises(rw.MatrixError, match="duplicate"):
+        rw.validate([_row(), _row()])
+
+
+def test_the_matrix_renders_evidence_and_says_full_text_is_pending():
+    import related_work_matrix as rw
+    r = _row()
+    r["cells"]["rule_generation"] = {"value": "Partial", "evidence": "drafts rules",
+                                     "source": "https://example.invalid/x"}
+    text = rw.render({"rows": [r], "preamble": "P"})
+    assert "| System [@k1] | 2026 |" in text and "| A |" in text
+    assert "drafts rules" in text and "full-text verification is pending" in text.lower()
+    assert "every cell is Not reported" not in text
+
+
+def test_the_committed_matrix_is_valid_and_matches_its_data():
+    import related_work_matrix as rw
+    data_path = ROOT / "paper" / "related_work.yaml"
+    if not data_path.exists():
+        pytest.skip("matrix data not written yet")
+    data = rw.load(data_path, ROOT / "paper" / "references.bib")
+    assert (ROOT / "paper" / "related_work_matrix.md").read_text() == rw.render(data)
+    chapter = (ROOT / "paper" / "chapters" / "02_literature_review.md").read_text()
+    a, b = chapter.index(rw.BEGIN) + len(rw.BEGIN), chapter.index(rw.END)
+    assert chapter[a:b].strip() == rw.render_table(data, rw.CHAPTER_CAPTION).strip()
+    brief = (ROOT / "docs" / "supervisor_brief.md").read_text()
+    a, b = brief.index(rw.BEGIN) + len(rw.BEGIN), brief.index(rw.END)
+    assert brief[a:b].strip() == rw.render_table(data, rw.BRIEF_CAPTION, rw.BRIEF_KEYS).strip()
+
+
+def test_sync_chapter_replaces_only_the_marked_block(tmp_path):
+    import related_work_matrix as rw
+    r = _row()
+    p = tmp_path / "ch.md"
+    p.write_text(f"before\n{rw.BEGIN}\nold\n{rw.END}\nafter\n")
+    assert rw.sync_chapter(p, {"rows": [r]}, "Cap") is True
+    text = p.read_text()
+    assert text.startswith("before\n") and text.endswith("after\n") and "old" not in text
+    assert "| System [@k1] | 2026 |" in text and ": Cap" in text
+    assert rw.sync_chapter(p, {"rows": [r]}, "Cap") is False          # idempotent
+    unmarked = tmp_path / "unmarked.md"
+    unmarked.write_text("no markers here\n")
+    with pytest.raises(rw.MatrixError, match="markers"):
+        rw.sync_chapter(unmarked, {"rows": [r]}, "Cap")
+
+
+def test_a_matrix_subset_keeps_only_the_named_rows_and_refuses_unknown_keys():
+    import related_work_matrix as rw
+    data = {"rows": [_row(), _row(key="k2", name="Other")]}
+    text = rw.render_table(data, "Cap", ["k2"])
+    assert "[@k2]" in text and "[@k1]" not in text and "| M1 |" in text
+    with pytest.raises(rw.MatrixError, match="not in the matrix"):
+        rw.render_table(data, "Cap", ["missing"])
