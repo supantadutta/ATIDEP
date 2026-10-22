@@ -8,6 +8,10 @@ adversarial set and protocol (`docs/ethics/supervisor_signoff.md`, item 10) is *
 The numbers are in `summary.md` and `summary.json`, generated from the 324 raw records in `raw/`.
 This note adds no number that is not there. History before the freeze: `../../DEVIATIONS.md`.
 
+To reproduce v0, check out commit `73656cb`. Later commits change files the freeze hashes (for
+example the economics fixes of 22 October touch `research/` and `config/`), so on them the runner
+refuses to run against `FREEZE.json`, by design; a later run is a new run (v1) with a new freeze.
+
 `run_manifest.json` records `working_tree_clean: false`: the flag is read at the end of the run,
 when the run's own new result files are present. Before the run the tree was clean, and the
 freeze verified unchanged after it.
