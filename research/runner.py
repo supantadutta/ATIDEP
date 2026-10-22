@@ -268,6 +268,7 @@ class ExperimentRunner:
         return {"extraction": mt.extraction_metrics(session, gt),
                 "opportunity": mt.opportunity_metrics(session, gt),
                 "rules": mt.rule_metrics(run), "pipeline_error": run.error,
+                "stage_errors": list(run.stage_errors),
                 "seconds": round(run.seconds, 3),
                 "per_rule": [{"kind": r.kind, "decision": r.decision,
                               "first_pass_valid": r.first_pass_valid,

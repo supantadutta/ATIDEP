@@ -12,8 +12,15 @@ case:
 * a case is **excluded** if at least two reviewers judge the claimed property *absent*, or if it
   fails a mechanical integrity check (``integrity_issues``);
 * ``unclear`` counts as *not absent*: doubt keeps a case in;
+* a reviewer who declares having read anything beyond the contract and the case files
+  (``read_other_files: true``) is **set aside**: the record is kept and listed, its verdicts are not
+  counted, and the batch is given to a replacement reviewer;
 * the reviewers' other notes (incidental defects, doubtful events) are recorded and reported but do
   not exclude a case.
+
+``review_gaps`` lists what still stands between the active case set and a run: a case without two
+counted verdicts, a case waiting for adjudication, or a case with a mechanical integrity problem.
+The runner refuses to start while any gap remains.
 
 Nothing here looks at how the system treats a case.
 """
@@ -161,9 +168,18 @@ def decide(verdicts: list[str], *, issues: list[str]) -> tuple[bool, str, bool]:
     return False, "", absent == 1 and len(verdicts) < 3
 
 
+def set_aside(reviews_dir: Path | str) -> list[str]:
+    """Review files whose reviewer declared reading other files; their verdicts are not counted."""
+    return [p.name for p in sorted(Path(reviews_dir).glob("*.json"))
+            if json.loads(p.read_text(encoding="utf-8")).get("read_other_files") is True]
+
+
 def collect(reviews_dir: Path | str) -> dict[str, list[dict[str, Any]]]:
     out: dict[str, list[dict[str, Any]]] = {}
+    skip = set(set_aside(reviews_dir))
     for p in sorted(Path(reviews_dir).glob("*.json")):
+        if p.name in skip:
+            continue
         doc = json.loads(p.read_text(encoding="utf-8"))
         for r in doc.get("reviews", []):
             out.setdefault(r["id"], []).append({**r, "reviewer": doc.get("reviewer"),
@@ -176,7 +192,8 @@ def apply(cases_dir: Path | str, reviews_dir: Path | str) -> dict[str, Any]:
     recs = collect(reviews_dir)
     root = Path(cases_dir)
     summary: dict[str, Any] = {"excluded": [], "needs_adjudication": [], "unreviewed": [],
-                               "incidental": {}, "split_votes": []}
+                               "incidental": {}, "split_votes": [],
+                               "set_aside": set_aside(reviews_dir)}
     for sub, cases in (("defects", cs.defects), ("controls", cs.controls),
                        ("injection", cs.injections)):
         for case in cases:
@@ -206,6 +223,22 @@ def apply(cases_dir: Path | str, reviews_dir: Path | str) -> dict[str, Any]:
                 summary["excluded"].append({"id": case.id, "reason": reason})
             dump_case(case, root / sub / f"{case.id}.yaml")
     return summary
+
+
+def review_gaps(cs: CaseSet) -> dict[str, list[str]]:
+    """What the active cases still lack before a run (all lists empty: ready). Read from the
+    review records that ``apply`` wrote into the case files."""
+    gaps: dict[str, list[str]] = {"unreviewed": [], "needs_adjudication": [], "integrity": []}
+    for case in (*cs.active_defects(), *cs.active_controls(), *cs.active_injections()):
+        verdicts = [v.get("verdict") for v in (case.review or {}).get("verdicts", [])]
+        if len(verdicts) < 2:
+            gaps["unreviewed"].append(case.id)
+        elif verdicts.count("absent") == 1 and len(verdicts) < 3:
+            gaps["needs_adjudication"].append(case.id)
+        issues = case.integrity_issues()
+        if issues:
+            gaps["integrity"].append(f"{case.id}: {'; '.join(issues)[:200]}")
+    return gaps
 
 
 def main(argv: list[str] | None = None) -> int:

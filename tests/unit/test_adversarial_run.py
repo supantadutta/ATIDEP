@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from research.adversarial.cases import CaseSet, dump_case, load_case_set
+from research.adversarial.cases import CaseSet, InjectionCase, dump_case, load_case_set
 from research.adversarial.run import (
     _write_once,
     check_freeze,
@@ -155,23 +155,53 @@ def tiny_set(tmp_path):
 def test_a_run_writes_raw_results_first_and_resumes_without_overwriting(tmp_path, ctx):
     cases = tiny_set(tmp_path)
     out = tmp_path / "res"
-    m = run(cases, out, freeze_path=None, require_freeze=False, ctx=ctx, log=lambda *_: None)
+    m = run(cases, out, freeze_path=None, require_freeze=False, allow_unreviewed=True, ctx=ctx,
+            log=lambda *_: None)
     assert m["counts"] == {"run": 9, "skipped_existing": 0}           # 3 cases x 3 conditions
     raw = json.loads((out / "raw/rules/B/D2-01.json").read_text())
     assert raw["case_id"] == "D2-01" and "G2" in raw["failed_gates"]
     assert raw["stopped_before_approval"] is True
+    assert set(raw["_stamp"]) == {"freeze_combined_sha256", "code_combined_sha256", "case_sha256"}
     assert (out / "summary.json").exists() and (out / "summary.md").exists()
     assert m["freeze"]["checked"] is False and m["freeze_required"] is False
+    assert m["preregistered"] is False and m["review_gaps"]["unreviewed"]
     assert len(m["code_sha256"]) > 20 and "research/adversarial/run.py" in m["code_sha256"]
     before = (out / "raw/rules/B/D2-01.json").read_text()
-    m2 = run(cases, out, freeze_path=None, require_freeze=False, ctx=ctx, log=lambda *_: None)
+    m2 = run(cases, out, freeze_path=None, require_freeze=False, allow_unreviewed=True, ctx=ctx,
+             log=lambda *_: None)
     assert m2["counts"] == {"run": 0, "skipped_existing": 9}
     assert (out / "raw/rules/B/D2-01.json").read_text() == before
+    manifest = json.loads((out / "run_manifest.json").read_text())
+    assert len(manifest["invocations"]) == 2 and manifest["preregistered"] is False
     with pytest.raises(FileExistsError):
         _write_once(out / "raw/rules/B/D2-01.json", {})
     s = json.loads((out / "summary.json").read_text())
     assert s["conditions"]["B"]["d1_d9"]["escapes"] == 0
-    assert s["injection"]["B"]["n"] == 1 and s["injection"]["B"]["n_cases"] == 1
+    assert s["completeness"]["complete"] is True
+    inj = s["injection"]["B"]
+    assert inj["n"] == 1 and inj["n_cases"] == 1 and not inj["harness_errors"]
+    raw_inj = json.loads((out / "raw/injection/B/INJA-01.json").read_text())
+    assert raw_inj["null_run"] and raw_inj["succeeded_without_compliance"] is not None
+
+
+def test_a_resumed_run_refuses_records_from_another_case_version(tmp_path, ctx):
+    cases = tiny_set(tmp_path)
+    out = tmp_path / "res"
+    run(cases, out, freeze_path=None, require_freeze=False, allow_unreviewed=True, ctx=ctx,
+        conditions=("C",), log=lambda *_: None)
+    p = cases / "controls" / "CTL9-01.yaml"
+    p.write_text(p.read_text().replace("why: fixture", "why: fixture, edited"))
+    with pytest.raises(SystemExit, match="different"):
+        run(cases, out, freeze_path=None, require_freeze=False, allow_unreviewed=True, ctx=ctx,
+            conditions=("C",), log=lambda *_: None)
+
+
+def test_a_run_refuses_while_cases_are_unreviewed(tmp_path, ctx):
+    cases = tiny_set(tmp_path)
+    with pytest.raises(SystemExit, match="review"):
+        run(cases, tmp_path / "o", freeze_path=None, require_freeze=False, ctx=ctx,
+            log=lambda *_: None)
+    assert not (tmp_path / "o" / "raw").exists()
 
 
 def test_a_run_refuses_without_a_matching_freeze_manifest(tmp_path, ctx):
@@ -189,14 +219,33 @@ def test_a_run_refuses_without_a_matching_freeze_manifest(tmp_path, ctx):
     assert not (tmp_path / "o2" / "raw").exists()                  # nothing ran
 
 
-def test_a_matching_freeze_manifest_allows_the_run(tmp_path, ctx):
+def test_a_matching_freeze_manifest_allows_the_run_only_on_the_frozen_cases(tmp_path, ctx,
+                                                                          monkeypatch):
     from research import freeze
+    from research.adversarial import run as run_mod
     cases = tiny_set(tmp_path)
     good = tmp_path / "freeze.json"
     good.write_text(json.dumps(freeze.make("test")))
-    assert check_freeze(good, load_case_set(cases))["matches"]
-    m = run(cases, tmp_path / "o3", freeze_path=good, ctx=ctx, log=lambda *_: None)
+    other = check_freeze(good, load_case_set(cases), cases)
+    assert not other["matches"] and other["differences"]["cases_dir"]
+    monkeypatch.setattr(run_mod, "FROZEN_CASES", cases)
+    assert check_freeze(good, load_case_set(cases), cases)["matches"]
+    m = run(cases, tmp_path / "o3", freeze_path=good, allow_unreviewed=True, ctx=ctx,
+            log=lambda *_: None)
     assert m["freeze"]["matches"] and m["counts"]["run"] == 9
+    assert m["preregistered"] is False                         # the tiny set has no reviews
+
+
+def test_a_freeze_manifest_without_code_does_not_match(tmp_path):
+    from research import freeze
+    man = freeze.make("test")
+    assert any(k.startswith("components/c4_validation/") for k in man["files"])
+    assert "research/adversarial/injection.py" in man["files"]
+    man["files"] = {k: v for k, v in man["files"].items() if not k.endswith(".py")}
+    p = tmp_path / "f.json"
+    p.write_text(json.dumps(man))
+    fr = check_freeze(p, small_set())
+    assert not fr["matches"] and fr["differences"]["code_not_frozen"]
 
 
 def test_code_manifest_covers_the_system_under_test_and_write_summary_is_idempotent(tmp_path):
@@ -209,3 +258,85 @@ def test_code_manifest_covers_the_system_under_test_and_write_summary_is_idempot
     cs = small_set()
     a = write_summary(cs, out)
     assert a == write_summary(cs, out)
+
+
+# ---- completeness, by-construction cells, D10 denominators, injection columns -------------------
+def test_a_result_set_missing_a_case_is_flagged_incomplete():
+    cs = small_set()
+    b = {"D2-01": rec("D2-01", "D2", "B", failed=["G2"], hit=True)}
+    s = summarise(cs, {"B": b}, {})
+    assert s["completeness"]["complete"] is False
+    assert "D2-02" in s["completeness"]["missing"]["B"] and "C" in s["completeness"]["missing"]
+    assert "INCOMPLETE RESULT SET" in render_markdown(s)
+
+
+def test_by_construction_rates_carry_no_confidence_bound_and_no_other_gate_column():
+    cs = small_set()
+    cv = {"D2-01": rec("D2-01", "D2", "C", construction=True, outcome="flagged", failed=["G2"]),
+          "CTL9-01": rec("CTL9-01", "NONE", "C", role="control", construction=True,
+                         outcome="passed")}
+    c = summarise(cs, {"C": cv}, {})["conditions"]["C"]
+    assert c["d1_d9"]["escape"]["by_construction"] and c["d1_d9"]["escape"]["upper_95"] is None
+    assert c["d1_d9"]["stopped_by_a_different_gate"] is None
+    fr = c["controls"]["false_rejection"]
+    assert fr["k"] == 0 and fr["by_construction"] and fr["upper_95"] is None
+    assert c["d1_d9"]["gate_miss"]["upper_95"] is not None          # measured post hoc
+    text = render_markdown(summarise(cs, {"C": cv}, {}))
+    assert "(by construction)" in text and "| n/a |" in text
+
+
+def test_a_d10_case_whose_base_rule_was_not_approved_stays_in_the_denominator():
+    cs = small_set()
+    b = {"D10-01": rec("D10-01", "D10", "B", approved=True, tamper=tam(True, True, True)),
+         "D10-02": rec("D10-02", "D10", "B", tamper=tam(None, None, None))}
+    d10 = summarise(cs, {"B": b}, {})["conditions"]["B"]["d10"]
+    assert d10["n"] == 2 and d10["n_applicable"] == 1
+    assert d10["base_rule_not_approved_ids"] == ["D10-02"] and d10["escaped_ids"] == []
+
+
+def test_injection_reports_success_with_and_without_compliance_and_leaves_out_the_inexpressible():
+    cs = CaseSet()
+    cs.injections = [InjectionCase.model_validate(dict(INJ, id=f"INJA-0{i}")) for i in (1, 2, 3, 4)]
+
+    def r(cid, won, alone, expressible=True, error=None):
+        return {"case_id": cid, "family": "f", "goal": "g", "attack_succeeded": won,
+                "succeeded_without_compliance": alone,
+                "attributable_to_compliance": won and not alone, "expressible": expressible,
+                "marker_survived_sanitiser": True, "pipeline_error": None,
+                "harness_error": error, "stopped_by_schema": [], "intermediate_only": [],
+                "stage_errors": []}
+    k = summarise(cs, {}, {"C": {"INJA-01": r("INJA-01", True, False),
+                                 "INJA-02": r("INJA-02", True, True),
+                                 "INJA-03": r("INJA-03", False, False, expressible=False),
+                                 "INJA-04": r("INJA-04", False, False, error="boom")}})
+    c = k["injection"]["C"]
+    assert c["n"] == 2 and c["n_cases"] == 4
+    assert (c["attack_success"]["k"], c["success_without_compliance"]["k"],
+            c["attributable_to_compliance"]["k"]) == (2, 1, 1)
+    assert c["not_expressible_in_condition"] == ["INJA-03"]
+    assert c["harness_errors"] == {"INJA-04": "boom"}
+    assert c["attack_success_worst_case"]["k"] == 3 and c["by_construction"] is True
+    text = render_markdown(k)
+    assert "without compliance" in text and "INJA-04" in text and "Not expressible" in text
+
+
+def test_review_gaps_and_set_aside_reviewers(tmp_path):
+    from research.adversarial.review import apply, review_gaps
+    cases = tiny_set(tmp_path)
+    assert review_gaps(load_case_set(cases))["unreviewed"] == ["D2-01", "CTL9-01", "INJA-01"]
+    revs = tmp_path / "reviews"
+    revs.mkdir()
+
+    def doc(name, reviewer, verdicts, read_other=False):
+        (revs / name).write_text(json.dumps({"reviewer": reviewer, "role": "primary",
+                                             "read_other_files": read_other, "reviews": [
+                                                 {"id": i, "verdict": v} for i, v in verdicts]}))
+    ids = ("D2-01", "CTL9-01", "INJA-01")
+    doc("a.json", "R1", [(i, "present") for i in ids])
+    doc("b.json", "R2", [(i, "present") for i in ids[:2]] + [("INJA-01", "absent")])
+    doc("c.json", "R9", [(i, "absent") for i in ids], read_other=True)     # set aside
+    summary = apply(cases, revs)
+    assert summary["set_aside"] == ["c.json"] and summary["excluded"] == []
+    assert summary["needs_adjudication"] == ["INJA-01"]
+    gaps = review_gaps(load_case_set(cases))
+    assert gaps["unreviewed"] == ["INJA-01"] and not gaps["integrity"]

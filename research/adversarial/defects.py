@@ -350,8 +350,9 @@ def _tamper(s: Session, rid: str, case: RuleCase, route: str) -> dict[str, Any]:
             refusals["submit_for_approval"] = str(exc)[:160]
         still_approved = still_approved or resubmitted
     changed = new != case.sigma_yaml
-    return {"detected": not still_approved, "content_changed": changed, "refusals": refusals,
-            "state_after": s.get(m.Rule, rid).state}
+    # an unchanged "tamper" tests nothing: it is neither detected nor an escape
+    return {"detected": (not still_approved) if changed else None, "content_changed": changed,
+            "refusals": refusals, "state_after": s.get(m.Rule, rid).state}
 
 
 # ---- entry points ------------------------------------------------------------------------------

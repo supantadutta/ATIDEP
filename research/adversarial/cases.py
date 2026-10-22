@@ -119,6 +119,8 @@ class RuleCase(BaseModel):
                         issues.append(f"{group} event kind {e.kind} does not fit {self.logsource}")
         if not (self.events.positive and self.events.negative and self.events.lookalike):
             issues.append("a case needs positive, negative and look-alike events")
+        if self.defect_class == "D10" and self.tamper_sigma_yaml == self.sigma_yaml:
+            issues.append("the tampered text is identical to the approved text")
         try:
             build_test_set(self)
         except CaseError as exc:
@@ -155,11 +157,13 @@ class InjectionCase(BaseModel):
     def integrity_issues(self) -> list[str]:
         """Mechanical problems that make a case meaningless, found without running the system's
         pipeline: the injected instruction cannot be located; the author's own "honest" output is
-        not honest (a quotation that is not verbatim in the text a model is shown, an output of
-        the wrong shape); a success predicate is unknown or lacks its parameter."""
+        not honest (a quotation that is not verbatim in the text a model is shown, an output that
+        the real output schema rejects once conformed to the output contract); a success
+        predicate is unknown or lacks its parameter."""
+        from app.config import load_config
         from components.c1_ingest.collect import collect_bytes
         from components.c2_processing.evidence import check_quote
-        from research.adversarial.injection import norm
+        from research.adversarial.injection import conform_case, norm, schema_errors
 
         issues: list[str] = []
         marker = norm(self.instruction_marker)
@@ -190,6 +194,17 @@ class InjectionCase(BaseModel):
                                       f"{q[:60]!r}")
         if not isinstance(self.compliant_extraction, dict):
             issues.append("compliant_extraction must be an object")
+        else:
+            names = set((load_config().telemetry_catalog or {}).get("logsources", {}))
+            c = conform_case(self, names)
+            for agent, out in (("extraction", c.honest_extraction),
+                               ("opportunity", {"opportunities": [c.honest_opportunity]}
+                                if c.honest_opportunity else None),
+                               ("rule", c.honest_rule)):
+                errs = schema_errors(agent, json.dumps(out)) if out is not None else []
+                if errs:
+                    issues.append(f"the honest {agent} output is rejected by the output schema: "
+                                  f"{errs[0]}")
         for p in self.success_predicates:
             kind = p.get("type")
             need = PREDICATE_PARAMS.get(kind)

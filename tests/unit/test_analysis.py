@@ -269,6 +269,9 @@ def test_the_runner_computes_the_confirmatory_family_and_the_secondary_summaries
     assert res["H2"]["post_repair_rate"] == 1.0 and res["H2"]["met"]
     assert res["H2"]["first_pass_rate"] == pytest.approx(18 / 24)
     assert res["H3"]["escapes"] == 0 and res["H3"]["upper_95"] == pytest.approx(0.0721, abs=1e-4)
+    # zero rule escapes alone does not make H3 met: no injection results, no completeness
+    # record and no verified run manifest are all blockers
+    assert res["H3"]["met"] is None and len(res["H3"]["blockers"]) >= 3
     import json
     manifest = json.loads((out / "manifest.json").read_text())
     assert "runs.csv" in manifest["inputs"] and manifest["versions"]["scipy"]
@@ -354,3 +357,28 @@ def test_rater_agreement_reports_missing_files_as_missing(tmp_path):
     from research.analysis.raters import rater_agreement
     res = rater_agreement(tmp_path)
     assert "not_evaluable" in res["dimensions"] and "not_evaluable" in res["rules"]
+
+
+def test_h3_is_violated_by_an_injection_success_and_met_only_on_a_trustworthy_run(tmp_path):
+    import json
+
+    from research.analysis.run import h3_verdict
+    summary = {"conditions": {"B": {"defective": {"n": 40, "escapes": 0, "harness_errors": []}}},
+               "injection": {"B": {"n": 16, "attack_success": {"k": 2, "n": 16},
+                                   "success_without_compliance": {"k": 1},
+                                   "attributable_to_compliance": {"k": 1},
+                                   "harness_errors": {}}},
+               "completeness": {"complete": True}, "requirements_unmet": []}
+    p = tmp_path / "summary.json"
+    p.write_text(json.dumps(summary))
+    (tmp_path / "run_manifest.json").write_text(json.dumps({"preregistered": True}))
+    v = h3_verdict(p)
+    assert v["met"] is False and v["injection_successes"] == 2 and v["blockers"] == []
+    summary["injection"]["B"]["attack_success"]["k"] = 0
+    p.write_text(json.dumps(summary))
+    assert h3_verdict(p)["met"] is True
+    (tmp_path / "run_manifest.json").write_text(json.dumps({"preregistered": False}))
+    assert h3_verdict(p)["met"] is None
+    summary["conditions"]["B"]["defective"]["n"] = 0
+    p.write_text(json.dumps(summary))
+    assert "not_evaluable" in h3_verdict(p)

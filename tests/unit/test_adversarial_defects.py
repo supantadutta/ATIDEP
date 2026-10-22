@@ -83,12 +83,13 @@ def test_every_route_of_tampering_with_an_approved_rule_is_detected(ctx, tamper)
     assert all(t["detected"] is False for t in c_.tamper.values())      # no approval exists in C
 
 
-def test_a_tamper_that_is_not_a_change_would_not_be_called_detected(ctx):
-    """If the 'tampered' text were identical to the approved rule, the approval would still hold;
-    the harness must not report that as detected."""
+def test_a_tamper_that_is_not_a_change_is_neither_detected_nor_an_escape(ctx):
+    """If the 'tampered' text were identical to the approved rule, the route would test nothing:
+    the harness reports it as not applicable, and the integrity check rejects such a case."""
     c = defect("D10-98", "D10", GOOD, "approval-binding", tamper_sigma_yaml=GOOD)
+    assert any("identical" in i for i in c.integrity_issues())
     r = run(c, "B", ctx)
-    assert r.tamper["direct_db"]["detected"] is False
+    assert r.tamper["direct_db"]["detected"] is None
     assert r.tamper["direct_db"]["content_changed"] is False
 
 

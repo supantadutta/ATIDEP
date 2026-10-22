@@ -5,9 +5,12 @@
 
 The manifest lists the SHA-256 of everything that fixes the study's rules: the configuration
 (including the economic inputs and the price register), the prompts, the knowledge files, the
-datasets' manifests and labels, the adversarial protocol and case set, and the pinned
-requirements. ``verify`` reports every file that has changed, appeared or vanished since. It
-records the git commit and whether the working tree was clean, because a manifest made from
+datasets' manifests and labels, the adversarial protocol, case set and review records, the pinned
+requirements, and the code of the system under test and of the harness and analysis (every
+``.py`` file of ``app``, ``components``, ``schemas``, ``research``, ``ui`` and ``tools``, and the
+event corpora under ``tests/events``), so that a change to a gate after the freeze is caught.
+``verify`` reports every file that has changed, appeared or vanished since. It records the git
+commit and whether the working tree was clean, because a manifest made from
 uncommitted files is a weaker promise. It does not create the git tag; that is a human act.
 """
 
@@ -26,20 +29,30 @@ PATTERNS = ("config/*.yaml", "prompts/*.md", "knowledge/*.json", "knowledge/*/*.
             "research/dataset/*/manifest.yaml", "research/dataset/manifest.yaml",
             "research/adversarial/PROTOCOL.md", "research/adversarial/cases/**/*.yaml",
             "research/preregistration/*.md", "research/preregistration/*.csv",
+            "research/adversarial/reviews/*.json",
             "requirements.in", "requirements.txt", "pyproject.toml", "docs/ATIDEP_Blueprint_v3.md")
+CODE_PATTERNS = ("app/**/*.py", "components/**/*.py", "schemas/**/*.py", "research/**/*.py",
+                 "ui/**/*.py", "tools/*.py", "tests/events/**/*.py", "tests/events/**/*.json",
+                 "tests/events/**/*.jsonl")
 
 
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def collect(root: Path = ROOT) -> dict[str, str]:
+def collect(root: Path = ROOT, patterns: tuple[str, ...] = PATTERNS + CODE_PATTERNS
+            ) -> dict[str, str]:
     files: dict[str, str] = {}
-    for pattern in PATTERNS:
+    for pattern in patterns:
         for p in sorted(root.glob(pattern)):
-            if p.is_file():
+            if p.is_file() and "__pycache__" not in p.parts:
                 files[str(p.relative_to(root))] = _sha(p)
     return files
+
+
+def combined(files: dict[str, str]) -> str:
+    return hashlib.sha256("\n".join(f"{k} {v}" for k, v in sorted(files.items()))
+                          .encode()).hexdigest()
 
 
 def _git(*args: str, root: Path = ROOT) -> str | None:
@@ -53,11 +66,9 @@ def _git(*args: str, root: Path = ROOT) -> str | None:
 def make(label: str, root: Path = ROOT) -> dict[str, object]:
     files = collect(root)
     dirty = _git("status", "--porcelain", root=root)
-    combined = hashlib.sha256("\n".join(f"{k} {v}" for k, v in sorted(files.items()))
-                              .encode()).hexdigest()
     return {"label": label, "created": datetime.now(UTC).isoformat(timespec="seconds"),
             "git_head": _git("rev-parse", "HEAD", root=root), "working_tree_clean": dirty == "",
-            "files": files, "combined_sha256": combined,
+            "files": files, "combined_sha256": combined(files),
             "note": "The git tag is created by a person after committing this file."}
 
 

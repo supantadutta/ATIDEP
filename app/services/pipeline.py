@@ -75,6 +75,9 @@ class PipelineRun:
     opportunity_ids: list[int] = field(default_factory=list)
     rules: list[RuleRun] = field(default_factory=list)
     error: str | None = None
+    # failures inside a stage that did not stop the run (a model reply the schema rejected, an
+    # opportunity assessment that failed); recorded so a run is never silently partial
+    stage_errors: list[str] = field(default_factory=list)
     seconds: float = 0.0
     stage_seconds: dict[str, float] = field(default_factory=dict)
 
@@ -100,6 +103,7 @@ def run_pipeline(session: Session, store: EvidenceStore, intel_id: str, *, cfg: 
                         prompt=prompts.extraction, benign_domains=benign_domains,
                         allow_test_tlds=options.allow_test_tlds, seed=options.seed)
     run.processed = proc
+    run.stage_errors += [f"extraction: {e}"[:300] for e in proc.extraction_errors]
     run.stage_seconds["processing"] = time.monotonic() - t0
     if not proc.ok:
         run.error, run.seconds = proc.error, time.monotonic() - t0
@@ -111,6 +115,9 @@ def run_pipeline(session: Session, store: EvidenceStore, intel_id: str, *, cfg: 
     except DetectionError as exc:
         run.error, run.seconds = str(exc), time.monotonic() - t0
         return run
+    last = (session.get(m.IntelligenceItem, intel_id).processing or {}).get("last_error")
+    if last:
+        run.stage_errors.append(str(last)[:300])
     run.stage_seconds["opportunity"] = time.monotonic() - t0 - run.stage_seconds["processing"]
     for opp_id in run.opportunity_ids:
         row = session.get(m.DetectionOpportunity, opp_id)
