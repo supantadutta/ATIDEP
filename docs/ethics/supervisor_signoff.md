@@ -19,7 +19,7 @@ Programme: PMICS, University of Dhaka
 | 7 | Economic decision rule: δ_c with its rationale, the primary workload, the engineer and analyst rates with sources | `config/experiment.yaml`, `config/cost_rates.yaml` | PENDING | PENDING |
 | 8 | Commercial candidate list for the paid reference scenario, fixed before prices are looked up | `config/price_register.yaml` | PENDING | PENDING |
 | 9 | The language model to be pinned | `config/experiment.yaml` | PENDING | PENDING |
-| 10 | Adversarial evaluation set and protocol, frozen before the run | `research/adversarial/PROTOCOL.md` and `cases/` | PENDING | PENDING |
+| 10 | Adversarial evaluation set and protocol, frozen before the run (note: frozen and run once as v0 on 22 October 2026 before this sign-off; see `research/adversarial/results/v0/REPORT.md` and `DEVIATIONS.md`; a change requested here becomes a second run beside v0) | `research/adversarial/PROTOCOL.md`, `cases/`, `reviews/` | PENDING | PENDING |
 | 11 | Data-management plan | `docs/ethics/data_management_plan.md` | PENDING | PENDING |
 | 12 | Whether the university requires ethics review, and its outcome | `docs/ethics/ethics_statement_draft.md` | PENDING (university) | PENDING |
 | 13 | Whether the independent-analyst subset is allowed | `docs/ethics/independent_analyst_consent_template.md` | PENDING (department) | PENDING |

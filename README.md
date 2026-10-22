@@ -10,7 +10,7 @@ The thesis evaluates ATIDEP on **two dimensions**: technical effectiveness (anal
 
 ## Status
 
-The software and the evaluation tooling are built and tested. **No result on real data exists yet**, and nothing in the repository is a price, a labour rate or a result that someone invented.
+The software and the evaluation tooling are built and tested. **No result on real data exists yet** (the only result so far is the adversarial evaluation on synthetic, independently authored cases), and nothing in the repository is a price, a labour rate or a result that someone invented.
 
 | Area | Where |
 |---|---|
@@ -21,7 +21,7 @@ The software and the evaluation tooling are built and tested. **No result on rea
 | Experiment harness: dataset with ground truth, conditions A/B/C/B-V/B-R, metrics, CSV exports | `research/` |
 | Statistics: paired and non-inferiority tests, BCa bootstrap, Holm, mixed model, proportions, agreement, rater reliability, power | `research/analysis/` |
 | Economic evaluation: sourced inputs, price register, comparable scenarios, ledger, unit costs, the H7 decision rule, sensitivity, tipping points | `research/economics/`, `config/cost_*.yaml`, `config/price_register.yaml` |
-| Adversarial evaluation: 70 seeded defective rules, 24 clean controls and 16 prompt-injection reports written by independent agents, mechanical integrity checks, reviewer tooling, runner and summary | `research/adversarial/` |
+| Adversarial evaluation: 70 seeded defective rules, 24 clean controls and 16 prompt-injection reports written by independent agents; two independent reviewers per case (2 rules excluded); frozen (`FREEZE.json`) and run once (v0, `results/v0/REPORT.md`): under B, 0/68 defective rules escaped, 2/24 clean controls were rejected, 3/16 injection attacks succeeded with a worst-case obedient model stand-in, so H3 is not met. Deviations: `DEVIATIONS.md` | `research/adversarial/` |
 | Reproducibility: pinned lock, licence audit, freeze manifests, model probe, reference checklist | `requirements.txt`, `tools/`, `research/freeze.py`, `paper/verification_checklist.md` |
 | Real-data readiness: dataset checker, pre-registration pack, ethics drafts | `research/dataset/check.py`, `research/preregistration/`, `docs/ethics/` |
 | Early drafts of Chapters 1-2 (definition, problem, challenges, themed state of the art, comparison matrix, research gap); a 69-entry bibliography with a verification record per source (no paper read in full: every paper is "Full-text verification pending"). **The rest of the paper is written after the experiments**, from the results (blueprint §34.4). | `paper/`, `tools/related_work_matrix.py` |
@@ -62,7 +62,7 @@ These come from the blueprint and are covered by tests, so they cannot be loosen
 - **Hard gates G1-G11 are pass/fail**; a G6 (telemetry) failure is *blocked*, not repairable. Approval is bound to the SHA-256 of the exact rule content.
 - Loading `config/policies.yaml` fails if LLM tools, command generation, automatic production deployment, plain-HTTP ingest, or a non-dry-run default are enabled, or if cloud inference is enabled without a positive spend cap.
 - **No invented numbers in the cost files**: every value in `config/cost_rates.yaml` is `null` or carries a basis, a source and (if supplied) a date checked; the loader refuses otherwise. A total with a missing input is a lower bound, never completed with zero.
-- The adversarial runner refuses to start unless the freeze manifest matches the files on disk, and never overwrites a raw result.
+- The adversarial runner refuses to start unless the freeze manifest (cases, reviews, configuration and code) matches the files on disk and every active case has its review, never overwrites a raw result, and refuses to resume over results from another version.
 
 ## Layout
 
