@@ -44,13 +44,21 @@ def entry(eid, group, components, **kw):
     base = dict(id=eid, group=group, status="priced", vendor="Vendor", product="Product",
                 tier="standard", currency="TST", components=components,
                 pricing_source="vendor price page (synthetic)", pricing_url="https://example.test/p",
-                checked_on="2026-10-01", workload_assumption="synthetic workload")
+                checked_on="2026-10-01", workload_assumption="synthetic workload",
+                price_basis="list", archive_ref="synthetic archive reference (test)")
     base.update(kw)
     return base
 
 
-def comp(kind, price, unit="per unit", included=0.0):
-    return {"unit_kind": kind, "price": price, "billing_unit": unit, "included_quantity": included}
+UNIT_WORDS = {"mtok_in": "per 1M input tokens", "mtok_out": "per 1M output tokens",
+              "hour": "per hour", "month": "per month", "gb_month": "per GB-month",
+              "gb_ingested_month": "per GB ingested", "endpoint_month": "per endpoint per month",
+              "kwh": "per kWh", "item": "per report"}
+
+
+def comp(kind, price, unit=None, included=0.0):
+    return {"unit_kind": kind, "price": price, "billing_unit": unit or UNIT_WORDS[kind],
+            "included_quantity": included}
 
 
 def register_doc(entries=None):
@@ -67,8 +75,19 @@ def register_doc(entries=None):
     return doc
 
 
-def make_inputs(rates=None, register=None, workload_overrides=None) -> CostInputs:
+def make_inputs(rates=None, register=None, workload_overrides=None, keep_pending=False,
+                horizon=12) -> CostInputs:
+    """``horizon`` stands for the coordinator's pre-registered amortisation horizon (a synthetic
+    test decision); ``None`` keeps the repository's own, which is not chosen yet."""
     sc_doc = raw("cost_scenarios.yaml")
+    if not keep_pending:
+        # the shipped model licence is pending until the model is pinned; the arithmetic tests
+        # state a synthetic one (a pending licence makes the line incomplete, tested separately)
+        for s in sc_doc["scenarios"]:
+            for ln in s["lines"]:
+                lic = ln["price"].get("licence") or ""
+                if lic.strip().lower().startswith("pending"):
+                    ln["price"]["licence"] = "synthetic test licence, no fee"
     for w in sc_doc["workloads"]:
         w["storage_gb"] = val(50)
         w["siem_ingest_gb_per_month"] = val(100)
@@ -78,4 +97,11 @@ def make_inputs(rates=None, register=None, workload_overrides=None) -> CostInput
     cfg = load_config()
     return CostInputs(CostRates(**(rates or rates_doc())),
                       PriceRegister(**(register or register_doc())),
-                      CostScenarios(**sc_doc), copy.deepcopy(cfg.experiment.economics))
+                      CostScenarios(**sc_doc), _economics(cfg, horizon))
+
+
+def _economics(cfg, horizon):
+    eco = copy.deepcopy(cfg.experiment.economics)
+    if horizon is not None:
+        eco.primary_horizon_months = horizon
+    return eco

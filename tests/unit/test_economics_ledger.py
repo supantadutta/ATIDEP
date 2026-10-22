@@ -126,7 +126,7 @@ def test_a_price_in_another_currency_needs_a_sourced_exchange_rate():
 def test_an_unpriced_product_is_incomplete_and_prints_the_mandated_wording_never_zero():
     real = load_cost_inputs()                          # the repository's own, number-free config
     q = Q
-    led = evaluate(real, "S-PAID", "scale_50", q)
+    led = evaluate(real, "S-PAID", "scale_50", q, horizon_months=12)
     llm = row(led, "llm_api")
     assert llm.amount is None and llm.status == "incomplete"
     assert any(QUOTE_REQUIRED in m for m in llm.missing)

@@ -146,7 +146,7 @@ def _component_quantity(unit: UnitKind, q: Quantities, backend: str
     """(quantity per month, basis, what is missing)."""
     n = q.items_per_month
     if unit is UnitKind.MONTH:
-        return 1.0, "n/a", None
+        return 1.0, "supplied", None          # a flat fee: the vendor fixes the quantity
     if unit is UnitKind.ITEM:
         return n, "workload", None
     if unit is UnitKind.HOUR:
@@ -187,12 +187,24 @@ def candidate_cost(entry: PriceEntry, q: Quantities, backend: str, inputs: CostI
     if missing:
         return None, missing, "measured"
     assert entry.currency is not None
+    if inputs.rates.reporting_currency is None:
+        return None, ["reporting_currency (not set)"], "measured"
     converted = inputs.rates.convert(total, entry.currency)
     if converted is None:
         return None, [f"{entry.id}: a sourced exchange rate {entry.currency} to "
                       f"{inputs.rates.reporting_currency}"], "measured"
-    basis = "proxy" if "proxy" in bases else ("workload" if "workload" in bases else "measured")
-    return converted, [], basis
+    return converted, [], weakest(bases) or "measured"
+
+
+# from the weakest kind of evidence to the strongest
+EVIDENCE_ORDER = ["proxy", "assumed", "workload", "derived", "supplied", "measured", "licence"]
+PRICE_BASES = {"list", "quote", "academic", "negotiated"}       # a vendor's price: supplied
+
+
+def weakest(bases) -> str | None:
+    known = [("supplied" if b in PRICE_BASES else b) for b in bases]
+    known = [b for b in known if b in EVIDENCE_ORDER]
+    return min(known, key=EVIDENCE_ORDER.index) if known else None
 
 
 def _register_row(sc: Scenario, ln: Line, q: Quantities, inputs: CostInputs, case: Case,
@@ -202,6 +214,10 @@ def _register_row(sc: Scenario, ln: Line, q: Quantities, inputs: CostInputs, cas
     base = Row(sc.id, ln.id, ln.function, ln.category.value, ln.perimeter.value,
                ln.recurrence.value, None, "per product", None, None, price_basis="supplied")
     usable = [e for e in inputs.register.group(group) if e.usable]
+    excluded = [f"{e.id} ({e.adequacy_note})" for e in inputs.register.group(group)
+                if e.status == "priced" and not e.adequate]
+    if excluded:
+        base.note = "excluded as not adequate: " + "; ".join(excluded)
     if not usable:
         base.status, base.missing = "incomplete", [f"{group}: {QUOTE_REQUIRED}"]
         return base
@@ -213,17 +229,23 @@ def _register_row(sc: Scenario, ln: Line, q: Quantities, inputs: CostInputs, cas
             gaps += miss
         else:
             priced.append((cost, e, basis))
-    if not priced:
-        base.status, base.missing = "incomplete", gaps
-        return base
     priced.sort(key=lambda t: t[0])
+    note = [base.note] if base.note else []
+    if gaps:
+        # the lowest (or highest) cost among *all* adequate candidates is unknown while one of
+        # them cannot be costed; no amount is given, so the total stays a lower bound
+        base.status, base.missing = "incomplete", gaps
+        if priced:
+            note.append(f"{len(priced)} of {len(usable)} adequate candidates costable "
+                        f"({priced[0][0]:.2f} to {priced[-1][0]:.2f} a month); the {case} case is "
+                        "unknown until every adequate candidate can be costed")
+        base.note = "; ".join(note)
+        return base
     cost, entry, basis = priced[0] if case == "base" else priced[-1]
     base.amount = cost * _amortised(ln, horizon)
     base.entry, base.quantity_basis = entry.id, basis
     base.price_basis = entry.price_basis.value if entry.price_basis else "supplied"
-    base.note = f"{len(priced)} priced candidate(s); case {case}"
-    if gaps:
-        base.note += f"; not costable: {'; '.join(gaps)}"
+    base.note = "; ".join([*note, f"{len(priced)} priced candidate(s); case {case}"])
     return base
 
 
@@ -234,8 +256,13 @@ def _rate_row(sc: Scenario, ln: Line, q: Quantities, inputs: CostInputs, horizon
     ref = ln.price.ref
     assert ref is not None and ln.driver is not None
     rate = rates.rate(ref)
-    price_basis = ("derived" if ref.startswith("derived.") else sourced(rates, ref).basis or
-                   "unset")
+    if ref == "derived.hardware_monthly":
+        # as strong as the weakest of the three inputs it is derived from
+        parts = [sourced(rates, f"host.{k}").basis for k in
+                 ("purchase_price", "useful_life_months", "project_usage_share")]
+        price_basis = weakest(getattr(b, "value", b) for b in parts if b) or "derived"
+    else:
+        price_basis = sourced(rates, ref).basis or "unset"
     price_basis = getattr(price_basis, "value", price_basis)
     am = _amortised(ln, horizon)
     row = Row(sc.id, ln.id, ln.function, ln.category.value, ln.perimeter.value,
@@ -295,9 +322,16 @@ def _rate_row(sc: Scenario, ln: Line, q: Quantities, inputs: CostInputs, horizon
 
 
 def _free_row(sc: Scenario, ln: Line) -> Row:
+    text = ln.price.licence or ""
+    if text.strip().lower().startswith("pending"):
+        # the licence is not known yet, so neither is whether it carries a fee
+        return Row(sc.id, ln.id, ln.function, ln.category.value, ln.perimeter.value,
+                   ln.recurrence.value, None, "licence", None, None, quantity_basis="n/a",
+                   price_basis="licence", status="incomplete",
+                   missing=[f"{ln.id}: licence not yet known ({text[:100]})"], note=text)
     return Row(sc.id, ln.id, ln.function, ln.category.value, ln.perimeter.value,
                ln.recurrence.value, 1.0, "licence", 0.0, 0.0, quantity_basis="n/a",
-               price_basis="licence", status="free", note=ln.price.licence or "")
+               price_basis="licence", status="free", note=text)
 
 
 # ---- the ledger --------------------------------------------------------------------------------
@@ -305,7 +339,10 @@ def evaluate(inputs: CostInputs, scenario: str, workload: str, q: Quantities, *,
              view: str = "adopt", case: Case = "base", perimeter: Perimeter = "workflow",
              horizon_months: int | None = None) -> Ledger:
     sc = inputs.scenarios.scenario(scenario)
-    horizon = horizon_months or inputs.rates.amortisation_horizon_months[0]
+    horizon = horizon_months or inputs.economics.primary_horizon_months
+    if horizon is None:
+        raise ValueError("no amortisation horizon given and none is pre-registered "
+                         "(economics.primary_horizon_months); one-off costs depend on it")
     hours = machine_hours(q, sc.backend)
     share = inputs.rates.host.project_usage_share.value
     hosts = None
@@ -341,12 +378,17 @@ def _totals(rows: list[Row], inputs: CostInputs, sc: Scenario, q: Quantities) ->
     missing = list(tech_missing)
     for r in op + rev:
         missing += [m for m in r.missing if m not in missing]
+    currency = inputs.rates.reporting_currency is not None
+    if not currency:
+        missing.append("reporting_currency")         # money without a currency is not money
+    # labour money is the known hours times the rate; it is a lower bound while hours are missing
+    # (the *_complete flags say so), and None only when the rate or the currency is missing
     return Totals(
-        technology=tech, technology_complete=not tech_missing,
+        technology=tech, technology_complete=not tech_missing and currency,
         operating_hours=op_hours, operating_hours_complete=op_hours_ok,
         review_hours=rev_hours, review_hours_complete=rev_hours_ok,
-        operating_money=(op_hours * eng if eng is not None and op_hours_ok else None),
-        review_money=(rev_hours * ana if ana is not None and rev_hours_ok else None),
+        operating_money=(op_hours * eng if eng is not None and currency else None),
+        review_money=(rev_hours * ana if ana is not None and currency else None),
         missing=sorted(set(missing)),
         proxy=any(r.quantity_basis == "proxy" for r in rows))
 
@@ -354,17 +396,22 @@ def _totals(rows: list[Row], inputs: CostInputs, sc: Scenario, q: Quantities) ->
 def evidence_shares(ledger: Ledger) -> dict[str, float]:
     """The share of the known money that rests on measured quantities and licences, supplied
     figures, or assumptions, so a reader sees how much of a total is data."""
-    order = ["proxy", "assumed", "workload", "derived", "supplied", "measured", "licence"]
     out: dict[str, float] = {}
     known = [r for r in ledger.rows if r.amount]
     total = sum(r.amount for r in known if r.amount)
     if not total:
         return out
     for r in known:
-        bases = [r.quantity_basis, r.price_basis]
-        worst = min((b for b in bases if b in order), key=order.index, default="supplied")
+        worst = weakest([r.quantity_basis, r.price_basis]) or "supplied"
         out[worst] = out.get(worst, 0.0) + (r.amount or 0.0) / total
     return {k: round(v, 4) for k, v in sorted(out.items())}
+
+
+def lines_without_amount(ledger: Ledger) -> list[dict[str, object]]:
+    """The lines a share of money cannot describe, because they have no amount: unpriced
+    ("Vendor quote required / public price unavailable") or missing an input."""
+    return [{"line": r.line, "quote_required": any(QUOTE_REQUIRED in m for m in r.missing),
+             "missing": r.missing} for r in ledger.rows if r.amount is None]
 
 
 def is_operating(category: str) -> bool:

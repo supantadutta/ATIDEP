@@ -17,7 +17,12 @@ from typing import Any
 
 from research.economics import analysis as an
 from research.economics.inputs import CostInputs, load_cost_inputs, readiness
-from research.economics.ledger import candidate_cost, evaluate, evidence_shares
+from research.economics.ledger import (
+    candidate_cost,
+    evaluate,
+    evidence_shares,
+    lines_without_amount,
+)
 from research.economics.measured import Measured, load_measured
 from schemas.cost_model import QUOTE_REQUIRED
 
@@ -59,14 +64,17 @@ def ledger_rows(inputs: CostInputs, meas: Measured) -> list[dict[str, Any]]:
             q = meas.quantities(w.items_per_month.value or 0.0, storage_gb=w.storage_gb.value,
                                 siem_ingest_gb=w.siem_ingest_gb_per_month.value,
                                 endpoints=w.monitored_endpoints.value)
-            for view in inputs.economics.views:
-                for case in inputs.economics.price_cases:
-                    for perimeter in ("workflow", "platform"):
+            for view, case, perimeter, horizon in (
+                    (v, c, p, h) for v in inputs.economics.views
+                    for c in inputs.economics.price_cases for p in ("workflow", "platform")
+                    for h in inputs.rates.amortisation_horizon_months):
                         led = evaluate(inputs, sid, w.id, q, view=view, case=case,
-                                       perimeter=perimeter)  # type: ignore[arg-type]
+                                       perimeter=perimeter,  # type: ignore[arg-type]
+                                       horizon_months=horizon)
                         for r in led.rows:
                             rows.append({"scenario": sid, "workload": w.id, "view": view,
                                          "price_case": case, "perimeter": perimeter,
+                                         "horizon_months": horizon,
                                          "line": r.line, "function": r.function,
                                          "category": r.category, "recurrence": r.recurrence,
                                          "quantity": r.quantity, "unit": r.unit,
@@ -153,17 +161,21 @@ def run_report(config_dir: Path | str, export_dir: Path | str, out_dir: Path | s
     _write(out / "price_register_costed.csv", costed_register(inputs, meas))
     _write(out / "time_kinds.csv", time_kinds_rows(exp, meas))
 
+    horizons = inputs.rates.amortisation_horizon_months
     units = []
     for sid in (sc.oss_local, sc.paid, sc.manual):
         for w in sc.workloads:
-            units.append(_flat(an.unit_costs(inputs, meas, sid, w.id)))
+            for h in horizons:
+                units.append(_flat(an.unit_costs(inputs, meas, sid, w.id, horizon_months=h)))
     _write(out / "unit_costs.csv", units)
 
     primary = eco.primary_workload
+    ph = eco.primary_horizon_months
     bases = ("differential", "technology")
     cells = {b: an.grid(inputs, meas, basis=b) for b in bases}
-    summary: dict[str, Any] = {"primary_workload": primary, "delta_c_pct": eco.delta_c_pct,
-                               "bases": {}}
+    summary: dict[str, Any] = {"primary_workload": primary, "primary_horizon_months": ph,
+                               "horizons_reported": horizons, "delta_c_pct": eco.delta_c_pct,
+                               "measurement": meas.report(), "bases": {}}
     for b in bases:
         label, failing = an.robustness(cells[b])
         entry: dict[str, Any] = {"robustness": label, "cells_not_supported": failing,
@@ -175,8 +187,8 @@ def run_report(config_dir: Path | str, export_dir: Path | str, out_dir: Path | s
             entry["joint"] = an.joint_verdict(
                 an.technical_adequacy(t.get("h2"), t.get("h3"), t.get("h4")), r)
         summary["bases"][b] = entry
-    be = an.break_even_volume(inputs, meas)
-    summary["break_even_vs_manual"] = be
+    summary["break_even_vs_manual"] = {
+        f"{h} months": an.break_even_volume(inputs, meas, horizon_months=h) for h in horizons}
     n = resamples or inputs.bootstrap_resamples
     if primary:
         def stat(m: Measured, w: str = primary) -> float | None:
@@ -185,16 +197,19 @@ def run_report(config_dir: Path | str, export_dir: Path | str, out_dir: Path | s
                                                             and r.paid.complete) else None
         summary["bootstrap_paid_minus_open_source"] = an.bootstrap_bca(
             meas, stat, n_resamples=n, seed=20261014)
-    sh = {}
-    if primary:
+    sh: dict[str, Any] = {}
+    unpriced: dict[str, Any] = {}
+    if primary and ph:
         w = sc.workload(primary)
         q = meas.quantities(w.items_per_month.value or 0.0, storage_gb=w.storage_gb.value,
                             siem_ingest_gb=w.siem_ingest_gb_per_month.value,
                             endpoints=w.monitored_endpoints.value)
         for sid in (sc.oss_local, sc.paid):
-            sh[sid] = evidence_shares(evaluate(inputs, sid, primary, q, view=eco.primary_view,
-                                               case=eco.primary_price_case))
+            led = evaluate(inputs, sid, primary, q, view=eco.primary_view,
+                           case=eco.primary_price_case, horizon_months=ph)
+            sh[sid], unpriced[sid] = evidence_shares(led), lines_without_amount(led)
     summary["evidence_shares_at_primary"] = sh
+    summary["lines_without_amount_at_primary"] = unpriced
     (out / "economics.json").write_text(json.dumps(summary, indent=1, default=str))
     (out / "economics.md").write_text(_markdown(inputs, meas, gaps, summary))
 
@@ -224,8 +239,20 @@ def _markdown(inputs: CostInputs, meas: Measured, gaps, summary: dict[str, Any])
          "common to the automated scenarios and is left out of the comparison (reported in hours).",
          "", f"Currency: {inputs.rates.reporting_currency or 'NOT SET'}. "
          f"Primary workload: {eco.primary_workload or 'NOT CHOSEN'}. "
+         f"Primary horizon: {eco.primary_horizon_months or 'NOT CHOSEN'} months (reported: "
+         f"{', '.join(map(str, inputs.rates.amortisation_horizon_months))}). "
          f"delta_c: {eco.delta_c_pct if eco.delta_c_pct is not None else 'NOT SET'}%. "
-         f"Items measured: {len(meas.items)}.", "", "## What is still missing", ""]
+         f"Items measured: {len(meas.items)}.", ""]
+    mr = summary["measurement"]
+    if mr["dropped_items"]:
+        L += [f"**Items with no usable run (every run stopped by the spend cap), left out of "
+              f"every per-item mean:** {', '.join(mr['dropped_items'])}. The means describe the "
+              "remaining items only.", ""]
+    L += [f"Measurement: {mr['budget_stopped_runs']} run(s) stopped by the spend cap; "
+          f"{mr['hosted_runs']} run(s) on a hosted model, kept apart; "
+          f"{mr['replayed_runs_left_out_of_model_wait']} run(s) with replayed calls left out of "
+          "the model-waiting time; operations time measured: "
+          f"{mr['operations_hours_measured']} h.", "", "## What is still missing", ""]
     for g in gaps:
         L.append(f"- {g.what} (needed for {g.needed_for}; **{g.supplied_by}**): {g.how}")
     L += ["", "## H7 (cost advantage) at the primary cell", ""]

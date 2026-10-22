@@ -32,7 +32,7 @@ Everything below is listed with its status in `research/preregistration/checklis
 
 * The language model (spike S3): `tools/model_probe.py` gathers evidence and selects nothing.
 * The real dataset (30 reports plus a pilot set), ground truth, a second labeller, blinded raters, event corpora (spike S4).
-* Commercial price candidates and prices from the vendors' own pages or written quotes; analyst and engineer rates; host price, power draw and tariff; δ_c and the primary workload. Until they are supplied, `python -m research.economics check` lists them and the paid side is reported as `Vendor quote required / public price unavailable`.
+* Commercial price candidates and prices from the vendors' own pages or written quotes; analyst and engineer rates; host price, power draw and tariff; δ_c, the primary workload and the primary amortisation horizon. Until they are supplied, `python -m research.economics check` lists them and the paid side is reported as `Vendor quote required / public price unavailable`.
 * Ethics and data-handling approval, supervisor sign-off (`docs/ethics/`, all marked PENDING), publisher-side verification of every reference.
 
 ## Commands

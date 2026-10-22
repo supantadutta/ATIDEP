@@ -16,9 +16,16 @@ from schemas.cost_model import (
     QUOTE_REQUIRED,
     CostRates,
     CostScenarios,
+    Driver,
     PriceRegister,
     Sourced,
+    UnitKind,
 )
+
+# register unit kinds that need a workload quantity, and the workload field that holds it
+WORKLOAD_FIELDS = {UnitKind.GB_MONTH: "storage_gb",
+                   UnitKind.GB_INGESTED: "siem_ingest_gb_per_month",
+                   UnitKind.ENDPOINT_MONTH: "monitored_endpoints"}
 
 FILES = ("cost_rates.yaml", "price_register.yaml", "cost_scenarios.yaml")
 
@@ -94,6 +101,10 @@ def load_cost_inputs(config_dir: Path | str = DEFAULT_CONFIG_DIR) -> CostInputs:
     if economics.primary_workload is not None and economics.primary_workload not in {
             w.id for w in scenarios.workloads}:
         raise ValueError(f"primary_workload {economics.primary_workload!r} is not a workload")
+    if economics.primary_horizon_months is not None and economics.primary_horizon_months not in \
+            rates.amortisation_horizon_months:
+        raise ValueError(f"primary_horizon_months {economics.primary_horizon_months} is not one "
+                         "of amortisation_horizon_months in cost_rates.yaml")
     return CostInputs(rates, register, scenarios, economics, hashes,
                       cfg.experiment.bootstrap_resamples)
 
@@ -105,8 +116,10 @@ def sourced(rates: CostRates, path: str) -> Sourced:
 
 def readiness(inputs: CostInputs) -> list[Gap]:
     """Everything the verdict still needs: unset rates and hours that the S-OSS-LOCAL and S-PAID
-    lines use, register groups without a priced adequate candidate, and the coordinator's two
-    pre-registration decisions."""
+    lines use, register groups without a priced adequate candidate, a sourced exchange rate for
+    every priced candidate in another currency, the workload quantities that a line or a candidate
+    is metered on, a free line whose licence is still pending, and the coordinator's
+    pre-registration decisions. When this list is empty the ledger can be complete."""
     gaps: list[Gap] = []
     seen: set[str] = set()
     sc = inputs.scenarios
@@ -129,6 +142,15 @@ def readiness(inputs: CostInputs) -> list[Gap]:
                 seen.add(ref)
                 who, how = SUPPLIED_BY.get(ref, ("coordinator", "a sourced value"))
                 gaps.append(Gap(ref, f"{sid}/{ln.id}", who, how))
+            if ln.price.source == "free" and (ln.price.licence or "").strip().lower() \
+                    .startswith("pending") and f"licence:{ln.id}" not in seen:
+                seen.add(f"licence:{ln.id}")
+                gaps.append(Gap(f"licence of {ln.id}", f"{sid}/{ln.id}", "researcher",
+                                "record the licence (and any fee or use restriction) once the "
+                                "component is chosen"))
+            needs: set[str] = set()
+            if ln.price.source == "rate" and ln.driver is Driver.STORAGE_GB:
+                needs.add("storage_gb")
             if ln.price.source == "register":
                 g = ln.price.ref
                 key = f"register:{g}"
@@ -139,6 +161,24 @@ def readiness(inputs: CostInputs) -> list[Gap]:
                                     "coordinator",
                                     f"candidate products with prices from the vendors' own "
                                     f"pages; until then: {QUOTE_REQUIRED}"))
+                cur = inputs.rates.reporting_currency
+                for e in usable:
+                    needs |= {WORKLOAD_FIELDS[c.unit_kind] for c in e.components
+                              if c.unit_kind in WORKLOAD_FIELDS}
+                    fx = f"fx:{e.currency}"
+                    if cur and e.currency and e.currency != cur and fx not in seen and \
+                            inputs.rates.convert(1.0, e.currency) is None:
+                        seen.add(fx)
+                        gaps.append(Gap(f"exchange rate {e.currency} to {cur}", f"{sid}/{ln.id}",
+                                        "coordinator", "a sourced, dated rate (fx in "
+                                        "cost_rates.yaml)"))
+            for w in sc.workloads:
+                for f in sorted(needs):
+                    if getattr(w, f).value is None and f"wl:{w.id}:{f}" not in seen:
+                        seen.add(f"wl:{w.id}:{f}")
+                        gaps.append(Gap(f"{f} of workload {w.id}", f"{sid}/{ln.id}",
+                                        "coordinator", "the workload's volume, with its basis "
+                                        "(cost_scenarios.yaml)"))
     if inputs.rates.reporting_currency is None:
         gaps.append(Gap("reporting_currency", "all money", "coordinator",
                         "the currency every amount is reported in"))
@@ -146,6 +186,10 @@ def readiness(inputs: CostInputs) -> list[Gap]:
     if eco.primary_workload is None:
         gaps.append(Gap("economics.primary_workload", "the H7 verdict", "coordinator",
                         "name the one workload that carries the headline claim, before the freeze"))
+    if eco.primary_horizon_months is None:
+        gaps.append(Gap("economics.primary_horizon_months", "the H7 verdict", "coordinator",
+                        "name the one amortisation horizon that carries the headline claim, "
+                        "before the freeze (every horizon is still reported)"))
     if eco.delta_c_pct is None:
         gaps.append(Gap("economics.delta_c_pct", "the H7 verdict", "coordinator",
                         "the threshold for 'substantially cheaper', with a one-line rationale"))

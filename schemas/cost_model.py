@@ -22,6 +22,8 @@ from pydantic import Field, field_validator, model_validator
 from schemas.common import Strict
 
 QUOTE_REQUIRED = "Vendor quote required / public price unavailable"
+# A plausibility window for a host's useful life in months: it catches a life entered in years.
+MIN_LIFE_MONTHS, MAX_LIFE_MONTHS = 6, 240
 
 
 class Basis(StrEnum):
@@ -161,6 +163,14 @@ class Host(Strict):
         s = self.project_usage_share.value
         if s is not None and not 0 < s <= 1:
             raise ValueError("project_usage_share must be in (0, 1]")
+        life = self.useful_life_months.value
+        if life is not None and not MIN_LIFE_MONTHS <= life <= MAX_LIFE_MONTHS:
+            raise ValueError(f"useful_life_months is in months ({MIN_LIFE_MONTHS}-"
+                             f"{MAX_LIFE_MONTHS}); a value of {life} looks like years or a typo")
+        for name in ("purchase_price", "power_active_watts"):
+            v = getattr(self, name).value
+            if v is not None and v <= 0:
+                raise ValueError(f"{name} must be positive when it is set")
         return self
 
 
@@ -232,15 +242,42 @@ class CostRates(Strict):
 
 
 # ---- price register -------------------------------------------------------------------------
+# Words the vendor's own billing unit must contain for each unit kind, so that, for example, a
+# price per thousand tokens cannot be entered as a price per million.
+BILLING_WORDS: dict[UnitKind, tuple[str, ...]] = {
+    UnitKind.MTOK_IN: (r"\b1\s*m\b", r"1,000,000", r"million", r"mtok"),
+    UnitKind.MTOK_OUT: (r"\b1\s*m\b", r"1,000,000", r"million", r"mtok"),
+    UnitKind.HOUR: (r"hour", r"\bhr\b"),
+    UnitKind.MONTH: (r"month",),
+    UnitKind.GB_MONTH: (r"\bgb\b.*month|month.*\bgb\b|gb-month",),
+    UnitKind.GB_INGESTED: (r"\bgb\b",),
+    UnitKind.ENDPOINT_MONTH: (r"endpoint", r"agent", r"device"),
+    UnitKind.KWH: (r"kwh",),
+    UnitKind.ITEM: (r"item", r"report", r"document"),
+}
+
+
 class PriceComponent(Strict):
     """One metered part of a product's price (a product may bill input and output tokens, or a
-    fee per gigabyte and a fee per endpoint, separately)."""
+    fee per gigabyte and a fee per endpoint, separately). The vendor's billing unit must name the
+    unit kind it is entered under, and a price of zero needs its reason."""
 
     unit_kind: UnitKind
     price: float = Field(ge=0)
     billing_unit: str = Field(min_length=2)      # the vendor's own wording
     included_quantity: float = Field(default=0.0, ge=0)   # free each month, in ``unit_kind``
     included_usage_note: str | None = None
+    zero_price_reason: str | None = None
+
+    @model_validator(mode="after")
+    def _unit_and_price_are_consistent(self) -> Self:
+        words = BILLING_WORDS.get(self.unit_kind, ())
+        if words and not any(re.search(w, self.billing_unit, re.I) for w in words):
+            raise ValueError(f"billing_unit {self.billing_unit!r} does not name the unit kind "
+                             f"{self.unit_kind.value}")
+        if self.price == 0 and not (self.zero_price_reason or "").strip():
+            raise ValueError("a price of zero needs zero_price_reason")
+        return self
 
 
 class PriceEntry(Strict):
@@ -270,6 +307,9 @@ class PriceEntry(Strict):
 
     @model_validator(mode="after")
     def _provenance(self) -> Self:
+        if not self.adequate and not (self.adequacy_note or "").strip():
+            raise ValueError("an entry marked not adequate needs adequacy_note (the logged reason "
+                             "for the exclusion)")
         named = bool((self.vendor or "").strip() and (self.product or "").strip())
         if self.status == "quote_required":
             # No public price. With no vendor named it is a category placeholder: nothing has been
@@ -282,7 +322,8 @@ class PriceEntry(Strict):
         if not named:
             raise ValueError("a priced entry names its vendor and product")
         missing = [f for f in ("tier", "currency", "pricing_source", "pricing_url", "checked_on",
-                               "workload_assumption") if not getattr(self, f)]
+                               "workload_assumption", "price_basis", "archive_ref")
+                   if not getattr(self, f)]
         if not self.components:
             missing.append("components")
         if missing:

@@ -72,9 +72,9 @@ scenarios:
     review_condition: B
     lines:
       - {id: public_sources, function: FN1, category: threat_intel_data, price: {source: free, licence: "public sources; each source's terms are recorded in config/sources.yaml"}}
-      - {id: open_stack, function: FN2, covers: [FN4, FN6], category: software_licence, price: {source: free, licence: "permissive open-source licences per each component's upstream licence; the list is produced by tools/licence_audit.py (not yet built)"}}
+      - {id: open_stack, function: FN2, covers: [FN4, FN6], category: software_licence, price: {source: free, licence: "permissive open-source licences per each component's upstream licence; the list is produced by tools/licence_audit.py"}}
       - {id: model_weights, function: FN3, category: software_licence, price: {source: free, licence: "pending: the model is not pinned yet (spike S3); its licence and OSI classification are recorded then"}}
-      - {id: wazuh, function: FN5, category: software_licence, perimeter: platform, price: {source: free, licence: "GPL-2.0 per the upstream licence; verification pending tools/licence_audit.py (not yet built)"}}
+      - {id: wazuh, function: FN5, category: software_licence, perimeter: platform, price: {source: free, licence: "GPL-2.0 per the upstream licence; to be checked by a person against the upstream repository (tools/licence_audit.py covers the Python dependencies only)"}}
       - {id: hardware, function: FN7, category: hardware, price: {source: rate, ref: derived.hardware_monthly}, driver: monthly}
       - {id: electricity, function: FN7, category: energy, price: {source: rate, ref: host.electricity_per_kwh}, driver: energy_kwh}
       - {id: local_storage, function: FN7, category: storage, price: {source: rate, ref: host.storage_per_gb_month}, driver: storage_gb}
@@ -92,9 +92,9 @@ scenarios:
     review_condition: B
     lines:
       - {id: public_sources, function: FN1, category: threat_intel_data, price: {source: free, licence: "public sources; each source's terms are recorded in config/sources.yaml"}}
-      - {id: open_stack, function: FN2, covers: [FN4, FN6], category: software_licence, price: {source: free, licence: "permissive open-source licences per each component's upstream licence; the list is produced by tools/licence_audit.py (not yet built)"}}
+      - {id: open_stack, function: FN2, covers: [FN4, FN6], category: software_licence, price: {source: free, licence: "permissive open-source licences per each component's upstream licence; the list is produced by tools/licence_audit.py"}}
       - {id: llm_api, function: FN3, category: model_inference, price: {source: register, ref: llm_api}}
-      - {id: wazuh, function: FN5, category: software_licence, perimeter: platform, price: {source: free, licence: "GPL-2.0 per the upstream licence; verification pending tools/licence_audit.py (not yet built)"}}
+      - {id: wazuh, function: FN5, category: software_licence, perimeter: platform, price: {source: free, licence: "GPL-2.0 per the upstream licence; to be checked by a person against the upstream repository (tools/licence_audit.py covers the Python dependencies only)"}}
       - {id: hardware, function: FN7, category: hardware, price: {source: rate, ref: derived.hardware_monthly}, driver: monthly}
       - {id: electricity, function: FN7, category: energy, price: {source: rate, ref: host.electricity_per_kwh}, driver: energy_kwh}
       - {id: local_storage, function: FN7, category: storage, price: {source: rate, ref: host.storage_per_gb_month}, driver: storage_gb}
@@ -115,7 +115,7 @@ scenarios:
     review_condition: B
     lines:
       - {id: public_sources, function: FN1, category: threat_intel_data, price: {source: free, licence: "public sources; each source's terms are recorded in config/sources.yaml"}}
-      - {id: open_stack, function: FN2, covers: [FN4, FN6], category: software_licence, price: {source: free, licence: "permissive open-source licences per each component's upstream licence; the list is produced by tools/licence_audit.py (not yet built)"}}
+      - {id: open_stack, function: FN2, covers: [FN4, FN6], category: software_licence, price: {source: free, licence: "permissive open-source licences per each component's upstream licence; the list is produced by tools/licence_audit.py"}}
       - {id: llm_api, function: FN3, category: model_inference, price: {source: register, ref: llm_api}}
       - {id: siem, function: FN5, category: software_licence, perimeter: platform, price: {source: register, ref: siem_platform}}
       - {id: cloud_compute, function: FN7, category: compute_infrastructure, price: {source: register, ref: cloud_compute}}
@@ -135,8 +135,8 @@ scenarios:
     review_condition: A
     lines:
       - {id: public_sources, function: FN1, category: threat_intel_data, price: {source: free, licence: "public sources; each source's terms are recorded in config/sources.yaml"}}
-      - {id: manual_tools, function: FN4, category: software_licence, price: {source: free, licence: "open-source tools (SigmaHQ rules, sigma-cli, ATT&CK Navigator) per their upstream licences; verification pending tools/licence_audit.py (not yet built)"}}
-      - {id: wazuh, function: FN5, category: software_licence, perimeter: platform, price: {source: free, licence: "GPL-2.0 per the upstream licence; verification pending tools/licence_audit.py (not yet built)"}}
+      - {id: manual_tools, function: FN4, category: software_licence, price: {source: free, licence: "open-source tools (SigmaHQ rules, sigma-cli, ATT&CK Navigator) per their upstream licences; to be checked by a person against each upstream repository (tools/licence_audit.py covers the Python dependencies only)"}}
+      - {id: wazuh, function: FN5, category: software_licence, perimeter: platform, price: {source: free, licence: "GPL-2.0 per the upstream licence; to be checked by a person against the upstream repository (tools/licence_audit.py covers the Python dependencies only)"}}
       - {id: analyst_work, function: FN8, category: analyst_labour, price: {source: rate, ref: labour.analyst_hourly}, driver: analyst_hours}
     not_required:
       - {function: FN2, reason: "No automated ingest or processing; the analyst reads the report directly."}

@@ -19,6 +19,7 @@ economics:                                  # pre-registered; frozen with the co
   primary_price_case: base                  # the lowest calculated cost among adequate priced candidates
   price_cases: [base, upper]
   primary_workload: null                    # the coordinator names ONE workload id from cost_scenarios.yaml before the freeze
+  primary_horizon_months: null              # and ONE amortisation horizon from cost_rates.yaml (the others are still reported)
   delta_c_pct: null                         # the coordinator's threshold for "substantially cheaper", with a rationale
   delta_c_rationale: null
   inference_modes_reported_separately: [local, cloud]

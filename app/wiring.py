@@ -79,7 +79,12 @@ def build_cloud_setup(cfg: AppConfig, env: dict[str, str], config_dir: Path | st
     comps = {c.unit_kind: c for c in entry.components}
     if UnitKind.MTOK_IN not in comps or UnitKind.MTOK_OUT not in comps:
         raise RuntimeError(f"price entry {entry.id!r} must price both input and output tokens")
-    guard = CostGuard(cfg.policies.llm.daily_cost_limit,
+    limit = cfg.policies.llm.daily_cost_limit
+    if not limit:                       # the config loader already refuses this; kept explicit
+        raise RuntimeError("cloud inference needs a positive daily_cost_limit")
+    # the guard charges every token at the list price and ignores any included monthly usage, so
+    # it stops no later than the real bill would
+    guard = CostGuard(limit,
                       price_in_per_mtok=comps[UnitKind.MTOK_IN].price,
                       price_out_per_mtok=comps[UnitKind.MTOK_OUT].price)
     inner = CloudChatClient(env.get("ATIDEP_CLOUD_API_STYLE", "openai"),  # type: ignore[arg-type]

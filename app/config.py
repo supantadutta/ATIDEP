@@ -85,7 +85,9 @@ class _Llm(Strict):
     use_stated_confidence_in_decisions: bool
     local_first: bool
     cloud_enabled: bool
-    daily_cost_limit: float = Field(ge=0)
+    # a spend cap for hosted inference, in the currency of the price-register entry the client
+    # is priced from; no default number, because a cap has to be chosen, not inherited
+    daily_cost_limit: float | None = Field(default=None, gt=0)
     runs_per_item: int = Field(ge=1)
 
 
@@ -147,7 +149,7 @@ class PoliciesConfig(Strict):
             raise ValueError("redaction and strict schema validation must stay on")
         if not m.local_first:
             raise ValueError("inference must be local-first; cloud is an explicit opt-in")
-        if m.cloud_enabled and m.daily_cost_limit <= 0:
+        if m.cloud_enabled and not m.daily_cost_limit:
             raise ValueError("cloud inference needs a positive daily cost cap")
         if i.allowed_schemes != ["https"] or not i.block_private_and_reserved_ranges \
                 or not i.connect_to_validated_ip:
@@ -166,16 +168,20 @@ class EconomicConfig(Strict):
     headline claim, the threshold for "substantially cheaper", and the grid reported around it.
     Frozen with the price register, rates, scenarios and workloads at tag ``prereg-v1``.
 
-    ``primary_workload`` and ``delta_c_pct`` are the coordinator's decisions. They are ``null``
-    until made, and while they are null the verdict is reported as "not evaluable", never
-    guessed. ``delta_c_pct`` is a normative threshold, not an estimate, so it needs a rationale."""
+    ``primary_workload``, ``primary_horizon_months`` and ``delta_c_pct`` are the coordinator's
+    decisions. They are ``null`` until made, and while they are null the verdict is reported as
+    "not evaluable", never guessed. The horizon matters because one-off hours are spread over it,
+    and the scenarios carry different one-off lines; every horizon in ``cost_rates.yaml`` is still
+    reported. ``delta_c_pct`` is a normative threshold, not an estimate, so it needs a rationale;
+    100% would require the open-source side to cost nothing, so it is excluded."""
 
     primary_view: Literal["adopt", "build"]
     views: list[Literal["adopt", "build"]]
     primary_price_case: Literal["base", "upper"]
     price_cases: list[Literal["base", "upper"]]
     primary_workload: str | None = None
-    delta_c_pct: float | None = Field(default=None, gt=0, le=100)
+    primary_horizon_months: int | None = Field(default=None, gt=0)
+    delta_c_pct: float | None = Field(default=None, gt=0, lt=100)
     delta_c_rationale: str | None = None
     inference_modes_reported_separately: list[Literal["local", "cloud"]]
 

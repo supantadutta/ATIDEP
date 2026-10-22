@@ -76,8 +76,11 @@ def test_an_incomplete_open_source_total_can_only_refute():
 
 
 def test_two_lower_bounds_conclude_nothing_and_the_repositorys_own_config_is_not_evaluable():
-    o = h7(load_cost_inputs(), measured(), "scale_50", delta_c_pct=20.0)
+    o = h7(load_cost_inputs(), measured(), "scale_50", horizon_months=12, delta_c_pct=20.0)
     assert o.verdict == "inconclusive" and not o.open_source.complete and not o.paid.complete
+    # the repository's own config has no pre-registered horizon, so nothing is evaluated at all
+    bare = h7(load_cost_inputs(), measured(), "scale_50", delta_c_pct=20.0)
+    assert bare.verdict == "not_evaluable" and "horizon" in bare.reason
     assert decide(*_sides(False, False), 10.0)[0] == "inconclusive"
 
 
@@ -118,17 +121,25 @@ def test_technology_only_basis_needs_no_labour_rate():
 def test_the_grid_covers_every_cell_and_a_claim_is_robust_only_if_it_holds_in_all_of_them():
     inputs, meas = make_inputs(), measured()
     undecided = grid(inputs, meas)
-    assert len(undecided) == 3 * 2 * 2
+    assert len(undecided) == 3 * 2 * 2 * 3                           # and every horizon
+    assert {c.horizon_months for c in undecided} == {12, 24, 36}
     assert {c.verdict for c in undecided} == {"not_evaluable"}       # no threshold set
     assert robustness(undecided)[0] == "not evaluable"
     cells = grid(inputs, meas, delta_c_pct=4.0)
-    label, failing = robustness(cells)
+    at12 = [c for c in cells if c.horizon_months == 12]
+    label, failing = robustness(at12)
     # the build view adds the same development hours to both sides, which shrinks the gap, so the
     # claim holds in the adopt view and fails in the build view: conditional, with cells named
     assert label == "conditional" and len(failing) == 6
-    assert all("/build/" in f for f in failing)
-    assert all(c.verdict == "supported" for c in cells if c.view == "adopt")
-    assert robustness(grid(inputs, meas, delta_c_pct=0.5)) == ("robust", [])
+    assert all("/build/" in f and f.endswith("/12m") for f in failing)
+    assert all(c.verdict == "supported" for c in at12 if c.view == "adopt")
+    assert robustness([c for c in grid(inputs, meas, delta_c_pct=0.5)
+                       if c.horizon_months == 12]) == ("robust", [])
+    # the horizon matters: S-PAID carries a one-off integration line that S-OSS-LOCAL does not,
+    # so spreading it over longer horizons lowers P, and the 12-month claim does not survive
+    long = [c for c in cells if c.horizon_months == 36 and c.view == "adopt"]
+    assert any(c.verdict == "not_supported" for c in long)
+    assert robustness(cells)[0] == "conditional"
 
 
 # ---- unit costs, by hand ---------------------------------------------------------------------------------------------------
@@ -184,7 +195,7 @@ def test_no_break_even_when_atidep_does_not_save_time_per_item():
 
 
 def test_break_even_is_none_when_the_analyst_rate_is_not_supplied():
-    be = break_even_volume(load_cost_inputs(), measured())
+    be = break_even_volume(load_cost_inputs(), measured(), horizon_months=12)
     assert be["n_star"] is None
 
 

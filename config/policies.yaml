@@ -27,7 +27,7 @@ llm:
   use_stated_confidence_in_decisions: false
   local_first: true                       # local open-weight model by default
   cloud_enabled: false                    # cloud inference is an explicit opt-in
-  daily_cost_limit: 5.00                  # must be > 0 if cloud_enabled
+  daily_cost_limit: null                  # required (> 0) before cloud_enabled; in the currency of the price-register entry the hosted client is priced from; chosen by the coordinator, never a default
   runs_per_item: 3
 
 ioc:

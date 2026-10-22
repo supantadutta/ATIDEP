@@ -61,14 +61,12 @@ def side(ledger: Ledger, *, basis: str) -> Side:
     value, complete = t.technology, t.technology_complete
     missing = list(t.missing)
     if basis == "differential":
-        if t.operating_money is not None and t.operating_hours_complete:
-            value += t.operating_money
-        else:
+        if t.operating_money is not None:
+            value += t.operating_money          # known hours x rate: a lower bound if hours lack
+        elif "reporting_currency" not in missing:
+            missing.append("labour.engineer_hourly")
+        if t.operating_money is None or not t.operating_hours_complete:
             complete = False
-            if "labour.engineer_hourly" not in missing and t.operating_money is None:
-                missing.append("labour.engineer_hourly")
-            if t.operating_money is not None:
-                value += t.operating_money
     return Side(ledger.scenario, value, complete, sorted(set(missing)), t.technology,
                 t.technology_complete, t.operating_hours, t.operating_hours_complete,
                 t.review_hours, t.proxy)
@@ -81,6 +79,7 @@ class H7Result:
     workload: str
     view: str
     case: str
+    horizon_months: int | None
     delta_c_pct: float | None
     verdict: Verdict
     reason: str
@@ -145,20 +144,28 @@ def h7(inputs: CostInputs, measured: Measured, workload_id: str, *, basis: str =
     view = view or eco.primary_view
     case = case or eco.primary_price_case
     delta = delta_c_pct if delta_c_pct is not None else eco.delta_c_pct
+    horizon = horizon_months or eco.primary_horizon_months
+    if horizon is None:
+        gap = ["economics.primary_horizon_months"]
+        blank = [Side(s, 0.0, False, gap, 0.0, False, 0.0, False, 0.0, False)
+                 for s in (sc.oss_local, sc.paid)]
+        return H7Result(basis, workload_id, view, case, None, delta, "not_evaluable",
+                        "the amortisation horizon is not set (economics.primary_horizon_months, "
+                        "the coordinator's decision)", blank[0], blank[1])
     lo = evaluate(inputs, sc.oss_local, workload_id, q, view=view, case=case,
-                  horizon_months=horizon_months)
+                  horizon_months=horizon)
     lp = evaluate(inputs, sc.paid, workload_id, q, view=view, case=case,
-                  horizon_months=horizon_months)
+                  horizon_months=horizon)
     o, p = side(lo, basis=basis), side(lp, basis=basis)
     verdict, reason = decide(o, p, delta)
     screening = o.proxy or p.proxy
     if screening and verdict == "supported":
         reason += "; SCREENING ONLY (a quantity was borrowed from another arm)"
-    res = H7Result(basis, workload_id, view, case, delta, verdict, reason, o, p,
-                   screening=screening)
+    res = H7Result(basis, workload_id, view, case, lo.horizon_months, delta, verdict, reason, o,
+                   p, screening=screening)
     if o.complete and p.complete and p.value > 0:
         res.saving_pct = 100.0 * (p.value - o.value) / p.value
-    if delta is not None and o.complete:
+    if delta is not None and delta < 100 and o.complete:
         res.paid_needed = o.value / (1.0 - delta / 100.0)
     res.flip = flip_rate(o, p, delta)
     return res
@@ -166,15 +173,17 @@ def h7(inputs: CostInputs, measured: Measured, workload_id: str, *, basis: str =
 
 def grid(inputs: CostInputs, measured: Measured, *, basis: str = "differential",
          delta_c_pct: float | None = None) -> list[H7Result]:
-    """H7 at every workload, view and price case: the sensitivity map around the primary cell. The
-    claim is *robust* only if it holds in every cell where it can be evaluated."""
+    """H7 at every workload, view, price case and amortisation horizon: the sensitivity map
+    around the primary cell. The claim is *robust* only if it holds in every cell where it can be
+    evaluated."""
     eco = inputs.economics
     out = []
     for w in inputs.scenarios.workloads:
         for view in eco.views:
             for case in eco.price_cases:
-                out.append(h7(inputs, measured, w.id, basis=basis, view=view, case=case,
-                              delta_c_pct=delta_c_pct))
+                for horizon in inputs.rates.amortisation_horizon_months:
+                    out.append(h7(inputs, measured, w.id, basis=basis, view=view, case=case,
+                                  horizon_months=horizon, delta_c_pct=delta_c_pct))
     return out
 
 
@@ -182,7 +191,8 @@ def robustness(cells: list[H7Result]) -> tuple[str, list[str]]:
     evaluable = [c for c in cells if c.verdict in ("supported", "not_supported")]
     if not evaluable:
         return "not evaluable", ["no cell has complete or bounding inputs"]
-    failing = [f"{c.workload}/{c.view}/{c.case}" for c in cells if c.verdict != "supported"]
+    failing = [f"{c.workload}/{c.view}/{c.case}/{c.horizon_months}m" for c in cells
+               if c.verdict != "supported"]
     if not failing:
         return "robust", []
     return "conditional", failing
@@ -211,9 +221,11 @@ def unit_costs(inputs: CostInputs, measured: Measured, scenario_id: str, workloa
     t = led.totals
     sc = inputs.scenarios.scenario(scenario_id)
     cond = sc.review_condition
-    gen, valid = measured.rate("generated"), measured.rate("valid")
+    # each scenario is divided by its own arm's detections: the manual workflow by the manual
+    # condition's rules, never by ATIDEP's
+    gen, valid = measured.rate("generated", cond), measured.rate("valid", cond)
     accepted = measured.accepted_rate(cond)
-    approved, deployed = measured.approved_rate(), measured.deployed_rate()
+    approved, deployed = measured.approved_rate(cond), measured.deployed_rate(cond)
     total = t.total
     differential = t.differential
     review_min = t.review_hours * 60.0 if t.review_hours_complete else None
@@ -224,8 +236,9 @@ def unit_costs(inputs: CostInputs, measured: Measured, scenario_id: str, workloa
     inference = _inference_cost(led, measured, sc.backend)
     out: dict[str, Any] = {
         "scenario": scenario_id, "workload": workload_id, "view": view, "price_case": case,
-        "items_per_month": n, "complete": t.technology_complete and t.operating_hours_complete
-        and t.review_money is not None, "missing": t.missing, "proxy": t.proxy,
+        "horizon_months": led.horizon_months, "detections_from_condition": cond,
+        "items_per_month": n, "complete": total is not None, "missing": t.missing,
+        "proxy": t.proxy,
         "monthly": {"technology": t.technology if t.technology_complete else None,
                     "operating_hours": t.operating_hours if t.operating_hours_complete else None,
                     "review_hours": t.review_hours if t.review_hours_complete else None,
