@@ -1,0 +1,41 @@
+{
+ "_stamp": {
+  "case_sha256": "c5b6c179d78a4ef246c507a03d3efa9ff9d0bef5285572a881ae25e346e35bd3",
+  "code_combined_sha256": "db76359d53ae0b51da733e5329640f621608f5ce462f38ea165bf9e3a8c3a89a",
+  "freeze_combined_sha256": "59451eacfd9ca4c0aaea74ebcb706efc25e3f86d5070bb38c6a9832623079c7d"
+ },
+ "accepted_by_construction": true,
+ "case_id": "D10-03",
+ "condition": "C",
+ "defect_class": "D10",
+ "evasive": true,
+ "expected_gate": "approval-binding",
+ "expected_gate_fired": false,
+ "failed_gates": [],
+ "harness_error": null,
+ "notes": "",
+ "opportunity_decision": null,
+ "outcome": null,
+ "package_ok": null,
+ "package_refusal": null,
+ "reached_approved": false,
+ "reached_validated": false,
+ "reason_codes": {},
+ "role": "defective",
+ "state_final": null,
+ "stopped_before_approval": false,
+ "tamper": {
+  "direct_db": {
+   "detected": false,
+   "note": "no approval record exists in C"
+  },
+  "direct_db_rehashed": {
+   "detected": false,
+   "note": "no approval record exists in C"
+  },
+  "edit_through_application": {
+   "detected": false,
+   "note": "no approval record exists in C"
+  }
+ }
+}

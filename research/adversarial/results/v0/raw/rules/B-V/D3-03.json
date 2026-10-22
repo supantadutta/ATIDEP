@@ -1,0 +1,34 @@
+{
+ "_stamp": {
+  "case_sha256": "c6a59f2270c88c30510eb9620e9aa7328bad7b3d987d2591b9bbb498a9770b58",
+  "code_combined_sha256": "db76359d53ae0b51da733e5329640f621608f5ce462f38ea165bf9e3a8c3a89a",
+  "freeze_combined_sha256": "59451eacfd9ca4c0aaea74ebcb706efc25e3f86d5070bb38c6a9832623079c7d"
+ },
+ "accepted_by_construction": false,
+ "case_id": "D3-03",
+ "condition": "B-V",
+ "defect_class": "D3",
+ "evasive": true,
+ "expected_gate": "G5",
+ "expected_gate_fired": true,
+ "failed_gates": [
+  "G5"
+ ],
+ "harness_error": null,
+ "notes": "",
+ "opportunity_decision": "behavioral",
+ "outcome": "revision_required",
+ "package_ok": null,
+ "package_refusal": null,
+ "reached_approved": true,
+ "reached_validated": true,
+ "reason_codes": {
+  "G5": [
+   "G5_UNKNOWN_FIELD"
+  ]
+ },
+ "role": "defective",
+ "state_final": "approved",
+ "stopped_before_approval": false,
+ "tamper": {}
+}

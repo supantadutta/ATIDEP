@@ -1,0 +1,54 @@
+{
+ "_stamp": {
+  "case_sha256": "d8b227a8176695f3af2c3c2aed36bcbc7f4e3c343d0bf94f2479ffa087054274",
+  "code_combined_sha256": "db76359d53ae0b51da733e5329640f621608f5ce462f38ea165bf9e3a8c3a89a",
+  "freeze_combined_sha256": "59451eacfd9ca4c0aaea74ebcb706efc25e3f86d5070bb38c6a9832623079c7d"
+ },
+ "accepted_by_construction": false,
+ "case_id": "D10-07",
+ "condition": "B",
+ "defect_class": "D10",
+ "evasive": true,
+ "expected_gate": "approval-binding",
+ "expected_gate_fired": false,
+ "failed_gates": [],
+ "harness_error": null,
+ "notes": "",
+ "opportunity_decision": "behavioral",
+ "outcome": null,
+ "package_ok": null,
+ "package_refusal": null,
+ "reached_approved": true,
+ "reached_validated": true,
+ "reason_codes": {},
+ "role": "defective",
+ "state_final": null,
+ "stopped_before_approval": false,
+ "tamper": {
+  "direct_db": {
+   "content_changed": true,
+   "detected": true,
+   "refusals": {
+    "verify_approval": "the rule content was changed after it was stored (hash mismatch)"
+   },
+   "state_after": "approved"
+  },
+  "direct_db_rehashed": {
+   "content_changed": true,
+   "detected": true,
+   "refusals": {
+    "verify_approval": "the approval was given for different content"
+   },
+   "state_after": "approved"
+  },
+  "edit_through_application": {
+   "content_changed": true,
+   "detected": true,
+   "refusals": {
+    "submit_for_approval": "only a rule whose current version passed every gate can be submitted for approval",
+    "verify_approval": "RULE-2026-0001 is draft; it is not approved"
+   },
+   "state_after": "draft"
+  }
+ }
+}

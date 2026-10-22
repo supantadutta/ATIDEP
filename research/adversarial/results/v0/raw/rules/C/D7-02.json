@@ -1,0 +1,30 @@
+{
+ "_stamp": {
+  "case_sha256": "626f3adfa6719d24a4c398a19b9e1096a13e059c58da0dfc30af0ec65c181fad",
+  "code_combined_sha256": "db76359d53ae0b51da733e5329640f621608f5ce462f38ea165bf9e3a8c3a89a",
+  "freeze_combined_sha256": "59451eacfd9ca4c0aaea74ebcb706efc25e3f86d5070bb38c6a9832623079c7d"
+ },
+ "accepted_by_construction": true,
+ "case_id": "D7-02",
+ "condition": "C",
+ "defect_class": "D7",
+ "evasive": false,
+ "expected_gate": "G11",
+ "expected_gate_fired": true,
+ "failed_gates": [
+  "G11"
+ ],
+ "harness_error": null,
+ "notes": "",
+ "opportunity_decision": null,
+ "outcome": "flagged",
+ "package_ok": null,
+ "package_refusal": null,
+ "reached_approved": false,
+ "reached_validated": false,
+ "reason_codes": {},
+ "role": "defective",
+ "state_final": null,
+ "stopped_before_approval": false,
+ "tamper": {}
+}

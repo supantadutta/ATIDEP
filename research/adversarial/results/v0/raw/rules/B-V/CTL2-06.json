@@ -1,0 +1,34 @@
+{
+ "_stamp": {
+  "case_sha256": "c15ef52d6a3465ee3b2dd7e46f7e7054d4aed14c9b71833d1cbfe13604d00907",
+  "code_combined_sha256": "db76359d53ae0b51da733e5329640f621608f5ce462f38ea165bf9e3a8c3a89a",
+  "freeze_combined_sha256": "59451eacfd9ca4c0aaea74ebcb706efc25e3f86d5070bb38c6a9832623079c7d"
+ },
+ "accepted_by_construction": false,
+ "case_id": "CTL2-06",
+ "condition": "B-V",
+ "defect_class": "NONE",
+ "evasive": false,
+ "expected_gate": "none",
+ "expected_gate_fired": false,
+ "failed_gates": [
+  "G4"
+ ],
+ "harness_error": null,
+ "notes": "",
+ "opportunity_decision": "behavioral",
+ "outcome": "revision_required",
+ "package_ok": null,
+ "package_refusal": null,
+ "reached_approved": true,
+ "reached_validated": true,
+ "reason_codes": {
+  "G4": [
+   "G4_UNSUPPORTED_VALUE"
+  ]
+ },
+ "role": "control",
+ "state_final": "approved",
+ "stopped_before_approval": false,
+ "tamper": {}
+}

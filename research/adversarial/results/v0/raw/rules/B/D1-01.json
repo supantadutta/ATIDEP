@@ -1,0 +1,34 @@
+{
+ "_stamp": {
+  "case_sha256": "aa7f398c27a7967fd2d70b990d0150e096ee77686e1b27528b2f7eb5a3d6310b",
+  "code_combined_sha256": "db76359d53ae0b51da733e5329640f621608f5ce462f38ea165bf9e3a8c3a89a",
+  "freeze_combined_sha256": "59451eacfd9ca4c0aaea74ebcb706efc25e3f86d5070bb38c6a9832623079c7d"
+ },
+ "accepted_by_construction": false,
+ "case_id": "D1-01",
+ "condition": "B",
+ "defect_class": "D1",
+ "evasive": true,
+ "expected_gate": "G1",
+ "expected_gate_fired": true,
+ "failed_gates": [
+  "G1"
+ ],
+ "harness_error": null,
+ "notes": "",
+ "opportunity_decision": "behavioral",
+ "outcome": "revision_required",
+ "package_ok": null,
+ "package_refusal": null,
+ "reached_approved": false,
+ "reached_validated": false,
+ "reason_codes": {
+  "G1": [
+   "G1_YAML"
+  ]
+ },
+ "role": "defective",
+ "state_final": "draft",
+ "stopped_before_approval": true,
+ "tamper": {}
+}

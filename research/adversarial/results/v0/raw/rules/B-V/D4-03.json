@@ -1,0 +1,38 @@
+{
+ "_stamp": {
+  "case_sha256": "341faa19c4da92609b4abac0183e2a1e6370336070aa92712d0702df6dd78892",
+  "code_combined_sha256": "db76359d53ae0b51da733e5329640f621608f5ce462f38ea165bf9e3a8c3a89a",
+  "freeze_combined_sha256": "59451eacfd9ca4c0aaea74ebcb706efc25e3f86d5070bb38c6a9832623079c7d"
+ },
+ "accepted_by_construction": false,
+ "case_id": "D4-03",
+ "condition": "B-V",
+ "defect_class": "D4",
+ "evasive": true,
+ "expected_gate": "G4",
+ "expected_gate_fired": true,
+ "failed_gates": [
+  "G4",
+  "G7"
+ ],
+ "harness_error": null,
+ "notes": "",
+ "opportunity_decision": "behavioral",
+ "outcome": "revision_required",
+ "package_ok": null,
+ "package_refusal": null,
+ "reached_approved": true,
+ "reached_validated": true,
+ "reason_codes": {
+  "G4": [
+   "G4_UNSUPPORTED_VALUE"
+  ],
+  "G7": [
+   "G7_UNKNOWN_TECHNIQUE"
+  ]
+ },
+ "role": "defective",
+ "state_final": "approved",
+ "stopped_before_approval": false,
+ "tamper": {}
+}

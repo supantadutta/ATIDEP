@@ -1,0 +1,30 @@
+{
+ "_stamp": {
+  "case_sha256": "883a7ce68b453475c1a580df37ba7f0d10a46ef1b5f009584040fe4bc0d745c8",
+  "code_combined_sha256": "db76359d53ae0b51da733e5329640f621608f5ce462f38ea165bf9e3a8c3a89a",
+  "freeze_combined_sha256": "59451eacfd9ca4c0aaea74ebcb706efc25e3f86d5070bb38c6a9832623079c7d"
+ },
+ "accepted_by_construction": true,
+ "case_id": "D9-03",
+ "condition": "C",
+ "defect_class": "D9",
+ "evasive": true,
+ "expected_gate": "G10",
+ "expected_gate_fired": true,
+ "failed_gates": [
+  "G10"
+ ],
+ "harness_error": null,
+ "notes": "",
+ "opportunity_decision": null,
+ "outcome": "flagged",
+ "package_ok": null,
+ "package_refusal": null,
+ "reached_approved": false,
+ "reached_validated": false,
+ "reason_codes": {},
+ "role": "defective",
+ "state_final": null,
+ "stopped_before_approval": false,
+ "tamper": {}
+}
