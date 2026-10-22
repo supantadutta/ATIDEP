@@ -1,0 +1,79 @@
+{
+ "batch": "CTL1a",
+ "reviewer": "R4",
+ "role": "replacement",
+ "read_other_files": false,
+ "workflow_run": "reviewer agent run individually (same instructions as wf_86e69ccc-de1)",
+ "recorded_on": "2026-10-22",
+ "reviews": [
+  {
+   "id": "CTL1-01",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The YAML parses and pySigma accepts it. All twelve metadata keys are present, status is experimental and the id is a valid UUID. The only fields are Image and CommandLine with endswith and contains|all on process_creation, and the tags attack.stealth and attack.t1218.011 match the table for T1218.011. Both evidence quotations appear word for word in report_text. 'rundll32.exe' and 'RunHTMLApplication' are in quote 1 and 'javascript:' is in quote 2. By hand, all three positives match: each has an image ending in \\rundll32.exe (System32 or SysWOW64) and a command line containing both javascript: and RunHTMLApplication, with the mixed case in positive 2 matched case-insensitively. None of the negatives (cmd ipconfig, chrome, schtasks) or the look-alikes (rundll32 Control_RunDLL desk.cpl, PrintUIEntry) has javascript:, so none matches. The only alternative has an 11-character CommandLine term, and no rundll32 javascript: pattern appears in the baseline summary.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Neither look-alike tests one half of the contains|all pair alone (for example rundll32 loading mshtml without javascript:), so the AND is not exercised against a near miss.",
+    "Coverage gap that does not violate the case: the mshtml ordinal form (mshtml,#135) and other javascript: loaders that do not name RunHTMLApplication are not detected."
+   ]
+  },
+  {
+   "id": "CTL1-02",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "The YAML parses and pySigma accepts it with complete metadata. It uses only Image and CommandLine, and the tags (attack.credential_access, attack.t1003.001, attack.stealth, attack.t1218.011) match the table for the two cited techniques. Both quotations appear word for word in the report. 'rundll32.exe', 'comsvcs.dll' and 'MiniDump' are in quote 1 and '#24' is in quote 2. By hand, positive 1 (comsvcs.dll, MiniDump), positive 2 (comsvcs.dll, #24) and positive 3 (SysWOW64 rundll32 with lowercase comsvcs.dll,minidump) all satisfy img AND dll AND export. The negatives (tasklist /v, whoami, wuauclt) and the look-alikes (rundll32 shell32.dll Control_RunDLL inetcpl.cpl, tasklist lsass filter) have no comsvcs.dll and do not match. The 11-character 'comsvcs.dll' term satisfies the breadth guard, and nothing in the baseline summary uses comsvcs.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Positive 3 runs the 32-bit SysWOW64 rundll32 against the System32 comsvcs.dll path to dump lsass. On 64-bit Windows the path would be redirected and a WOW64 process cannot normally dump a 64-bit lsass, so the event is less realistic, though the behaviour is still the right one.",
+    "The look-alike 'tasklist /fi \"imagename eq lsass.exe\"' is the attacker's own PID-lookup step in this report, so calling it benign is debatable. Since it does not match either way, this has no effect.",
+    "Coverage gap that does not violate the case: evasions such as omitting '.dll' (rundll32 comsvcs MiniDump), a renamed copy of comsvcs.dll, or ordinal variants like #+24 or #-4294967272 are missed."
+   ]
+  },
+  {
+   "id": "CTL1-03",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "The YAML parses and pySigma accepts it with complete metadata. 'all of selection*' is allowed, the fields are only Image and CommandLine, and the tags attack.stealth and attack.t1218.010 are correct. Both quotations appear word for word in report_text. 'regsvr32.exe', 'scrobj.dll' and '/i:http' (also 'i:http' with separators stripped) occur in quote 1 and quote 2. By hand, all three positives have an image ending in \\regsvr32.exe, scrobj.dll and /i:http; positive 2's /i:https contains /i:http. The negatives (msiexec, cmd ipconfig, OUTLOOK) and both regsvr32 look-alikes (viewer.dll, shell.dll with no scrobj or /i:http) do not match. The breadth guard is met by the 10-character 'scrobj.dll'.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Look-alike 2 'regsvr32.exe /s /u C:\\Program Files\\OldApp\\shell.dll' has an unquoted path containing a space, which is a little unrealistic.",
+    "Coverage gap that does not violate the case: Squiblydoo variants with the dash form (-i:http), a quoted URL (/i:\"http...), a full path to scrobj.dll without the literal 'scrobj.dll' after a renamed copy, or a non-http scheme would be missed."
+   ]
+  },
+  {
+   "id": "CTL1-04",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "The YAML parses and pySigma accepts it with complete metadata. The fields are Image, CommandLine and ParentImage, all allowed, and the tags attack.stealth and attack.t1218.005 are correct. All three quotations appear word for word, and every value ('mshta.exe', 'http', 'vbscript:', 'javascript:', 'hrportal.exe', 'hrportal.hta') occurs in them. By hand, the positives (an http URL from a WINWORD parent, vbscript:Execute, a SysWOW64 mshta with javascript:) match and none has an hrportal parent. Look-alike 1 contains http but is excluded by filter_hr: its parent ends in \\hrportal.exe and its command line contains hrportal.hta. Look-alike 2 (help.hta) has no http, vbscript: or javascript:. The negatives are not mshta. The shortest alternative term, 'http', is exactly 4 characters on CommandLine, so it meets the breadth guard at the limit, and the baseline summary lists no mshta.exe.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The selection term 'http' is only just at the 4-character breadth minimum and matches 'http' anywhere in an mshta command line. It is acceptable because the rule is anchored on mshta.exe, but it is a broad term.",
+    "The report says hrportal.exe always runs mshta with its local hrportal.hta, yet look-alike 1 adds an http SSO URL. That is plausible, but it is not literally the behaviour the report describes.",
+    "filter_hr would also suppress a malicious mshta child of hrportal.exe whose command line mentions hrportal.hta. This bypass is narrow and accepted by the report's exclusion."
+   ]
+  },
+  {
+   "id": "CTL1-05",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "The YAML parses and pySigma accepts it. pySigma expands CommandLine|windash|contains|all to the -, /, en-dash, em-dash and horizontal-bar forms of 'urlcache' and 'split' with an AND between them. All modifiers are allowed and the tags attack.command_and_control and attack.t1105 match T1105. Both quotations appear word for word. '-urlcache' and '-split' are in quote 1, quote 2 has 'urlcache' and 'split', and 'certutil.exe' is in both. By hand, positive 1 (dash form), positive 2 (slash form /urlcache /split) and positive 3 (reversed order -split -urlcache, SysWOW64) all match. The negatives (cmd whoami, tasklist, ipconfig) and the look-alikes (-hashfile, and '-urlcache * delete' with no split) do not. The 9-character '-urlcache' term satisfies the breadth guard, and there is no certutil in the baseline summary.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Coverage gap that does not violate the case: certutil downloads without -split (certutil -urlcache -f URL) or via -verifyctl are not detected. The report scopes the rule to the urlcache+split pair, so this is not a defect here.",
+    "Positive 1's parent_cmd 'cmd.exe /c' is a truncated, slightly unrealistic parent command line."
+   ]
+  },
+  {
+   "id": "CTL1-06",
+   "verdict": "present",
+   "confidence": 86,
+   "reasoning": "The YAML parses and pySigma accepts it with complete metadata. '1 of selection*' is allowed and only Image and CommandLine are used. The tags execution, persistence and stealth plus t1197 match the table row for T1197, and command_and_control plus t1105 match T1105. Both quotations appear word for word. 'bitsadmin.exe', '/transfer' and '/download' are in quote 1, and 'powershell.exe' and 'Start-BitsTransfer' are in quote 2. By hand, positives 1 and 2 match selection_bitsadmin (bitsadmin with /transfer and /download) and positive 3 matches selection_powershell (powershell.exe with Start-BitsTransfer). The negatives (chrome, schtasks, powershell Get-Service) and the look-alikes (bitsadmin /list /allusers, powershell Get-BitsTransfer) do not match. Each alternative has a CommandLine term of at least 9 characters, and the frequent powershell command lines in the baseline summary (backup.ps1, Get-Service) do not contain Start-BitsTransfer.",
+   "events_ok": true,
+   "incidental_issues": [
+    "selection_powershell anchors on \\powershell.exe only, so pwsh.exe and encoded-command (-enc) forms of Start-BitsTransfer are missed. This is a coverage gap, not a defect for this case.",
+    "bitsadmin /transfer defaults to download when /download is omitted, so requiring /download misses that form. The report explicitly names the pair as the marker.",
+    "Positive 3 runs Start-BitsTransfer synchronously, without -Asynchronous, so it does not exactly show the reboot-surviving job the report describes. The event is still a BITS download."
+   ]
+  }
+ ]
+}

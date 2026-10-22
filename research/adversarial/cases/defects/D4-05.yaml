@@ -105,6 +105,39 @@ events:
     dest_port: '8443'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: Image|endswith '\wscript.exe' is a positive condition value. The two evidence quotations
+      cover only '203.0.113.77', 'TCP port 8443' and the port-approval sentence, and the report says only
+      'a script host process', never wscript.exe. assumptions is empty, so 'wscript.exe' is unsupported.
+      DestinationIp and DestinationPort (203.0.113.77, 8443) are in the first quotation. I treated the
+      process name as a discriminating value because G4 does not exempt process names.
+    events_ok: true
+    incidental_issues:
+    - The rule pins a single documentation IP and an invented process, so it is both IOC-style and narrow.
+    - The positive events were invented to match the unsupported wscript.exe, so they exercise the defect
+      rather than the report.
+    - The look-alikes (wscript.exe to 198.51.100.40:8443, agent.exe to 192.0.2.60:8443) correctly do not
+      match.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 86
+    reasoning: The quotes contain '203.0.113.77', '8443' and 'TCP port', so DestinationIp and DestinationPort
+      are supported. Image|endswith '\wscript.exe' (wscript.exe) is in neither quote, no assumption is
+      declared, and the report text only says 'a script host process', never naming wscript.exe. The Image
+      value is therefore an invented discriminating condition. The contract does not exempt process names
+      from G4 (only boolean fields), so G4 should stop it.
+    events_ok: true
+    incidental_issues:
+    - The rule is bound to a single IP and port plus an invented process name, so it is effectively an
+      IOC rule with a guessed image.
+    - The description states wscript.exe as fact, though the report never says which script host connected.
+    - The look-alike (wscript.exe to 198.51.100.40:8443) is a weak benign case, but all events evaluate
+      as labelled.
 excluded: false
 exclusion_reason: ''

@@ -105,6 +105,39 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The rule is on process_creation, whose allowed fields are Image, CommandLine, ParentImage,
+      ParentCommandLine, User and OriginalFileName. selection_img uses `NewProcessName|endswith`, which
+      is not on that list (it is a Windows Security 4688 name, not a Sysmon-style field), so G5 should
+      reject it. The other field, CommandLine, is valid. The YAML parses, and the fix would be to use
+      Image.
+    events_ok: true
+    incidental_issues:
+    - 'The rule is much narrower than the report''s recommendation: it hard-codes ''mediasync.dll,#1''
+      instead of detecting any Public-profile DLL loaded by ordinal, so the description overstates what
+      it matches.'
+    - Neither look-alike exercises the Public-profile or ordinal logic. Both are ordinary named-export
+      rundll32 calls, which is acceptable but weak.
+    - Both evidence quotes are verbatim in the report text, and the tags (attack.stealth, attack.t1218.011)
+      match the ATT&CK table.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The process_creation rule's selection_img uses NewProcessName|endswith, which is not in
+      the allowed list (Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName), so
+      G5 should reject it. The YAML parses, and NewProcessName is the only field outside the list (CommandLine
+      is valid). Metadata and tags (attack.stealth, attack.t1218.011) are correct, so this is the sole
+      defect. If NewProcessName were Image, both positives (rundll32 with mediasync.dll,#1) would match
+      and the look-alikes (shell32.dll,Control_RunDLL; printui.dll) would not.
+    events_ok: true
+    incidental_issues:
+    - The rule keys on the literal file name mediasync.dll, which is narrow, but that is not related to
+      the claimed defect.
 excluded: false
 exclusion_reason: ''

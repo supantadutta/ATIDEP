@@ -95,6 +95,32 @@ events:
     dest_port: null
     name: psgallery-mirror.pennantbio.test
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: The rule is on dns_query, whose only allowed fields are Image and QueryName. The selection
+      uses `DnsQueryName|endswith`, which is not allowed (the valid name is QueryName), so G5 should reject
+      it. Image is valid. The two positives (powershell.exe resolving names under ledger-sync.pennantbio.invalid)
+      show the intended behaviour, and the look-alike is powershell resolving psgallery-mirror.pennantbio.test,
+      which is benign.
+    events_ok: true
+    incidental_issues:
+    - Only one look-alike is supplied, which meets the minimum.
+    - Both evidence quotes are verbatim in the report. The tags (attack.command_and_control, attack.t1071.004)
+      are correct, and the .invalid and .test domains are fictional.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: The dns_query rule uses DnsQueryName|endswith, but the only allowed fields are Image and
+      QueryName, so G5 should stop it. DnsQueryName is a near-miss invented name for QueryName. With the
+      field corrected, the positives (*.ledger-sync.pennantbio.invalid from powershell.exe) would match,
+      and the chrome and svchost negatives and the PowerShell look-alike to psgallery-mirror.pennantbio.test
+      would not. Tags (attack.command_and_control, attack.t1071.004) are correct.
+    events_ok: true
+    incidental_issues: []
 excluded: false
 exclusion_reason: ''

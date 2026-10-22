@@ -105,6 +105,45 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 80
+    reasoning: 'selection_script requires ScriptBlockText|contains|all [System.Net.Sockets.TCPClient,
+      203.0.113.77], and the rule ANDs it with Initiated: true. The Sigma logsource is network_connection,
+      but ScriptBlockText is not a network_connection field and belongs only to the unavailable script-block
+      source named in the case. The condition is selection_net and selection_script, so the rule can never
+      match without script-block telemetry. G6 should block on the required source. The declared available
+      category makes it a hybrid with a G5-style invalid field.'
+    events_ok: true
+    incidental_issues:
+    - All events are kind process_create although the rule's log source is network_connection. The contract
+      requires events to match the rule's log source kind.
+    - Positive events encode the TCPClient call in CommandLine, while the report says the script block
+      is the only place it appears. They are still semantically valid positives, and the lookalike (TCPClient
+      to 192.0.2.15:443) is a fair benign look-alike.
+    - 'Port 4444 appears in the report evidence but not in the rule. Initiated: true is a boolean and
+      exempt from G4.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 72
+    reasoning: 'The detection mixes Initiated: true (valid for network_connection) with selection_script
+      ScriptBlockText|contains|all (System.Net.Sockets.TCPClient, 203.0.113.77), and the condition ANDs
+      them. ScriptBlockText is not in the network_connection fields (Image, DestinationIp, DestinationPort,
+      Initiated). It belongs only to the unavailable script-block source, so the rule needs unavailable
+      telemetry. No single network event could carry both fields, so the rule can never fire on available
+      data. As with D5-03, the declared logsource is available, so G5 would also catch it and G6 behaviour
+      depends on how the gate derives the required source.'
+    events_ok: true
+    incidental_issues:
+    - All events are kind process_create with dest_ip and dest_port null, although the declared log source
+      is network_connection. The contract requires events of the kind matching the log source, so there
+      are no network_connect events at all.
+    - The description says 'outbound connection', but the discriminating logic is script text. The rule
+      could have used DestinationIp 203.0.113.77 and DestinationPort 4444 on available telemetry.
+    - The tags are correct (T1059.001, T1571), and the evidence quotes cover the values.
 excluded: false
 exclusion_reason: ''

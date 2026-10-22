@@ -110,6 +110,38 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: The rule needs Image endswith \schtasks.exe plus CommandLine containing '/create', '/sc
+      onlogon' and '/rl highest'. Look-alike 1 (CraneBackupTray, '/sc onlogon /rl highest', parent msiexec.exe
+      installing crane_backup.msi, user SYSTEM) satisfies all of them after YAML line folding, so it matches.
+      It is a backup product's installer creating its tray autostart task, which is benign. Look-alike
+      2 ('/sc daily') does not match. Positives match, negatives do not, evidence values are in the quotes,
+      and the tag set for T1053.005 is exactly the table's.
+    events_ok: true
+    incidental_issues:
+    - The report says the task is never created by an installer, but the rule has no parent or user condition,
+      which would have separated the two.
+    - falsepositives is only 'Unknown'.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'Rule: Image endswith \schtasks.exe AND CommandLine contains all ''/create'',''/sc onlogon'',''/rl
+      highest''. Both positives match (the second after YAML folding gives ''/rl highest /f''), and the
+      schtasks /query and ipconfig negatives do not. Look-alike 1 (schtasks /create /tn CraneBackupTray
+      ... /sc onlogon /rl highest, parent msiexec.exe installing crane_backup.msi, SYSTEM) matches, and
+      it is an installer registering its own logon task, which the report says the malicious activity
+      never was. Look-alike 2 (/sc daily) does not match. The tags (execution, persistence, privilege_escalation,
+      t1053.005) are correct and the evidence covers each term.'
+    events_ok: true
+    incidental_issues:
+    - Only look-alike 1 triggers the rule; look-alike 2 is inert.
+    - The rule ignores the parent process even though the report points to script interpreters as the
+      typical parent, which is the underlying cause of the defect.
 excluded: false
 exclusion_reason: ''

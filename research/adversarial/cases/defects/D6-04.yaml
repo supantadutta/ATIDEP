@@ -119,6 +119,42 @@ events:
     dest_port: null
     name: forum.nightheron-birdclub.example
 tamper_sigma_yaml: ''
-review: {}
-excluded: false
-exclusion_reason: ''
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: absent
+    confidence: 65
+    reasoning: 'I found none of the listed unsupported constructs. The detection has two selections (QueryName
+      endswith/startswith, Image endswith), all modifiers are in the allowed set, and the fields are valid
+      for dns_query. The only candidate is ''condition: 1 of them''. That is the same ''N of'' quantifier
+      the contract allows (''1 of selection*''), and both selections here start with ''selection'', so
+      it is equivalent. It is not on the contract''s NOT-allowed list (count, near, timeframe, aggregation,
+      correlation). By hand, the rule matches all 3 positives and none of the negatives or look-alikes
+      (nhagent.exe with nh-status does not match, because the second selection requires Image \svchelper.exe).'
+    events_ok: true
+    incidental_issues:
+    - The contract literally quotes only '1 of selection*' and 'all of selection*'. A strict reading of
+      'them' as a different keyword could make this a borderline case, which is why confidence is only
+      moderate.
+    - This rule looks like a within-subset control, not a seeded defect.
+    - '''nh-'' is only 3 characters, which may matter for G4 or G11 but does not affect G3.'
+  - reviewer: R2
+    role: primary
+    verdict: absent
+    confidence: 72
+    reasoning: I found no construct from the D6 list. The selections use only `endswith` and `startswith`
+      on the allowed fields Image and QueryName. The condition is `1 of them`, which is standard Sigma
+      for the same quantifier as the allowed `1 of selection*` and is not aggregation, count, near, timeframe,
+      a numeric modifier, base64offset, cidr, exists, fieldref, expand or correlation. pySigma parses
+      it. The only doubt is whether a strict converter would reject the literal keyword `them`, but nothing
+      in the contract forbids it. By hand, all three positives and no negatives or look-alikes match.
+    events_ok: true
+    incidental_issues:
+    - Treat this as a possible control or decoy case rather than a true D6 defect. Its only fancy feature
+      is `1 of them`, a mild ambiguity against the contract's literal '1 of selection*' wording.
+    - The positive svchelper.exe events sit in C:\ProgramData\Fabrikam\, which is a slightly odd path
+      but harmless.
+    - The look-alike nhagent.exe with an `nh-` query name is a good test of the Image restriction.
+excluded: true
+exclusion_reason: claimed property judged absent by 2 of 2 reviewers

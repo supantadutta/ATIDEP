@@ -129,6 +129,48 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: 'YAML and pySigma parse cleanly, metadata is complete, and the id is a valid UUID. Tags
+      carry both techniques correctly: attack.credential_access and attack.t1003.001 for T1003.001, and
+      attack.stealth and attack.t1218.011 for T1218.011. Both techniques are cited. Every value (rundll32.exe,
+      comsvcs.dll, MiniDump, #24) is covered: the first three by the verbatim quote ''The actor ran rundll32.exe
+      C:\Windows\System32\comsvcs.dll, MiniDump 624 ...'' and ''#24'' by the second quote, both confirmed
+      in report_text. By hand: the by-name positive, the ordinal ''#24'' positive and the lower-case SysWOW64
+      ''minidump'' positive all match case-insensitively. The negatives do not match. The look-alikes
+      (rundll32 shell32 Control_RunDLL, and tasklist filtering lsass.exe) lack comsvcs.dll, so they do
+      not match. The baseline has no rundll32.'
+    events_ok: true
+    incidental_issues:
+    - '''#24'' is only three characters, but it is ANDed with comsvcs.dll under a rundll32 image, so G11
+      is satisfied by the ''comsvcs.dll'' term.'
+    - The third positive is a plausible but synthetic WmiPrvSE/SYSTEM execution context.
+  - reviewer: R4
+    role: replacement
+    verdict: present
+    confidence: 88
+    reasoning: 'The YAML parses and pySigma accepts it with complete metadata. It uses only Image and
+      CommandLine, and the tags (attack.credential_access, attack.t1003.001, attack.stealth, attack.t1218.011)
+      match the table for the two cited techniques. Both quotations appear word for word in the report.
+      ''rundll32.exe'', ''comsvcs.dll'' and ''MiniDump'' are in quote 1 and ''#24'' is in quote 2. By
+      hand, positive 1 (comsvcs.dll, MiniDump), positive 2 (comsvcs.dll, #24) and positive 3 (SysWOW64
+      rundll32 with lowercase comsvcs.dll,minidump) all satisfy img AND dll AND export. The negatives
+      (tasklist /v, whoami, wuauclt) and the look-alikes (rundll32 shell32.dll Control_RunDLL inetcpl.cpl,
+      tasklist lsass filter) have no comsvcs.dll and do not match. The 11-character ''comsvcs.dll'' term
+      satisfies the breadth guard, and nothing in the baseline summary uses comsvcs.'
+    events_ok: true
+    incidental_issues:
+    - Positive 3 runs the 32-bit SysWOW64 rundll32 against the System32 comsvcs.dll path to dump lsass.
+      On 64-bit Windows the path would be redirected and a WOW64 process cannot normally dump a 64-bit
+      lsass, so the event is less realistic, though the behaviour is still the right one.
+    - The look-alike 'tasklist /fi "imagename eq lsass.exe"' is the attacker's own PID-lookup step in
+      this report, so calling it benign is debatable. Since it does not match either way, this has no
+      effect.
+    - 'Coverage gap that does not violate the case: evasions such as omitting ''.dll'' (rundll32 comsvcs
+      MiniDump), a renamed copy of comsvcs.dll, or ordinal variants like #+24 or #-4294967272 are missed.'
 excluded: false
 exclusion_reason: ''

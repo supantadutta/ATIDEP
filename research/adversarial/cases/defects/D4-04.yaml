@@ -116,6 +116,41 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 94
+    reasoning: selection_dll requires CommandLine|contains 'scrobj.dll'. It is absent from both evidence
+      quotations, and the declared assumption's covers list contains only '/i:http://'. The assumption's
+      statement text mentions scrobj.dll, but the covers list does not include it, so it is not covered.
+      '/i:http://' is validly covered, and '/i:https://' and regsvr32.exe are in the first quotation,
+      so scrobj.dll is the unsupported discriminating value.
+    events_ok: true
+    incidental_issues:
+    - The assumption's prose mentions scrobj.dll while its covers omit it; this is a decoy that does not
+      satisfy G4.
+    - The quoted command line in the report is explicitly truncated and has no scrobj.dll, yet both positive
+      events append it, so positives are tailored to the rule rather than the report.
+    - The look-alike 'regsvr32.exe /u /s scrobj.dll' correctly fails the /i:http requirement.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 91
+    reasoning: The quotes support '\regsvr32.exe' and '/i:https://'. '/i:http://' is not in the quotes
+      (the report has https) but is correctly listed in the covers of the declared assumption. CommandLine|contains
+      'scrobj.dll' is in neither quote, does not occur anywhere in the report, and is not in the covers
+      list. The assumption's statement text mentions scrobj.dll, but covers lists only '/i:http://', and
+      covers is what G4 consults. So scrobj.dll is an unsupported mandatory condition (selection_dll is
+      ANDed).
+    events_ok: true
+    incidental_issues:
+    - The assumption statement names scrobj.dll but the covers field omits it, so this looks like a half-declared
+      assumption.
+    - The report says the audit record was truncated, so making scrobj.dll mandatory would also miss real
+      variants.
+    - 'Positive events add scrobj.dll, which the report does not show. Events and rule logic are otherwise
+      consistent: the /u /s scrobj.dll look-alike correctly lacks a /i: URL and does not match.'
 excluded: false
 exclusion_reason: ''

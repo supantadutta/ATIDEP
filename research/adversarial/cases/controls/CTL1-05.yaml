@@ -122,6 +122,43 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: YAML and pySigma parse cleanly, metadata is complete, and the tags (attack.command_and_control,
+      attack.t1105) match the table for T1105. The values '\certutil.exe', '-urlcache' and '-split' occur
+      in the verbatim evidence quote 'certutil.exe -urlcache -split -f http://203.0.113.45/...' (confirmed
+      in report_text). The windash|contains|all chain is allowed and is the standard Sigma ordering. By
+      hand, the dash-form positive, the slash-form positive (/urlcache /split) and the reordered positive
+      (-split -urlcache) all match. Negatives do not match. Look-alike 'certutil.exe -hashfile ...' lacks
+      the switches, and 'certutil.exe -urlcache * delete' lacks -split, so neither matches. The baseline
+      has no certutil.
+    events_ok: true
+    incidental_issues:
+    - The slash spelling appears in report_text but not in the quoted evidence. G4 strips separators,
+      so the values are still covered.
+    - Look-alike 2 contains a literal '*' in the command line, which is harmless.
+  - reviewer: R4
+    role: replacement
+    verdict: present
+    confidence: 88
+    reasoning: The YAML parses and pySigma accepts it. pySigma expands CommandLine|windash|contains|all
+      to the -, /, en-dash, em-dash and horizontal-bar forms of 'urlcache' and 'split' with an AND between
+      them. All modifiers are allowed and the tags attack.command_and_control and attack.t1105 match T1105.
+      Both quotations appear word for word. '-urlcache' and '-split' are in quote 1, quote 2 has 'urlcache'
+      and 'split', and 'certutil.exe' is in both. By hand, positive 1 (dash form), positive 2 (slash form
+      /urlcache /split) and positive 3 (reversed order -split -urlcache, SysWOW64) all match. The negatives
+      (cmd whoami, tasklist, ipconfig) and the look-alikes (-hashfile, and '-urlcache * delete' with no
+      split) do not. The 9-character '-urlcache' term satisfies the breadth guard, and there is no certutil
+      in the baseline summary.
+    events_ok: true
+    incidental_issues:
+    - 'Coverage gap that does not violate the case: certutil downloads without -split (certutil -urlcache
+      -f URL) or via -verifyctl are not detected. The report scopes the rule to the urlcache+split pair,
+      so this is not a defect here.'
+    - Positive 1's parent_cmd 'cmd.exe /c' is a truncated, slightly unrealistic parent command line.
 excluded: false
 exclusion_reason: ''

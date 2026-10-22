@@ -1,0 +1,92 @@
+{
+ "batch": "D7",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D7-01",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "The only alternative is CommandLine|contains 'cmd.exe /c' (10 chars on CommandLine), so structurally it has a discriminating term. The defect rests on the baseline rate. The contract lists 'cmd.exe /c ipconfig /all' and 'cmd.exe /c whoami' as frequent baseline command lines, and cmd.exe has 31 baseline events, so the rule very likely matches well over 2 of 400 (0.5%). Both are benign admin one-liners that contain 'cmd.exe /c', which is exactly what G11 should stop. The exact count is not given, so this is inferred from the contract's frequent-command-line list. Both positives match, and the negatives and lookalikes do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The two positive events are identical except for user and parent_cmd path.",
+    "The lookalikes (cmd.exe /k and a bare cmd.exe) are not the benign activity that makes the rule over-broad. The real look-alike would be 'cmd.exe /c ipconfig /all' or 'cmd.exe /c whoami', so G10 does not exercise the breadth defect.",
+    "The G4 and G7 metadata are fine: tags are attack.execution and attack.t1059.003, and the value occurs in evidence quote 1."
+   ]
+  },
+  {
+   "id": "D7-02",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The only condition is Image|endswith '\\powershell.exe', a single positive condition on a process-name field, so there is no discriminating term (G11 first prong). The contract baseline has powershell.exe 25 of 400 events (6.25%), far above the 2-event limit, and these include the benign backup.ps1 and Get-Service invocations. Both positives match and the powershell_ise and pwsh lookalikes do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The lookalikes (powershell_ise.exe, pwsh.exe) are different binaries and so avoid the over-broad match. A real look-alike would be benign powershell.exe, for example a backup.ps1 run, which this rule would hit.",
+    "The evidence quotes are verbatim from the report and the tags match the ATT&CK table."
+   ]
+  },
+  {
+   "id": "D7-03",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The selection ANDs Image|endswith '.exe' with DestinationPort '443'. Two different fields, so the structural second prong of G11 is technically met even though both terms are weak (every Windows image ends in .exe, and 443 has 3 characters). The defect is carried by the baseline. The contract says the 80 baseline network connections are ports 443 and 80 from chrome, msedge, Teams, svchost and OneDrive. A large share are port 443 from .exe images, well above the 2-event limit. Positives (crsync.exe:443) match, the negatives (123, 993) and the chrome:8443 lookalike do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The lookalike is chrome on port 8443, which the exact-match '443' misses. The truly confusing benign case, chrome on 443, is absent, so G10 does not test the breadth.",
+    "The two positive events are identical.",
+    "The G4 values '.exe' and '443' appear in the evidence."
+   ]
+  },
+  {
+   "id": "D7-04",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "The only condition is QueryName|endswith '.com'. At exactly 4 characters on a non-process field it nominally meets the length prong of G11, but it is a bare TLD. The contract baseline DNS names include login.microsoftonline.com, www.microsoft.com, mail.google.com, www.bing.com, onedrive.live.com and windowsupdate.microsoft.com. That is six of the eight listed domains, so a large fraction of the 60 DNS queries (around 10% of the 400) match, far over the 2-event limit. Positives (*.vexmoor-lattice.com) match, and the .example, .invalid and .test lookalike and negatives do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The lookalike (a1b2c3.pkgmirror.test) ends in .test, so it cannot show the over-breadth. A benign .com lookup would be the proper look-alike.",
+    "vexmoor-lattice.com uses a real TLD rather than .test, .example or .invalid. It is an invented name, but it is not strictly in the contract's fictional-domain convention."
+   ]
+  },
+  {
+   "id": "D7-05",
+   "verdict": "present",
+   "confidence": 87,
+   "reasoning": "The selection ANDs Image|endswith '\\msiexec.exe' with CommandLine|contains '/qn'. Two different fields, so the structural prong is met. The defect rests on the baseline. The contract lists msiexec.exe at 9 of 400 events (2.25%) and names 'msiexec.exe /i C:\\Temp\\app.msi /qn' as a frequent benign command line. Matches would very likely number at least 3, above the 2-event limit. The exact /qn count is inferred from the contract, not stated. Positives match, and the Word and notepad negatives and the /passive lookalike do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The lookalike uses /passive, which the rule does not match. The benign /qn install (C:\\Temp\\app.msi /qn), which is the over-breadth source, is not used as the look-alike, so G10 does not test breadth.",
+    "The two positive events are identical.",
+    "'/qn' is only 3 characters, so it is a weak term on its own."
+   ]
+  },
+  {
+   "id": "D7-06",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The selection_create alternative is specific (schtasks, /create and CraneSync, all required). The selection_verify alternative is only CommandLine|contains 'schtasks /query', the benign verification step. Structurally it has a 15-character CommandLine term, but the baseline defeats it. schtasks.exe has 13 baseline events and 'schtasks /query /fo LIST' is a listed frequent command line, so this alternative matches roughly 13 of 400 (3%), above the 2-event limit. The condition is 'or', so the over-broad alternative makes the whole rule over-broad. Both positives match the create alternative, and the BackupNightly lookalike matches neither.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The lookalike is a schtasks /create for a different task, not the /query form that drives the over-breadth, so G10 passes while G11 should fail.",
+    "The two positive events are identical apart from user.",
+    "The tags match the table for T1053.005, and the G4 values occur in the evidence quotes."
+   ]
+  },
+  {
+   "id": "D7-07",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The only condition is DestinationPort in ['80','443']: a single field, with values of 2 and 3 characters, so it has no discriminating term under either prong of G11. The contract baseline says the network connections are ports 443 and 80 from chrome, msedge, Teams, svchost and OneDrive. Essentially all 80 network events (20% of the 400) would match, far above the 2-event limit. Positives (updater.exe on 80 and 443) match, and the 3389, 53 and 8080 negatives and lookalike do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The lookalike (curl.exe on 8080) avoids the matched ports. A real look-alike would be a browser connection on 443 or 80.",
+    "The two positive events differ only in port, and they do exhibit the described fallback behaviour.",
+    "The multi-line evidence quote parses correctly, and the tags match the table for T1105."
+   ]
+  }
+ ]
+}

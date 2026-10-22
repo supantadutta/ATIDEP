@@ -1,0 +1,81 @@
+{
+ "batch": "D8",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D8-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The technique tag is attack.t1059.099. No such sub-technique exists in the contract's table or in ATT&CK, and the case cites T1059.001 (PowerShell), whose exact tag is attack.t1059.001. attack.execution is a valid tactic, but there is no valid technique tag, so G7 should stop it. I also checked the rule logic: both positives match, and neither negative nor either look-alike does (the look-alikes each lack one of 'WindowStyle Hidden' or 'Net.WebClient').",
+   "events_ok": true,
+   "incidental_issues": [
+    "The look-alike with an internal DownloadString but no hidden window is a reasonable near-miss; no other problems."
+   ]
+  },
+  {
+   "id": "D8-02",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "The technique tag is attack.t1117, the legacy Regsvr32 ID. It is deprecated and absent from the contract's table of active techniques; the replacement is T1218.010, which is the technique the case cites. The tactic attack.stealth is valid, but the technique tag is not supported by the cited technique and is not active in v19.2, so G7 should fail. The rule matches both positives (Image endswith \\regsvr32.exe, CommandLine contains scrobj.dll and /i:http, including the SysWOW64 one). It matches no negatives and no look-alikes.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The contract's list of deprecated IDs does not name T1117 explicitly, but it is absent from the active table and is the known revoked Regsvr32 ID."
+   ]
+  },
+  {
+   "id": "D8-03",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The tags include attack.defense_evasion. The contract says v19 renamed it to attack.stealth and that the old name is INVALID. The technique tag attack.t1197 is correct and is the cited technique, but the invalid tactic tag means G7 should stop the rule. The table also lists attack.stealth for T1197, which this rule omits. By hand evaluation, both bitsadmin /transfer /download positives match, and the /list and /info look-alikes and the two negatives do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule omits attack.stealth, which the table lists for T1197."
+   ]
+  },
+  {
+   "id": "D8-04",
+   "verdict": "present",
+   "confidence": 75,
+   "reasoning": "Per the contract table, T1218.011 maps only to attack.stealth, attack.t1218.011. The rule adds attack.execution, which is a valid v19.2 tactic name but is not a tactic of this technique, so the tactic tags are inconsistent with the technique under G7's consistency requirement. The technique tag and the cited technique agree. This is the subtlest defect in the batch because every tag is individually valid. The rule logic is otherwise fine: Image endswith \\rundll32.exe, ParentImage endswith \\winword.exe, CommandLine contains '.dll,'. Both positives match; the negatives and the two look-alikes (parents explorer.exe and chrome.exe) do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The only defect is the extra attack.execution tag, which a lenient reader could call harmless."
+   ]
+  },
+  {
+   "id": "D8-05",
+   "verdict": "present",
+   "confidence": 96,
+   "reasoning": "The rule is tagged attack.t1219 (Remote Access Tools), but the case's cited technique is T1571 (Non-Standard Port). The report explicitly says the operators did not install or abuse any remote-administration or screen-sharing product, so the opportunity does not support T1219. The tactic attack.command_and_control is valid. The rule logic (DestinationIp 203.0.113.50 and DestinationPort 4444) matches both positives and none of the negatives or look-alikes (which use different IPs).",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule is tied to a single IP plus a port, so it is close to an IOC rule; the port-based behaviour from the report is only partly captured. This does not affect the D8 claim."
+   ]
+  },
+  {
+   "id": "D8-06",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The tags list is only [attack.command_and_control], with no technique tag at all. The case cites T1071.004, whose tag attack.t1071.004 is missing. G7 requires at least one technique tag, so it should stop the rule. The rule logic (QueryName endswith '.relay-check.valleycu-status.invalid') matches both positives and no negatives or look-alikes.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The false-positive and look-alike coverage is thin but reasonable."
+   ]
+  },
+  {
+   "id": "D8-07",
+   "verdict": "present",
+   "confidence": 65,
+   "reasoning": "The technique tag is attack.t1003 (the parent OS Credential Dumping), not the cited T1003.001, whose exact tag in the contract table is attack.t1003.001. The tag is therefore not the one the opportunity cites and is not in the table, so a strict G7 would reject it. This is the weakest defect in the batch, because T1003 is a real, active parent technique and a lenient reader could call it supported. The tactic attack.credential_access is valid and consistent. The rule logic (CommandLine contains all '-ma' and 'lsass') matches both positives (including the renamed pd64.exe). It does not match the w3wp.exe look-alike (no lsass) or the tasklist look-alike (no '-ma').",
+   "events_ok": true,
+   "incidental_issues": [
+    "attack.t1003 is a genuine ATT&CK technique, so whether G7 should stop it depends on how strictly it compares tags against the cited sub-technique.",
+    "The rule has no Image or process-name condition, which is deliberate so renamed tools are caught."
+   ]
+  }
+ ]
+}

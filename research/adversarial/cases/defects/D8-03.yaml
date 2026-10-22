@@ -111,6 +111,31 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The tags include attack.defense_evasion. The contract says v19 renamed it to attack.stealth
+      and that the old name is INVALID. The technique tag attack.t1197 is correct and is the cited technique,
+      but the invalid tactic tag means G7 should stop the rule. The table also lists attack.stealth for
+      T1197, which this rule omits. By hand evaluation, both bitsadmin /transfer /download positives match,
+      and the /list and /info look-alikes and the two negatives do not.
+    events_ok: true
+    incidental_issues:
+    - The rule omits attack.stealth, which the table lists for T1197.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 96
+    reasoning: 'The tags include attack.defense_evasion. The contract says ATT&CK v19 renamed it and that
+      the old name is INVALID. The correct tactic for T1197 is attack.stealth, giving attack.execution,
+      attack.persistence, attack.stealth and attack.t1197. The technique T1197 is correct and supported
+      by the opportunity, so the defect is purely the invalid tactic tag. I checked events by hand: both
+      positives match (/transfer and /download), while the ipconfig/notepad negatives and the bitsadmin
+      /list and /info look-alikes do not.'
+    events_ok: true
+    incidental_issues: []
 excluded: false
 exclusion_reason: ''

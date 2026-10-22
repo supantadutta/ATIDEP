@@ -130,6 +130,42 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'The YAML and pySigma parse and the metadata is complete. The fields ParentImage, Image
+      and CommandLine are allowed, and the modifiers are endswith and contains. All 3 positives match:
+      WINWORD or EXCEL as parent, powershell.exe as image, and the command line contains DownloadString,
+      DownloadFile or Net.WebClient (positive 2 matches through System.Net.WebClient and DownloadFile).
+      The negatives (Word, Outlook and Chrome launches) do not match. The Word-spawned ''Get-Service''
+      look-alike fails selection_child, and the explorer-spawned DownloadFile look-alike fails selection_parent.
+      Every value is in a verbatim evidence quote (winword.exe, excel.exe, powershell.exe, DownloadString,
+      DownloadFile, Net.WebClient). Tags attack.execution and attack.t1059.001 are correct. The rule needs
+      a parent plus an image and command-line condition, so it is specific.'
+    events_ok: true
+    incidental_issues:
+    - Look-alike 1 (Word parent running Get-Service) is benign only by its command line. A Word-to-PowerShell
+      parent chain is itself suspicious, so it is a slightly artificial look-alike.
+    - Net.WebClient alone is enough to match, with no Invoke-Expression requirement. This follows the
+      report's detection sentence.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: YAML parses and pySigma accepts it, and the metadata is complete. T1059.001 maps to attack.execution
+      and attack.t1059.001, which is what the rule carries. The three evidence quotes are verbatim in
+      the report and cover winword.exe, excel.exe, powershell.exe, DownloadString, DownloadFile and Net.WebClient,
+      so every discriminating value is quoted. The three positives (WINWORD or EXCEL parent, powershell
+      child, a DownloadString, DownloadFile or Net.WebClient command line) all match, including the 'System.Net.WebClient'
+      variant. The three negatives are not PowerShell. Look-alike 1 (Word parent, Get-Service, no download
+      string) fails selection_child. Look-alike 2 (explorer parent, benign DownloadFile) fails selection_parent.
+      It needs an Office parent, a powershell child and a download string, so baseline hits are very unlikely.
+    events_ok: true
+    incidental_issues:
+    - Negative 1 has WINWORD.EXE as the Image rather than the parent, which is fine as an unrelated event.
+    - '''Net.WebClient'' alone is broad, but it is bounded by the Office-parent requirement.'
 excluded: false
 exclusion_reason: ''

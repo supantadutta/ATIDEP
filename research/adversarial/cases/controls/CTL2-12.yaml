@@ -130,6 +130,49 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: 'The rule parses in pySigma and the test backend renders windash correctly: ''netstat -ano''
+      becomes the variants -ano, /ano and the unicode dashes, which delivers the ''accept both spellings''
+      requirement. The tags attack.discovery, t1082, t1033 and t1049 match the cited techniques. Both
+      quotes are verbatim and cover cmd.exe, systeminfo, ''whoami /all'' and ''netstat -ano''. All 3 positives
+      match: the full chain, ''whoami /all & netstat /ano & systeminfo'' via the slash variant, and ''netstat
+      -ano && systeminfo && whoami /all'' with /d. The tasklist and wuauclt negatives fail Image. The
+      three look-alikes (systeminfo only, netstat piped to findstr, whoami only) each lack at least two
+      of the three required tokens. All three tokens in one command line are absent from the baseline
+      summary, so about 0 matches.'
+    events_ok: true
+    incidental_issues:
+    - The title says 'Chained', but the rule requires the three tokens to be present without requiring
+      a chaining operator. This is equivalent in practice.
+    - windash has no effect on 'whoami /all', since that value contains no dash, so 'whoami -all' would
+      not match. The report only asks for the netstat variants.
+    - Positive 3's parent WmiPrvSE.exe is an unusual but plausible variant.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 75
+    reasoning: The rule parses in pySigma 1.5.1 with no errors and has all 12 metadata keys, a valid v4
+      UUID and a '2026/10/02' date. Tags attack.discovery, t1082, t1033 and t1049 match the table. Image
+      'cmd.exe', 'systeminfo', 'whoami /all' and 'netstat -ano' all occur in the two evidence quotes,
+      and both quotes are verbatim in the report. By hand and by script, all 3 positives match (including
+      the 'netstat /ano' one, via windash) and both negatives and all 3 look-alikes (single systeminfo,
+      netstat | findstr, whoami) do not. The only reservation is that pySigma's lint flags windash combined
+      with 'all' (see incidental issues); its converted query is still the correct AND of ORs.
+    events_ok: true
+    incidental_issues:
+    - pySigma's invalid_modifier_combinations validator reports a HIGH-severity 'windash cannot be combined
+      with all' issue for CommandLine|contains|windash|all. The pySigma 1.5.1 conversion is still correct
+      (systeminfo AND (whoami -all OR /all ...) AND (netstat -ano OR /ano ...)). A converter that appends
+      the variants to one ANDed list would never match, so this is a latent portability risk.
+    - The report sentence about 'netstat /ano' is not among the evidence quotes. The slash spelling is
+      covered only through windash expansion of the quoted value, not through an explicit quotation or
+      assumption.
+    - The rule does not require a chaining operator (& or &&). It matches any cmd.exe command line containing
+      all three strings, so the title's 'chained' is slightly stronger than the logic.
 excluded: false
 exclusion_reason: ''

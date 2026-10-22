@@ -104,6 +104,41 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: The selection map has the key 'CommandLine|contains' twice ('/i:http' and 'scrobj.dll').
+      A mapping with duplicate keys is invalid under the YAML 1.2 spec, and pySigma 1.5.1 rejects it with
+      YAMLError "Duplicate key 'CommandLine|contains'". Plain yaml.safe_load accepts it silently and keeps
+      only 'scrobj.dll', dropping the '/i:http' condition, so a lenient loader hides the defect; a strict
+      parser catches it. Removing the first key or merging into a |all list makes the rule convert.
+    events_ok: true
+    incidental_issues:
+    - A lenient parse silently changes the rule to regsvr32 + scrobj.dll, so the malformation is semantic
+      as well as syntactic; the events would still pass under the lenient reading, so only a strict YAML
+      or Sigma parse exposes it.
+    - Evidence quotes are verbatim; T1218.010 tags are correct; the look-alikes (local DLL registration,
+      /u /s unregister of a local DLL) are fair benign activity.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: The selection mapping repeats the key 'CommandLine|contains' ('/i:http' and then 'scrobj.dll').
+      Duplicate keys violate the YAML 1.2 requirement that mapping keys be unique. pySigma's loader rejects
+      the rule with YAMLError "Duplicate key 'CommandLine|contains'". Plain yaml.safe_load silently accepts
+      it and keeps only the last value ('scrobj.dll'), so the rule would quietly lose its '/i:http' condition.
+      Using 'CommandLine|contains|all' with a list makes it parse. The confidence is not higher because
+      the outcome depends on how strict the YAML loader is, but a Sigma parser does reject it.
+    events_ok: true
+    incidental_issues:
+    - Under plain PyYAML last-key-wins the rule would still match both positives and none of the negatives
+      or look-alikes (none of those contain scrobj.dll). Without a strict-key parser the defect is a silent
+      semantic loss rather than a crash.
+    - Against the intended logic (regsvr32.exe AND /i:http AND scrobj.dll), both positives match. The
+      whoami and net negatives and both regsvr32 look-alikes (local DLL register, /u /s oldcodec.dll)
+      do not.
 excluded: false
 exclusion_reason: ''

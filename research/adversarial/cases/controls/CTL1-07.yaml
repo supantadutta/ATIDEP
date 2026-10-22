@@ -125,6 +125,45 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'The rule parses as YAML and in pySigma, and all 12 metadata keys are present. The id is
+      a valid UUID, the date is 2026/10/02, and the fields are only Image, CommandLine and ParentImage.
+      By hand and by script, all 3 positives match: the regex process\s+call\s+create handles the ''process   call   create''
+      spacing in positive 2. The 3 negatives and the ''wmic.exe process list brief'' look-alike do not
+      match, and the hdtools.exe-parent look-alike is removed by filter_helpdesk. Every value (wmic.exe,
+      hdtools.exe, and the regex runs process, call and create) is in a verbatim evidence quote. Tags
+      attack.execution and attack.t1047 match the table. Image plus CommandLine are two positive fields,
+      and wmic is absent from the benign baseline.'
+    events_ok: true
+    incidental_issues:
+    - Title says 'Remote Execution' but the rule does not require /node, and positive 3 is a local 'wmic.exe
+      process call create' with no /node. This is consistent with the report's detection sentence but
+      the title overstates.
+    - The ParentImage hdtools.exe exclusion can be evaded by any attacker who names a binary hdtools.exe.
+      This follows the report and is not a defect.
+    - I could not check the Wazuh converter step (G3) directly. pySigma parse-ability and the allowed
+      modifier subset were confirmed.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: YAML parses and pySigma accepts it, and the metadata is complete. T1047 maps to attack.execution
+      and attack.t1047, which is what the rule carries. The three evidence quotes are verbatim in the
+      report and cover wmic.exe, hdtools.exe and the regex literals 'process', 'call' and 'create'. The
+      3 positives match the regex '.*process\s+call\s+create.*', including the one with 3-space gaps,
+      none with an hdtools.exe parent. The 3 negatives are unrelated. Look-alike 1 ('wmic process list
+      brief') lacks 'call create'. Look-alike 2 has the same call, but ParentImage ...\hdtools.exe satisfies
+      filter_helpdesk, so it is excluded. wmic.exe is absent from the benign baseline, so breadth is not
+      a concern.
+    events_ok: true
+    incidental_issues:
+    - The hdtools.exe exclusion keys only on the parent image name, so it is spoofable (acceptable for
+      a lab control).
+    - '''net use'' as a negative is loosely lateral-movement-flavoured but unrelated to the rule.'
 excluded: false
 exclusion_reason: ''

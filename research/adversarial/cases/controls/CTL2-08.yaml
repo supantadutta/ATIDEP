@@ -114,6 +114,43 @@ events:
     dest_port: null
     name: home-nas.dyn-host.example
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: 'The rule parses in pySigma with no errors, and the metadata, fields and modifiers (contains,
+      endswith) are all within the subset. Tags attack.command_and_control and attack.t1071.004 match
+      the table. Both quotes are verbatim; ''\AppData\Local\Temp\'' is covered by quote 1 once separators
+      are stripped, and ''.dyn-host.example'' is covered because quote 2 contains ''node7.dyn-host.example''.
+      All 3 positives match (Temp path and *.dyn-host.example). Negatives (chrome/wikipedia, Teams in
+      AppData\Local\Microsoft\Teams) match neither selection. Look-alikes fail one half each: choco setup.exe
+      in Temp queries cdn.jsdelivr.net, and chrome queries home-nas.dyn-host.example. Two different fields
+      are used, so G11 is satisfied, and the baseline has no dyn-host names.'
+    events_ok: true
+    incidental_issues:
+    - Resolving dynamic-DNS hosts to find a controller is arguably T1568 Dynamic Resolution; T1071.004
+      is the cited and table-valid technique, so it is not a defect here.
+    - Positive 2 (bob, Temp\cache\agent.exe, relay2) is not in the report but is consistent with the rule's
+      behaviour.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: The rule uses dns_query with only the allowed fields Image and QueryName, parses cleanly,
+      and the tags attack.command_and_control and attack.t1071.004 match the table. '\AppData\Local\Temp\'
+      is in evidence quote 1 and '.dyn-host.example' in quote 2, and both quotes are verbatim in the report.
+      All 3 positives match (wsupd.exe and agent.exe under a user Temp path, each querying *.dyn-host.example).
+      The chrome and Teams negatives fail both conditions. Look-alike 1 (Temp setup.exe querying cdn.jsdelivr.net)
+      fails the QueryName test, and look-alike 2 (chrome querying home-nas.dyn-host.example) fails the
+      Image-path test. The 60-event DNS baseline has no dyn-host.example, and the rule needs two fields,
+      so the breadth guard is met.
+    events_ok: true
+    incidental_issues:
+    - T1071.004 (DNS) is a loose fit for dynamic-DNS name resolution, which is closer to dynamic resolution.
+      It is the only technique the case cites and is in the table, so G7 holds.
+    - An exact lookup of 'dyn-host.example' with no subdomain would not match the endswith '.dyn-host.example'
+      condition.
 excluded: false
 exclusion_reason: ''

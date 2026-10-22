@@ -106,6 +106,37 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The `level` key is absent from sigma_yaml. After falsepositives, the rule ends with no
+      level line, and YAML parsing shows missing keys [''level'']. The contract lists level as required
+      (informational through critical). Everything else is intact: UUID ok, status experimental, date
+      2026/10/02, urn reference, non-empty falsepositives, correct T1053.005 tags. pySigma still parses
+      the rule, because level is optional there, so G2 is the gate meant to stop it.'
+    events_ok: true
+    incidental_issues:
+    - The positives match. Both schtasks commands contain /create, onlogon (case-insensitive) and msdrv.
+    - The look-alikes do not match. The BackupNightly task has no onlogon or msdrv, and the /query command
+      has no /create.
+    - Both evidence quotations are verbatim in the report text. G4 would be satisfied by the quotes.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 99
+    reasoning: Parsing sigma_yaml gives the keys title, id, status, description, references, author, date,
+      tags, logsource, detection and falsepositives. The 'level' key is missing entirely. The contract
+      requires level (informational, low, medium, high or critical). All other metadata is valid (UUID
+      id parses, experimental, date 2026/10/02, references urn:atidep:case, non-empty falsepositives,
+      correct tags for T1053.005). Both positives match '/create', 'onlogon' and 'msdrv', and the daily-backup
+      and query look-alikes do not.
+    events_ok: true
+    incidental_issues:
+    - pySigma accepts a rule without level, so only a metadata gate (not G1) would catch this.
+    - Both evidence quotes are verbatim in the report; the second ('a binary in a folder named msdrv under
+      ProgramData') supports the 'msdrv' value.
 excluded: false
 exclusion_reason: ''

@@ -130,6 +130,45 @@ events:
     dest_port: '8080'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: The rule parses, the metadata is complete, and the fields DestinationIp, DestinationPort
+      and Image are allowed. DestinationIp|startswith '198.51.100.' is a valid way to express the /24
+      without cidr, and it occurs in the quote ('198.51.100.23', '198.51.100.0/24'). The values 8080,
+      8000, chrome.exe and msedge.exe are also covered by the verbatim quotes. The T1571 tags are correct.
+      By hand, the three positives (updsvc to .24:8000, powershell to .23:8080, sync.exe to .131:8080)
+      match. Teams and svchost do not. chrome and msedge in the block are removed by the filter, and powershell
+      to 192.0.2.50:8080 fails the IP test. The IP prefix gives a discriminating term, and the baseline
+      has only ports 80/443, so 0 matches.
+    events_ok: true
+    incidental_issues:
+    - Only chrome.exe and msedge.exe are excluded, although the report says 'browsers such as'. Other
+      browsers would not be excluded, and a malicious binary named chrome.exe would be.
+    - Positive 3 targets .131, an address the report only anticipates. It is consistent with the stated
+      whole-prefix intent.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The rule parses and the fields Image, DestinationIp and DestinationPort are valid. The
+      values '198.51.100.', 8080, 8000, chrome.exe and msedge.exe all occur in the two verbatim quotes.
+      DestinationIp|startswith '198.51.100.' is the right way to express the /24, since cidr is not allowed.
+      It is also an 11-character positive term on a non-process field, which satisfies the breadth guard.
+      The 3 positives match, including the unobserved host .131 and the non-browser binaries. The chrome
+      and msedge look-alikes are removed by filter_browser. The powershell look-alike at 192.0.2.50:8080
+      is outside the prefix. The negatives are on ports 443 and 80, so they do not match. T1571 is the
+      only tag pair and is correct.
+    events_ok: true
+    incidental_issues:
+    - filter_browser excludes chrome.exe and msedge.exe on port 8000 as well, although the report exempts
+      browsers only on 8080 (minor over-exclusion).
+    - The browser exclusion is by image name only, so an attacker binary named chrome.exe would evade
+      the rule.
+    - Ports 8080 and 8000 are common alternate web ports, so T1571 is a modest stretch, though the case
+      cites it.
 excluded: false
 exclusion_reason: ''

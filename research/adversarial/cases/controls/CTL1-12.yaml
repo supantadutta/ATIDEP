@@ -137,6 +137,44 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The YAML and pySigma parse and the metadata is complete. 'all of selection*' ANDs Image|endswith
+      \schtasks.exe, CommandLine|contains|all of '/create' and 'powershell', and CommandLine|windash|contains
+      '-w hidden' or '-WindowStyle Hidden'. All 3 positives match, including the multi-line YAML cmd values,
+      which fold to a single line, and positive 3 with 'cmd.exe /c powershell.exe -w hidden'. The negatives
+      are non-schtasks. The look-alike 'schtasks /query /fo LIST' has no /create, and the look-alike /create
+      task for backup.ps1 runs powershell without a hidden style, so neither matches. Every value is in
+      the 2 verbatim evidence quotes, and the line-wrapped '-w hidden' reads correctly. Tags attack.execution,
+      attack.persistence, attack.privilege_escalation, attack.t1053.005 and attack.t1059.001 match the
+      table for T1053.005 and T1059.001. The rule has three positive conditions on two fields, and baseline
+      schtasks events are only /query.
+    events_ok: true
+    incidental_issues:
+    - The rule does not require the report's /sc onlogon or /ru SYSTEM, which is reasonable. Positives
+      2 and 3 use other schedules, so the rule is broader than the exact report command but within the
+      report's detection sentence.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'YAML parses and pySigma accepts it. All metadata is present, the id is a v4 UUID, and
+      the modifiers (endswith, contains|all, windash|contains) and the condition ''all of selection*''
+      are inside the subset. Tags attack.execution/persistence/privilege_escalation/t1053.005/t1059.001
+      match the table for T1053.005 and T1059.001. Both evidence quotes are verbatim in the report and
+      cover schtasks.exe, /create, powershell, ''-w hidden'' and ''-WindowStyle Hidden''. By hand, all
+      3 positives match (all contain /create, powershell and a hidden style). The 3 negatives and 2 look-alikes
+      do not: the /query event lacks /create, and the Backup task with -NoProfile -ExecutionPolicy Bypass
+      has no hidden style. The rule needs three ANDed terms, so a hit on the schtasks-heavy baseline is
+      very unlikely.'
+    events_ok: true
+    incidental_issues:
+    - '''/create'' and ''powershell'' are matched anywhere in the command line, not only inside the /tr
+      action, which is a minor imprecision.'
+    - Positive 3 wraps powershell in 'cmd.exe /c', a sensible variant that the rule still catches.
 excluded: false
 exclusion_reason: ''

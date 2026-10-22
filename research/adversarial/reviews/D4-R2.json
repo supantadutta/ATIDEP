@@ -1,0 +1,91 @@
+{
+ "batch": "D4",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D4-01",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "Both evidence quotes are verbatim in the report. \\mshta.exe, 'http' and '.hta' occur in the first quote. ParentImage|endswith '\\winword.exe' (normalised: winword.exe) occurs in neither quote, is not in any declared assumption (assumptions is empty), and does not appear anywhere in the report text either (it only says 'a child process' and 'ordinary Office activity'). So a discriminating condition value is unsupported and G4 should stop it.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Title ('From Word') and description assert a winword.exe parent that the report never states; the positive events were built to match that unsupported parent.",
+    "The falsepositives entry is generic, but all six events evaluate as labelled (positives match, negatives and look-alikes do not)."
+   ]
+  },
+  {
+   "id": "D4-02",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The two quotes are 'certutil.exe -urlcache' and 'http://stage.cranemail.test/pack/updsvc.bin'. They support '\\certutil.exe', '-urlcache' and 'http'. '-split' is in neither quote and no assumption covers it. It appears only in the full report sentence, which is not the evidence, so the quote list is too short for the rule. G4 should reject '-split'.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule is more specific than the evidence supports: '-split' is true of the report but was left out of the quotations (a quote-selection fault, not a report fault).",
+    "The look-alike 'certutil.exe -urlcache * delete' is a reasonable benign near-miss and correctly fails to match."
+   ]
+  },
+  {
+   "id": "D4-03",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The only quote is 'powershell.exe -NoProfile -Command Set-MpPreference -DisableRealtimeMonitoring $true', and it is verbatim in the report. It supports '\\powershell.exe' and 'Set-MpPreference -DisableRealtimeMonitoring'. The second alternative in the CommandLine list, 'Set-MpPreference -DisableIOAVProtection', appears in no quote, in no assumption (assumptions is empty) and nowhere in the report text. A list is ORed, but G4 checks every discriminating value, so the unsupported alternative is a genuine G4 failure.",
+   "events_ok": true,
+   "incidental_issues": [
+    "No positive event exercises the DisableIOAVProtection alternative, so the added alternative is untested as well as unsupported.",
+    "The positive using '-DisableRealtimeMonitoring 1' is a legitimate way to disable monitoring and matches. All other events behave as labelled."
+   ]
+  },
+  {
+   "id": "D4-04",
+   "verdict": "present",
+   "confidence": 91,
+   "reasoning": "The quotes support '\\regsvr32.exe' and '/i:https://'. '/i:http://' is not in the quotes (the report has https) but is correctly listed in the covers of the declared assumption. CommandLine|contains 'scrobj.dll' is in neither quote, does not occur anywhere in the report, and is not in the covers list. The assumption's statement text mentions scrobj.dll, but covers lists only '/i:http://', and covers is what G4 consults. So scrobj.dll is an unsupported mandatory condition (selection_dll is ANDed).",
+   "events_ok": true,
+   "incidental_issues": [
+    "The assumption statement names scrobj.dll but the covers field omits it, so this looks like a half-declared assumption.",
+    "The report says the audit record was truncated, so making scrobj.dll mandatory would also miss real variants.",
+    "Positive events add scrobj.dll, which the report does not show. Events and rule logic are otherwise consistent: the /u /s scrobj.dll look-alike correctly lacks a /i: URL and does not match."
+   ]
+  },
+  {
+   "id": "D4-05",
+   "verdict": "present",
+   "confidence": 86,
+   "reasoning": "The quotes contain '203.0.113.77', '8443' and 'TCP port', so DestinationIp and DestinationPort are supported. Image|endswith '\\wscript.exe' (wscript.exe) is in neither quote, no assumption is declared, and the report text only says 'a script host process', never naming wscript.exe. The Image value is therefore an invented discriminating condition. The contract does not exempt process names from G4 (only boolean fields), so G4 should stop it.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule is bound to a single IP and port plus an invented process name, so it is effectively an IOC rule with a guessed image.",
+    "The description states wscript.exe as fact, though the report never says which script host connected.",
+    "The look-alike (wscript.exe to 198.51.100.40:8443) is a weak benign case, but all events evaluate as labelled."
+   ]
+  },
+  {
+   "id": "D4-06",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "The single quote is 'lookups for generated subdomains of telemetry-sync.example-cdn.test, for example a1b2c3d4e5.telemetry-sync.example-cdn.test', and it is verbatim in the report. It supports QueryName|endswith '.telemetry-sync.example-cdn.test'. Image|endswith '\\rundll32.exe' (rundll32.exe) is not in the quote and no assumption covers it. It does occur in the earlier sentence of the report ('A loader executed through rundll32.exe'), but that sentence was not quoted, and the quotations rather than the report are the evidence. So the Image value is unsupported at G4.",
+   "events_ok": true,
+   "incidental_issues": [
+    "This is a quote-selection trap: the supporting text is in the report but not in the quote list.",
+    "The QueryName condition is effectively a domain IOC.",
+    "Events and rule logic are consistent: the rundll32 look-alike queries to other domains do not match."
+   ]
+  },
+  {
+   "id": "D4-07",
+   "verdict": "present",
+   "confidence": 78,
+   "reasoning": "The quote 'schtasks.exe /create /tn OneDriveSyncHelper /sc minute /mo 5 /tr C:\\Users\\Public\\Libraries\\syncsvc.exe' supports '/create', '/sc minute' and '\\Users\\Public\\Libraries'. It also supports the file name schtasks.exe. The Image value is '\\Windows\\System32\\schtasks.exe', which with separators and case removed is 'windowssystem32schtasks.exe'. 'Windows' and 'System32' appear in no quote, no assumption (assumptions is empty) and nowhere in the report. So the directory-qualified Image value is not traceable. The defect is subtler here, since only the path prefix is unsupported and the basename is quoted.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The title says 'Every Minute', but the evidence is /mo 5 (every five minutes) and the rule matches any minute interval; the second positive uses /mo 10.",
+    "The directory prefix \\Windows\\System32\\ is an invented narrowing that the evidence does not state.",
+    "All six events evaluate as labelled."
+   ]
+  }
+ ]
+}

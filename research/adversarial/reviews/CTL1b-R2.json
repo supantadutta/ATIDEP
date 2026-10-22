@@ -1,0 +1,79 @@
+{
+ "batch": "CTL1b",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "CTL1-12",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "YAML parses and pySigma accepts it. All metadata is present, the id is a v4 UUID, and the modifiers (endswith, contains|all, windash|contains) and the condition 'all of selection*' are inside the subset. Tags attack.execution/persistence/privilege_escalation/t1053.005/t1059.001 match the table for T1053.005 and T1059.001. Both evidence quotes are verbatim in the report and cover schtasks.exe, /create, powershell, '-w hidden' and '-WindowStyle Hidden'. By hand, all 3 positives match (all contain /create, powershell and a hidden style). The 3 negatives and 2 look-alikes do not: the /query event lacks /create, and the Backup task with -NoProfile -ExecutionPolicy Bypass has no hidden style. The rule needs three ANDed terms, so a hit on the schtasks-heavy baseline is very unlikely.",
+   "events_ok": true,
+   "incidental_issues": [
+    "'/create' and 'powershell' are matched anywhere in the command line, not only inside the /tr action, which is a minor imprecision.",
+    "Positive 3 wraps powershell in 'cmd.exe /c', a sensible variant that the rule still catches."
+   ]
+  },
+  {
+   "id": "CTL1-11",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "YAML parses and pySigma accepts it, and the metadata is complete. T1218.003 maps to attack.stealth and attack.t1218.003, which is what the rule carries. Both evidence quotes are verbatim in the report and cover cmstp.exe, the /s and /ns switches and '.inf'. The 3 positives match (cmstp.exe with /s, /ns and .inf, including the /au variant and the SysWOW64 UNC-path variant). The 3 negatives are unrelated. Look-alike 1 (cmstp /u ...vpnprofile.inf) has no /s or /ns, and look-alike 2 (cmstp /s ...vpn.inf) has no /ns, so neither matches. The rule is specific: a cmstp.exe image AND '.inf' (4 characters) on CommandLine, and cmstp.exe is absent from the benign baseline.",
+   "events_ok": true,
+   "incidental_issues": [
+    "'/s' is a very short substring; it is safe here only because it is ANDed with /ns, .inf and the image.",
+    "There is no windash, so '-s -ns' spellings would be missed. This is a small coverage gap, not a defect."
+   ]
+  },
+  {
+   "id": "CTL1-10",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "YAML parses, pySigma converts it, and the metadata, tags and fields are valid. The tags for T1059.001 plus T1027 (execution, stealth, t1059.001, t1027) match the table. The regex literal runs ('powershell.exe', 'ncodedcommand') occur in evidence quotes that are verbatim in the report. By hand, the three positives carry base64 arguments of 124, 132 and 60 characters after -e, -enc and -encodedcommand, so all match. The 16-character '-enc VwBoAG8AYQBtAGkA' look-alike falls under the 40-character floor and does not match. The -File and '-Command ... Status -eq Running' look-alikes do not match, because ' -eq' and '-ExecutionPolicy' fail the (n|nc|ncodedcommand)?\\s+ part. The negatives are not powershell.exe.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The 40-character threshold is not in any evidence quotation or declared assumption. The report text does say 'at least 40 characters', but the author did not quote it, and G4 does not check numeric quantifiers.",
+    "The alternation (n|nc|ncodedcommand) misses valid PowerShell prefixes such as -ec, -enco and -encod.",
+    "The report says the argument is about 400 characters while the positives are 60 to 132; positive 1's base64 is also truncated and does not decode cleanly.",
+    "The look-alike with a 16-character encoded 'Whoami' is a threshold probe rather than clearly benign activity."
+   ]
+  },
+  {
+   "id": "CTL1-09",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "YAML parses and pySigma accepts it, and the metadata is complete. T1059.001 maps to attack.execution and attack.t1059.001, which is what the rule carries. The three evidence quotes are verbatim in the report and cover winword.exe, excel.exe, powershell.exe, DownloadString, DownloadFile and Net.WebClient, so every discriminating value is quoted. The three positives (WINWORD or EXCEL parent, powershell child, a DownloadString, DownloadFile or Net.WebClient command line) all match, including the 'System.Net.WebClient' variant. The three negatives are not PowerShell. Look-alike 1 (Word parent, Get-Service, no download string) fails selection_child. Look-alike 2 (explorer parent, benign DownloadFile) fails selection_parent. It needs an Office parent, a powershell child and a download string, so baseline hits are very unlikely.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Negative 1 has WINWORD.EXE as the Image rather than the parent, which is fine as an unrelated event.",
+    "'Net.WebClient' alone is broad, but it is bounded by the Office-parent requirement."
+   ]
+  },
+  {
+   "id": "CTL1-08",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "YAML parses and pySigma converts the windash|contains selections, and the metadata is complete. T1059.001 tags are correct. The three evidence quotes are verbatim and cover powershell.exe, pwsh.exe, '-enc', '-w hidden', '-WindowStyle Hidden' and ccmexec.exe. All 3 positives match, with encoded plus hidden in both short and long forms and powershell.exe and pwsh.exe images, and none has a ccmexec.exe parent. The 3 negatives are unrelated. Look-alike 1 satisfies the image, -enc and hidden selections, but its parent C:\\Windows\\CCM\\CcmExec.exe satisfies filter_sccm, so it is excluded. The -File, hidden-only and '-Encoding utf8' look-alikes each fail one of the -enc or hidden selections.",
+   "events_ok": true,
+   "incidental_issues": [
+    "'-enc' as a substring also matches '-Encoding' (look-alike 4 shows this); the rule is saved there only by the hidden-window requirement, so a hidden-window script using -Encoding would be a false positive.",
+    "The short forms -e and -ec are not covered, a minor coverage gap.",
+    "The ccmexec exclusion relies on the parent image name only."
+   ]
+  },
+  {
+   "id": "CTL1-07",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "YAML parses and pySigma accepts it, and the metadata is complete. T1047 maps to attack.execution and attack.t1047, which is what the rule carries. The three evidence quotes are verbatim in the report and cover wmic.exe, hdtools.exe and the regex literals 'process', 'call' and 'create'. The 3 positives match the regex '.*process\\s+call\\s+create.*', including the one with 3-space gaps, none with an hdtools.exe parent. The 3 negatives are unrelated. Look-alike 1 ('wmic process list brief') lacks 'call create'. Look-alike 2 has the same call, but ParentImage ...\\hdtools.exe satisfies filter_helpdesk, so it is excluded. wmic.exe is absent from the benign baseline, so breadth is not a concern.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The hdtools.exe exclusion keys only on the parent image name, so it is spoofable (acceptable for a lab control).",
+    "'net use' as a negative is loosely lateral-movement-flavoured but unrelated to the rule."
+   ]
+  }
+ ]
+}

@@ -107,6 +107,40 @@ events:
     dest_port: '8080'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The rule is on network_connection, whose allowed fields are Image, DestinationIp, DestinationPort
+      and Initiated. The selection uses `DestinationHostname|endswith`, which is not on that list. It
+      is a real Sysmon field name, but it is not in this catalog, so G5 should stop it. Image is valid.
+    events_ok: true
+    incidental_issues:
+    - The event format for network_connect carries only image, dest_ip and dest_port, with no hostname.
+      The positive events therefore could not match this rule even if the field were allowed, because
+      the hostname condition has nothing to evaluate against.
+    - The look-alikes are mshta.exe connecting to 192.0.2.15:80 and 192.0.2.16:8080. The report says mshta
+      has no business reaching external hosts, so calling these 'benign' sits awkwardly with the report.
+      They only show that the rule is keyed to the staging hostname.
+    - The evidence quotes are verbatim in the report and the tags (attack.stealth, attack.t1218.005) are
+      correct.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The network_connection rule uses DestinationHostname|endswith, but the allowed fields are
+      only Image, DestinationIp, DestinationPort and Initiated, so DestinationHostname is invented and
+      G5 should stop it. Image is valid. The tags (attack.stealth, attack.t1218.005) are correct and the
+      YAML parses, so this is the only defect.
+    events_ok: true
+    incidental_issues:
+    - The event format for network_connect has no hostname field, so the positive events (mshta.exe to
+      203.0.113.77:8443) could not match even a hostname rule. Image plus DestinationIp or DestinationPort
+      would be needed for a testable fix.
+    - 'The two look-alikes (mshta.exe to 192.0.2.15:80 and 192.0.2.16:8080) are weakly benign: the report
+      says mshta should never make outbound connections. They only act as look-alikes for a rule scoped
+      to the specific staging host.'
 excluded: false
 exclusion_reason: ''

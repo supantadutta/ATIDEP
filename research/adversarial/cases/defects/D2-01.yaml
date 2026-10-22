@@ -105,6 +105,40 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: 'The id is 5c0e7a1d-93b4-4f28-a6d1-9d41c2e7b05g. The last group ends in ''g'', which is
+      not a hex digit, and Python''s uuid.UUID() rejects it. The other metadata is complete: status experimental,
+      date 2026/10/02, references urn:atidep:case, non-empty falsepositives, level high, valid tags. The
+      malformed UUID is therefore the only metadata defect, and it matches the D2 claim.'
+    events_ok: true
+    incidental_issues:
+    - 'pySigma''s SigmaRule.from_yaml also rejects this rule (SigmaIdentifierError: identifier must be
+      a UUID), so G1 could stop it before G2 does. Gate attribution is ambiguous, though the defect is
+      real.'
+    - The falsepositives entry says legitimate software 'was not observed'. That is a statement of absence,
+      not a false-positive scenario. It is non-empty, so it is not the seeded defect.
+    - 'Hand check of the detection logic found no other defect. Both positives match (Image endswith \rundll32.exe,
+      CommandLine contains javascript: and RunHTMLApplication, case-insensitive). The negatives and look-alikes
+      do not match.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The id is ''5c0e7a1d-93b4-4f28-a6d1-9d41c2e7b05g''. Its last character ''g'' is not hexadecimal,
+      so it is not a UUID (Python uuid.UUID raises, and pySigma raises SigmaIdentifierError ''must be
+      an UUID''). The other metadata is intact: status experimental, date 2026/10/02, level high, references
+      urn:atidep:case, non-empty falsepositives. The detection logic matches both positives and neither
+      negative nor look-alike, so the id is the only defect and it is what a metadata gate should stop.'
+    events_ok: true
+    incidental_issues:
+    - pySigma itself rejects the malformed id, so a G1 'Sigma parser accepts the rule' check would likely
+      stop this rule before G2; it is not strictly 'otherwise valid Sigma'.
+    - Positive 2 uses the SysWOW64 rundll32 path and upper-case JAVASCRIPT; both are matched by the case-insensitive
+      endswith/contains, which is good coverage.
 excluded: false
 exclusion_reason: ''

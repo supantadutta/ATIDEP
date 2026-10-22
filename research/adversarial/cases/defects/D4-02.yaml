@@ -107,6 +107,34 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 96
+    reasoning: CommandLine|contains|all includes '-split'. The two evidence quotations are 'certutil.exe
+      -urlcache' and 'http://stage.cranemail.test/pack/updsvc.bin', and neither contains '-split'. The
+      switch appears only in the surrounding report text, which is not evidence, and assumptions is empty.
+      certutil.exe, -urlcache and http are all supported by the quotations.
+    events_ok: true
+    incidental_issues:
+    - The look-alike 'certutil.exe -urlcache * delete' shares -urlcache but lacks -split and http, so
+      it correctly does not match.
+    - The rule is otherwise consistent, and the tags match the T1105 row of the table.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: The two quotes are 'certutil.exe -urlcache' and 'http://stage.cranemail.test/pack/updsvc.bin'.
+      They support '\certutil.exe', '-urlcache' and 'http'. '-split' is in neither quote and no assumption
+      covers it. It appears only in the full report sentence, which is not the evidence, so the quote
+      list is too short for the rule. G4 should reject '-split'.
+    events_ok: true
+    incidental_issues:
+    - 'The rule is more specific than the evidence supports: ''-split'' is true of the report but was
+      left out of the quotations (a quote-selection fault, not a report fault).'
+    - The look-alike 'certutil.exe -urlcache * delete' is a reasonable benign near-miss and correctly
+      fails to match.
 excluded: false
 exclusion_reason: ''

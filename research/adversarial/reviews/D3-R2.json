@@ -1,0 +1,81 @@
+{
+ "batch": "D3",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D3-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The process_creation rule's selection_img uses NewProcessName|endswith, which is not in the allowed list (Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName), so G5 should reject it. The YAML parses, and NewProcessName is the only field outside the list (CommandLine is valid). Metadata and tags (attack.stealth, attack.t1218.011) are correct, so this is the sole defect. If NewProcessName were Image, both positives (rundll32 with mediasync.dll,#1) would match and the look-alikes (shell32.dll,Control_RunDLL; printui.dll) would not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule keys on the literal file name mediasync.dll, which is narrow, but that is not related to the claimed defect."
+   ]
+  },
+  {
+   "id": "D3-02",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The network_connection rule uses DestinationHostname|endswith, but the allowed fields are only Image, DestinationIp, DestinationPort and Initiated, so DestinationHostname is invented and G5 should stop it. Image is valid. The tags (attack.stealth, attack.t1218.005) are correct and the YAML parses, so this is the only defect.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The event format for network_connect has no hostname field, so the positive events (mshta.exe to 203.0.113.77:8443) could not match even a hostname rule. Image plus DestinationIp or DestinationPort would be needed for a testable fix.",
+    "The two look-alikes (mshta.exe to 192.0.2.15:80 and 192.0.2.16:8080) are weakly benign: the report says mshta should never make outbound connections. They only act as look-alikes for a rule scoped to the specific staging host."
+   ]
+  },
+  {
+   "id": "D3-03",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The dns_query rule uses DnsQueryName|endswith, but the only allowed fields are Image and QueryName, so G5 should stop it. DnsQueryName is a near-miss invented name for QueryName. With the field corrected, the positives (*.ledger-sync.pennantbio.invalid from powershell.exe) would match, and the chrome and svchost negatives and the PowerShell look-alike to psgallery-mirror.pennantbio.test would not. Tags (attack.command_and_control, attack.t1071.004) are correct.",
+   "events_ok": true,
+   "incidental_issues": []
+  },
+  {
+   "id": "D3-04",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The filter_patch_agent selection uses ParentProcessName|endswith, which is not in the process_creation allowed list; the valid field is ParentImage. The invented field sits in a negated filter, but G5 checks every field used, so the rule should still be stopped. Image and CommandLine are valid, and the tags (attack.command_and_control, attack.t1105) are correct. With the field fixed, the two certutil -urlcache -split positives match and the look-alikes (-store My, -hashfile) and the ping and tasklist negatives do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The patchagent look-alike (certutil -store My) would not match the selection anyway because it lacks -urlcache, so the filter is redundant for the tests."
+   ]
+  },
+  {
+   "id": "D3-05",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The network_connection rule uses DestinationIP, but the contract lists DestinationIp and says field names are case-sensitive exactly as written, so DestinationIP is not an allowed field and G5 should stop it. The defect is subtle, a case-only difference, but it is a genuine violation of the stated contract. Image and DestinationPort are valid, and the tags (attack.command_and_control, attack.t1571) are correct. With the casing fixed, the two powershell.exe positives to 203.0.113.120:4444 would match and the 192.0.2.30:5985 look-alike would not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The invented field is a case variant of a real field rather than a wholly new name, which may or may not count as invented under a looser reading of the class."
+   ]
+  },
+  {
+   "id": "D3-06",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The process_creation selection includes Hashes|contains, which is not in the allowed list (Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName), so G5 should reject it. Image and CommandLine are valid, and the tags (attack.credential_access, attack.t1003.001) are correct. The event format carries no hash value, so the two positives (svcstat.exe -accepteula -ma lsass.exe) could never satisfy a hash condition. The Hashes condition is also what would block the rule.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Hashes is a real Sysmon and Sigma field, but it is not in this lab's process_creation catalog.",
+    "The hash condition makes the rule an IOC rule combined with a behaviour rule, and the test events cannot exercise it.",
+    "The procdump64 look-alike (-ma w3wp.exe) is a reasonable benign look-alike."
+   ]
+  },
+  {
+   "id": "D3-07",
+   "verdict": "present",
+   "confidence": 96,
+   "reasoning": "The process_creation rule matches on ScriptBlockText|contains|all, but ScriptBlockText belongs to windows_powershell_script_block, which the contract says is not available, and it is not in the process_creation allowed list (the command line is CommandLine), so G5 should stop it. Image is valid, and the tags (attack.execution, attack.t1059.001) are correct. With the field changed to CommandLine, both positives (IEX plus DownloadString) would match and the inventory.ps1 and Invoke-WebRequest look-alikes would not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "ScriptBlockText is a real Sigma field from a different, unavailable log source, so the case is also near the G6 telemetry-availability territory. The rule still declares process_creation, so G5 is the gate that applies."
+   ]
+  }
+ ]
+}

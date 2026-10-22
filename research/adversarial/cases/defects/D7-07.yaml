@@ -96,6 +96,39 @@ events:
     dest_port: '8080'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The only condition is DestinationPort in [''80'',''443'']: a single field, with values
+      of 2 and 3 characters, so it has no discriminating term under either prong of G11. The contract
+      baseline says the network connections are ports 443 and 80 from chrome, msedge, Teams, svchost and
+      OneDrive. Essentially all 80 network events (20% of the 400) would match, far above the 2-event
+      limit. Positives (updater.exe on 80 and 443) match, and the 3389, 53 and 8080 negatives and lookalike
+      do not.'
+    events_ok: true
+    incidental_issues:
+    - The lookalike (curl.exe on 8080) avoids the matched ports. A real look-alike would be a browser
+      connection on 443 or 80.
+    - The two positive events differ only in port, and they do exhibit the described fallback behaviour.
+    - The multi-line evidence quote parses correctly, and the tags match the table for T1105.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The only condition is DestinationPort in [''80'',''443'']. Both values are under 4 characters,
+      there is no second field and no discriminating term, so the structural G11 rule fails. The baseline
+      has 80 network connections, with ports 443 and 80 from chrome, msedge, Teams, svchost and OneDrive.
+      Most of the baseline''s network events match, far above 0.5 percent. Hand evaluation: both updater.exe
+      positives (ports 80, 443) match, and the negatives (3389, 53) and the curl 8080 look-alike do not.'
+    events_ok: true
+    incidental_issues:
+    - The look-alike (curl on 8080) does not match, so it hides the defect. Browsers on 443 would be the
+      real benign look-alike.
+    - The rule ignores the report's updater.exe path and 203.0.113.77, and has no Image or DestinationIp
+      term.
+    - The two positives differ only in port.
 excluded: false
 exclusion_reason: ''

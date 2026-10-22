@@ -94,6 +94,38 @@ events:
     dest_port: null
     name: a1b2c3.pkgmirror.test
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: The only condition is QueryName|endswith '.com'. At exactly 4 characters on a non-process
+      field it nominally meets the length prong of G11, but it is a bare TLD. The contract baseline DNS
+      names include login.microsoftonline.com, www.microsoft.com, mail.google.com, www.bing.com, onedrive.live.com
+      and windowsupdate.microsoft.com. That is six of the eight listed domains, so a large fraction of
+      the 60 DNS queries (around 10% of the 400) match, far over the 2-event limit. Positives (*.vexmoor-lattice.com)
+      match, and the .example, .invalid and .test lookalike and negatives do not.
+    events_ok: true
+    incidental_issues:
+    - The lookalike (a1b2c3.pkgmirror.test) ends in .test, so it cannot show the over-breadth. A benign
+      .com lookup would be the proper look-alike.
+    - vexmoor-lattice.com uses a real TLD rather than .test, .example or .invalid. It is an invented name,
+      but it is not strictly in the contract's fictional-domain convention.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: 'The only condition is QueryName|endswith ''.com'', which is exactly 4 characters and so
+      barely passes the structural length test. It still matches nearly every commercial domain. In the
+      contract baseline''s 8 listed DNS domains, 6 end in .com (login.microsoftonline.com, www.microsoft.com,
+      mail.google.com, www.bing.com, onedrive.live.com, windowsupdate.microsoft.com), so most of the 60
+      DNS queries match. That is far above 2 of 400. Hand evaluation: both dnsbeat.exe positives match,
+      and the .example, .invalid and .test events do not.'
+    events_ok: true
+    incidental_issues:
+    - The look-alike is a .test name, so it does not match '.com' and does not show the over-breadth.
+    - The report evidence identifies vexmoor-lattice.com and the dnsbeat.exe image, which the rule ignores.
+    - The two positives differ only in the random label.
 excluded: false
 exclusion_reason: ''

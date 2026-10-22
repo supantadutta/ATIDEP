@@ -103,6 +103,42 @@ events:
     dest_port: '4782'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 80
+    reasoning: 'The YAML parses and every top-level key is valid, but detection defines ''selection_rundll32''
+      (two l''s) while ''condition: selection_rundl32'' (one l) references an undefined identifier. pySigma
+      SigmaRule.from_yaml returns with no errors but evaluating the condition raises SigmaConditionError
+      ''Detection selection_rundl32 not defined in detections'', and TextQueryTestBackend.convert_rule
+      fails the same way; correcting the typo makes it convert to ''Image endswith \rundll32.exe and DestinationPort=4782''.
+      A Sigma parser therefore does not accept it, so the defect is real, although the failure is lazy
+      in pySigma and is a dangling reference rather than a structural YAML error.'
+    events_ok: true
+    incidental_issues:
+    - The failure only surfaces when the condition is parsed or converted, not at SigmaRule.from_yaml;
+      a G1 check that only constructs the rule object would miss it, so this case sits at the semantic
+      edge of 'schema violation'.
+    - With the typo fixed the rule would pass all events (positives are rundll32 to 4782; the look-alikes
+      are rundll32 on 443 and nwsync.exe on 4782, neither matched). Evidence quotes are verbatim; tags
+      attack.command_and_control + attack.t1571 match the ATT&CK table.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 82
+    reasoning: The YAML parses and the selection is named 'selection_rundll32', but the condition reads
+      'selection_rundl32' (one 'l' missing). pySigma raises SigmaConditionError "Detection 'selection_rundl32'
+      not defined in detections" when the condition is parsed. With the typo corrected the rule parses
+      cleanly. The caveat is that SigmaRule.from_yaml and SigmaCollection.from_yaml accept the rule and
+      rule.errors is empty, because pySigma parses conditions lazily. A G1 that only constructs the rule
+      object would not catch it, but any conversion or condition parse will.
+    events_ok: true
+    incidental_issues:
+    - The defect is a dangling reference in the condition, not a pure YAML or JSON-schema violation. It
+      is only detected once the condition is parsed or converted.
+    - 'Against the corrected logic (rundll32.exe AND port 4782), both positives match. Neither negative
+      nor either look-alike matches: rundll32 on 443 and nwsync.exe on 4782 do not.'
 excluded: false
 exclusion_reason: ''

@@ -106,6 +106,37 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: CommandLine|contains is an OR list with two values. The first, 'Set-MpPreference -DisableRealtimeMonitoring',
+      is in the evidence quotation. The second, 'Set-MpPreference -DisableIOAVProtection', is in neither
+      the single quotation nor the report text, and assumptions is empty. This is an ungrounded alternative
+      that G4 should stop.
+    events_ok: true
+    incidental_issues:
+    - No positive event exercises the unsupported IOAVProtection branch, so the defect is invisible to
+      the positive/negative tests.
+    - Positive 2 uses '-DisableRealtimeMonitoring 1' instead of $true, which is still a genuine disable.
+    - The look-alikes (-ScanAvgCPULoadFactor, Get-MpPreference ... DisableRealtimeMonitoring) do not match
+      the rule, as intended.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The only quote is 'powershell.exe -NoProfile -Command Set-MpPreference -DisableRealtimeMonitoring
+      $true', and it is verbatim in the report. It supports '\powershell.exe' and 'Set-MpPreference -DisableRealtimeMonitoring'.
+      The second alternative in the CommandLine list, 'Set-MpPreference -DisableIOAVProtection', appears
+      in no quote, in no assumption (assumptions is empty) and nowhere in the report text. A list is ORed,
+      but G4 checks every discriminating value, so the unsupported alternative is a genuine G4 failure.
+    events_ok: true
+    incidental_issues:
+    - No positive event exercises the DisableIOAVProtection alternative, so the added alternative is untested
+      as well as unsupported.
+    - The positive using '-DisableRealtimeMonitoring 1' is a legitimate way to disable monitoring and
+      matches. All other events behave as labelled.
 excluded: false
 exclusion_reason: ''

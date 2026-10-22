@@ -1,0 +1,93 @@
+{
+ "batch": "D3",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D3-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The rule is on process_creation, whose allowed fields are Image, CommandLine, ParentImage, ParentCommandLine, User and OriginalFileName. selection_img uses `NewProcessName|endswith`, which is not on that list (it is a Windows Security 4688 name, not a Sysmon-style field), so G5 should reject it. The other field, CommandLine, is valid. The YAML parses, and the fix would be to use Image.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule is much narrower than the report's recommendation: it hard-codes 'mediasync.dll,#1' instead of detecting any Public-profile DLL loaded by ordinal, so the description overstates what it matches.",
+    "Neither look-alike exercises the Public-profile or ordinal logic. Both are ordinary named-export rundll32 calls, which is acceptable but weak.",
+    "Both evidence quotes are verbatim in the report text, and the tags (attack.stealth, attack.t1218.011) match the ATT&CK table."
+   ]
+  },
+  {
+   "id": "D3-02",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The rule is on network_connection, whose allowed fields are Image, DestinationIp, DestinationPort and Initiated. The selection uses `DestinationHostname|endswith`, which is not on that list. It is a real Sysmon field name, but it is not in this catalog, so G5 should stop it. Image is valid.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The event format for network_connect carries only image, dest_ip and dest_port, with no hostname. The positive events therefore could not match this rule even if the field were allowed, because the hostname condition has nothing to evaluate against.",
+    "The look-alikes are mshta.exe connecting to 192.0.2.15:80 and 192.0.2.16:8080. The report says mshta has no business reaching external hosts, so calling these 'benign' sits awkwardly with the report. They only show that the rule is keyed to the staging hostname.",
+    "The evidence quotes are verbatim in the report and the tags (attack.stealth, attack.t1218.005) are correct."
+   ]
+  },
+  {
+   "id": "D3-03",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The rule is on dns_query, whose only allowed fields are Image and QueryName. The selection uses `DnsQueryName|endswith`, which is not allowed (the valid name is QueryName), so G5 should reject it. Image is valid. The two positives (powershell.exe resolving names under ledger-sync.pennantbio.invalid) show the intended behaviour, and the look-alike is powershell resolving psgallery-mirror.pennantbio.test, which is benign.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Only one look-alike is supplied, which meets the minimum.",
+    "Both evidence quotes are verbatim in the report. The tags (attack.command_and_control, attack.t1071.004) are correct, and the .invalid and .test domains are fictional."
+   ]
+  },
+  {
+   "id": "D3-04",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The rule is on process_creation, whose parent field is ParentImage. The filter selection `filter_patch_agent` uses `ParentProcessName|endswith`, which is not allowed. The invented field sits in a negated filter rather than the main selection, but it is still a field the rule uses, so G5 should flag it. Image and CommandLine are valid.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Because the invented field is only in a 'not' filter, the positives would still pass logically (an absent field never matches the filter), so the defect is hidden from the event tests and only G5 can catch it.",
+    "The look-alikes (certutil -store under patchagent, certutil -hashfile) do not test the exclusion filter. No event pairs patchagent.exe with -urlcache.",
+    "Evidence quotes are verbatim in the report, and the tags (attack.command_and_control, attack.t1105) are correct."
+   ]
+  },
+  {
+   "id": "D3-05",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The rule is on network_connection, whose allowed field is spelled `DestinationIp`. The rule uses `DestinationIP` (capital P). The contract says field names are case-sensitive exactly as written, so this name is not in the allowed list and G5 should stop it. This is a subtle case-variant invented field. Image and DestinationPort are valid.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The only reason the field is wrong is capitalisation. A system that compares field names case-insensitively would accept it, so the defect depends on G5 being case-sensitive as the contract states.",
+    "The look-alike (powershell to 192.0.2.30:5985) is genuinely benign according to the report. The rule hard-pins the destination IP, which makes it IOC-like rather than behavioural.",
+    "The evidence quotes are verbatim in the report and the tags (attack.command_and_control, attack.t1571) are correct."
+   ]
+  },
+  {
+   "id": "D3-06",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The rule is on process_creation, and the allowed fields do not include `Hashes`. The selection uses `Hashes|contains` with a 64-hex-character SHA256. G5 should reject it, since the catalog has no hash field for this log source. The hash value matches the one in the report and in the first evidence quote.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The event format has no hash attribute, so the positive events could not match a Hashes condition even if the field were allowed. This is a second reason the rule would fail the positive test.",
+    "The rule needs the hash AND the file name AND '-ma lsass', so it is brittle and narrower than the report's recommendation (svcstat.exe with -ma against lsass).",
+    "The look-alike (procdump64.exe -ma w3wp.exe) is benign. The evidence quotes are verbatim, and the tags (attack.credential_access, attack.t1003.001) are correct."
+   ]
+  },
+  {
+   "id": "D3-07",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The rule declares category process_creation, but the selection uses `ScriptBlockText|contains|all`. ScriptBlockText belongs to the windows_powershell_script_block log source, which is not available, and it is not in the process_creation allowed list (Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName). G5 should stop it. The right field would be CommandLine, which the process_create events do carry.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The field comes from an unavailable log source, so the defect straddles G5 and G6. Because the declared log source is process_creation, G5 is the gate that applies.",
+    "The process_create events have no ScriptBlockText, so the positives would also fail G8 as written.",
+    "The look-alikes (a management-agent inventory script and Invoke-WebRequest to an intranet .test host) are benign and resemble the cradle. The evidence quotes are verbatim, and the tags (attack.execution, attack.t1059.001) are correct."
+   ]
+  }
+ ]
+}

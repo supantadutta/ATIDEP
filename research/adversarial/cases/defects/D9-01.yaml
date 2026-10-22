@@ -107,6 +107,36 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The rule needs Image endswith \cmstp.exe plus CommandLine containing '/s', '/ni' and '.inf'.
+      Look-alike 1 ('cmstp.exe /s /ni C:\ProgramData\CraneVPN\cranevpn.inf') contains all three, so it
+      matches. It is a VPN vendor setup exe running as SYSTEM and installing its own connection profile,
+      which is benign. The discriminating '/au' switch is missing from the rule. Look-alike 2 ('/u ...')
+      does not match; both positives match and both negatives do not. Evidence values appear in the quotes,
+      and the tags attack.stealth + attack.t1218.003 match the table.
+    events_ok: true
+    incidental_issues:
+    - Rule omits /au, the auto-elevation switch the report highlights, which is the cause of the over-match.
+    - falsepositives is only 'Unknown'.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: 'The rule is Image endswith \cmstp.exe AND CommandLine contains all ''/s'',''/ni'',''.inf''.
+      Evaluated by hand and by a small script written in the scratchpad: both positives match, both negatives
+      do not, and look-alike 1 (cmstp.exe /s /ni C:\ProgramData\CraneVPN\cranevpn.inf, SYSTEM, parent
+      cranevpn_setup.exe /deploy) matches because the rule never requires the /au auto-elevation switch
+      the report stresses. That event is a vendor setup silently installing its own VPN profile, which
+      is benign. Look-alike 2 (/u uninstall) does not match, so only one look-alike trips the rule. Tags,
+      evidence quotations and metadata look correct, and pySigma parses the rule with no errors.'
+    events_ok: true
+    incidental_issues:
+    - Only one of the two look-alikes actually triggers the rule; the /u uninstall event is an inert look-alike.
+    - '''/s'' is a very short substring match for a discriminator; it is not a fault for this class.'
 excluded: false
 exclusion_reason: ''

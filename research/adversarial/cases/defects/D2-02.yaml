@@ -101,6 +101,33 @@ events:
     dest_port: '8531'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The rule has status: stable. The contract requires status to be experimental, so G2 should
+      stop it. The id is a valid UUID, the date is 2026/10/02, references and falsepositives are non-empty,
+      and level is high. The only metadata defect is the status, and the rule parses in pySigma, so it
+      is a pure G2 case.'
+    events_ok: true
+    incidental_issues:
+    - 'The falsepositives text is weak and self-referential: ''A different product that happens to share
+      the file name... is not expected''.'
+    - The look-alikes (bkagent.exe and syncvault.exe on port 8531) do not match, because Image and DestinationIp
+      differ. The detection logic and events are otherwise sound.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The rule has ''status: stable'', but the contract requires status to be experimental.
+      All other metadata is valid: UUID id parses, date 2026/10/02, level high, references urn:atidep:case,
+      falsepositives non-empty, tags attack.command_and_control and attack.t1571 are correct. pySigma
+      accepts the rule, so the status is the only defect. Both positives match (updchk.exe with 203.0.113.77:8531)
+      and the port-8531 look-alikes with other images and IPs do not match.'
+    events_ok: true
+    incidental_issues:
+    - The rule keys on one hard-coded IP, port and process name; that is fine for this case but narrow.
 excluded: false
 exclusion_reason: ''

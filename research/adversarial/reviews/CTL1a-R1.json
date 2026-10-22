@@ -1,0 +1,78 @@
+{
+ "batch": "CTL1a",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": true,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "CTL1-01",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The YAML and pySigma parse cleanly. All 12 required top-level keys are present, and the tags attack.stealth + attack.t1218.011 match the contract table. Both evidence quotes are verbatim in the report. Together they cover every discriminating value: rundll32.exe, RunHTMLApplication, and javascript: (the latter only in the second quote). By hand, all 3 positives match (including the lower-case 'runhtmlapplication' in SysWOW64 positive 2). The 3 negatives and both rundll32 look-alikes (shell32 Control_RunDLL, printui) fail selection_cli. The CommandLine terms are 11+ characters, and rundll32 is not a frequent baseline image.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Positive 3 only runs window.close() after javascript:/RunHTMLApplication. It is a valid positive but a weak payload.",
+    "The rule requires Image ending in rundll32.exe, so renamed binaries are missed. This is not a defect against the report.",
+    "Process note: a final glob in my own sanity-check script (CTL1-0*.yaml) also loaded CTL1-07, CTL1-08 and CTL1-09, which are not in my batch. I printed only their IP/host strings and assumptions, so read_other_files is true. This did not influence any verdict."
+   ]
+  },
+  {
+   "id": "CTL1-02",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The YAML and pySigma parse cleanly and the metadata is complete. Tags credential_access/t1003.001 and stealth/t1218.011 match the table, and both techniques are cited. Both evidence quotes are verbatim and cover rundll32.exe, comsvcs.dll, MiniDump and '#24' (the ordinal form is in the second quote). By hand, all 3 positives match: the '#24' form via CommandLine, and the lower-case 'comsvcs.dll,minidump' under SysWOW64 with the SYSTEM/WmiPrvSE parent. The negatives (tasklist, whoami, wuauclt) fail on Image. The look-alikes fail: shell32 Control_RunDLL inetcpl.cpl has no comsvcs.dll, and tasklist is not rundll32. The 'comsvcs.dll' term is 11 characters, so G11 holds.",
+   "events_ok": true,
+   "incidental_issues": [
+    "'#24' is only 3 characters and is not a discriminating term on its own. The rule needs it ANDed with comsvcs.dll, which it is.",
+    "The ordinal list covers only '#24' and not variants such as '#+24'. This is outside the report."
+   ]
+  },
+  {
+   "id": "CTL1-03",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The YAML and pySigma parse cleanly. Tags stealth/t1218.010 are correct for Regsvr32. Both evidence quotes are verbatim and cover regsvr32.exe, scrobj.dll and '/i:http'. The condition 'all of selection*' ANDs the three selections. All 3 positives match, including SysWOW64 with /i:https (a '/i:http' substring) and the argument-reordered form. The negatives (msiexec, cmd, OUTLOOK) fail on Image. Both regsvr32 look-alikes (viewer.dll, OldApp shell.dll) lack scrobj.dll and /i:http. Terms are 10 and 7 characters, and regsvr32 is not a frequent baseline image.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Look-alike 2 has an unquoted path containing spaces (regsvr32.exe /s /u C:\\Program Files\\OldApp\\shell.dll). This is cosmetic.",
+    "Neither look-alike includes scrobj.dll with a local /i: argument, so the 'remote' discrimination is not tested by a look-alike."
+   ]
+  },
+  {
+   "id": "CTL1-04",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "The YAML and pySigma parse cleanly. Tags stealth/t1218.005 are correct. All three evidence quotes are verbatim and cover mshta.exe, http, vbscript:, javascript:, hrportal.exe and hrportal.hta. The condition is 'selection_img and selection_cli and not filter_hr', and the 'not' is allowed. By hand, all 3 positives match with filter_hr false. Look-alike 1 (hrportal.exe parent, cmd contains hrportal.hta and http://hr.lab.invalid/sso) matches selection_cli but is removed by filter_hr, which is the intended exclusion. Look-alike 2 (help.hta) contains no http, vbscript: or javascript:. The negatives are non-mshta. 'vbscript:' and 'javascript:' are 9+ characters, 'http' is exactly 4, and mshta is rare in the baseline.",
+   "events_ok": true,
+   "incidental_issues": [
+    "'http' as a contains term is the weakest discriminator, exactly 4 characters. It passes G11 on the stated rule but is borderline-broad, for example for local HTA paths containing 'http'.",
+    "Look-alike 2 (help.hta) contradicts the report's 'always with hrportal.hta' and never exercises the exclusion. It would not match even without filter_hr.",
+    "The exclusion depends on ParentImage, which an attacker could mimic by copying a binary to a path ending \\hrportal.exe."
+   ]
+  },
+  {
+   "id": "CTL1-05",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The YAML parses and pySigma accepts 'CommandLine|windash|contains|all' with both values ANDed. That is the standard SigmaHQ modifier order, and windash is allowed. Tags command_and_control/t1105 are correct. Both evidence quotes are verbatim and cover certutil.exe, urlcache and split. By hand, all 3 positives match: the dash form, the slash form /urlcache /split (via windash), and the reordered '-split -urlcache' under SysWOW64. The negatives are unrelated. Look-alike 1 (-hashfile) has neither switch. Look-alike 2 ('-urlcache * delete') has -urlcache but not -split, so the 'all' prevents a match. 'urlcache' is 8 characters and certutil is not a frequent baseline image.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule requires -split. A urlcache download without -split (for example certutil -urlcache -f) is missed, but that matches the report's stated 'both switches' requirement.",
+    "The ATT&CK tag list does not include T1059.003 even though a command shell is mentioned. This is acceptable because only T1105 is cited."
+   ]
+  },
+  {
+   "id": "CTL1-06",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "The YAML and pySigma parse cleanly. The tags are the exact union of the table entries: execution, persistence, stealth for T1197 and command_and_control for T1105, plus t1197 and t1105. Both techniques are cited. Both evidence quotes are verbatim and cover bitsadmin.exe, /transfer, /download, powershell.exe and Start-BitsTransfer. The condition '1 of selection*' is allowed, and each alternative has a long CommandLine term. By hand, the 2 bitsadmin positives and the powershell Start-BitsTransfer positive each match exactly one selection. The negatives, including powershell Get-Service, do not match. The look-alikes do not match: bitsadmin /list lacks /transfer, and Get-BitsTransfer does not contain 'Start-BitsTransfer'. Neither tool is a frequent baseline image or command line.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The PowerShell alternative is limited to powershell.exe, so pwsh.exe is not covered. This is consistent with the report.",
+    "Positive 1 and the powershell positive reuse the same server and file. This is fine but low-diversity."
+   ]
+  }
+ ]
+}

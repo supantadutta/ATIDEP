@@ -101,6 +101,44 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 80
+    reasoning: The detection is ScriptBlockText|contains|all [Resolve-DnsName, '-Type TXT', beacon-relay.invalid],
+      so every term lives in script-block text, the unavailable source named as the case's logsource.
+      The Sigma logsource is declared as dns_query and the rule never uses QueryName, the only content
+      field that source offers. Under dns_query telemetry it could never match, so it needs the unavailable
+      script-block telemetry. G6 should block it. The evidence quote is verbatim and the tags (attack.command_and_control,
+      attack.t1071.004, attack.execution, attack.t1059.001) match the table.
+    events_ok: true
+    incidental_issues:
+    - The declared dns_query logsource contradicts the field used (ScriptBlockText), so G5 would also
+      fail. All events are process_create rather than dns_query, which breaks the contract's event-kind
+      rule.
+    - A QueryName|endswith beacon-relay.invalid rule would have been feasible on available telemetry.
+      The report's claim that only script text is reliable is partly an artefact of how the case was built.
+    - The positive events carry the call in CommandLine, and the _dmarc TXT lookalike is a fair benign
+      look-alike.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 72
+    reasoning: The detection is a single selection of ScriptBlockText|contains|all (Resolve-DnsName, '-Type
+      TXT', beacon-relay.invalid) under logsource category dns_query. The dns_query fields are only Image
+      and QueryName, so the rule never uses its declared source's fields. It keys entirely on script-block
+      text, which only the unavailable windows_powershell_script_block source provides. The rule therefore
+      requires unavailable telemetry, and the available alternative (QueryName endswith beacon-relay.invalid)
+      was not used. The caveat is that the declared logsource is available, so G5 would also fire and
+      G6 depends on how the gate identifies the required source.
+    events_ok: true
+    incidental_issues:
+    - All events are process_create although the declared log source is dns_query, so no dns_query events
+      exist for a rule that claims to be DNS-based.
+    - Positive event 2 has a folded line break inside the cmd, which is harmless.
+    - The tags are correct (T1071.004, T1059.001), and the look-alike (_dmarc.mail.example TXT lookup)
+      is a reasonable benign near-miss.
 excluded: false
 exclusion_reason: ''

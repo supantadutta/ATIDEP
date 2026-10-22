@@ -104,6 +104,39 @@ events:
     dest_port: null
     name: crl.vendorpki.example
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 96
+    reasoning: The condition string 'selection_tool and or selection_domain' has two adjacent boolean
+      operators, which is not a valid Sigma condition. The YAML loads and SigmaRule.from_yaml returns,
+      but parsing the condition raises SigmaConditionError 'Expected end of text, found selection', and
+      the TextQueryTestBackend conversion fails the same way. Using 'selection_tool and selection_domain'
+      converts cleanly, so this is the single defect and a Sigma parser rejects the rule.
+    events_ok: true
+    incidental_issues:
+    - As in D1-03, pySigma only fails when the condition is parsed or converted, not at SigmaRule.from_yaml.
+    - 'Events are sound: certutil resolving *.reedmarsh-files.test is positive; certutil resolving ca01.northwind.test
+      and crl.vendorpki.example are good benign look-alikes. The report text describes certutil -urlcache
+      download behaviour, which fits the DNS rule only indirectly, but the quoted evidence is verbatim.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: The condition is 'selection_tool and or selection_domain', with two adjacent boolean operators.
+      The YAML parses, but pySigma raises SigmaConditionError "Expected end of text, found 'selection'
+      (at char 22)", and the full rule validator fails the same way. Changing it to 'selection_tool and
+      selection_domain' makes the rule parse cleanly. Both selections are defined and the fields (Image,
+      QueryName) are valid for dns_query.
+    events_ok: true
+    incidental_issues:
+    - Like D1-03, SigmaRule.from_yaml itself succeeds and the failure appears when the condition is parsed.
+    - The intended operator is ambiguous. With 'and', both positives match and nothing else does. With
+      'or', the two certutil look-alikes (ca01.northwind.test, crl.vendorpki.example) would match because
+      the certutil.exe selection alone would suffice, which would be a breadth or look-alike problem unrelated
+      to G1.
+    - Tags (attack.command_and_control, attack.t1105) match the ATT&CK table.
 excluded: false
 exclusion_reason: ''

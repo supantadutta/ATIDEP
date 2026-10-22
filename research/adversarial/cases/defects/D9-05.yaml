@@ -102,6 +102,38 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: The rule is Image endswith \wmic.exe AND CommandLine|re '/node:[^ ]+ process call create'.
+      Look-alike 1 ('wmic.exe /node:APP01 process call create "C:\Program Files\CranePatch\patchrun.exe
+      /quiet"', parent cpconsole.exe, user LAB\patch-admin) matches the regex. It is a patch-management
+      console running its own runner remotely, which is a plausible benign admin use of the same WMI call.
+      Look-alike 2 ('product get') does not match the regex. Positives match, negatives do not, and the
+      literal runs '/node:' and ' process call create' are in the evidence quote. T1047 tags are correct.
+    events_ok: true
+    incidental_issues:
+    - The rule has no condition on the target binary path (C:\Users\Public) or the parent process, so
+      legitimate remote execution is indistinguishable from the attack.
+    - falsepositives is only 'Unknown'.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 84
+    reasoning: 'Rule: Image endswith \wmic.exe AND CommandLine matches the regex ''/node:[^ ]+ process
+      call create''. Both positives match (the image case difference WMIC.exe is irrelevant because matching
+      is case-insensitive), and the wmic os get and ping negatives do not. Look-alike 1 (wmic.exe /node:APP01
+      process call create "C:\Program Files\CranePatch\patchrun.exe /quiet", parent cpconsole.exe, user
+      LAB\patch-admin) matches the regex. It is a patch-management console doing a sanctioned remote install,
+      which is benign. Look-alike 2 (product get) does not match. The regex literal runs ''/node:'' and
+      '' process call create'' occur in the evidence quote, and the T1047 tags are correct.'
+    events_ok: true
+    incidental_issues:
+    - Only one look-alike triggers the rule.
+    - Remote wmic process call create is rarely benign in practice, but the patch-tool parent, path and
+      admin account give it adequate benign context.
 excluded: false
 exclusion_reason: ''

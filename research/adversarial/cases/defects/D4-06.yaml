@@ -102,6 +102,36 @@ events:
     dest_port: null
     name: ocsp.certs-sample.example
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 94
+    reasoning: Image|endswith '\rundll32.exe' is a positive condition value. The single evidence quotation
+      ('lookups for generated subdomains of telemetry-sync.example-cdn.test, for example a1b2c3d4e5.telemetry-sync.example-cdn.test')
+      does not contain rundll32.exe. The word appears only in the surrounding report text, which is not
+      evidence, and assumptions is empty. The QueryName suffix '.telemetry-sync.example-cdn.test' is supported
+      by that quotation.
+    events_ok: true
+    incidental_issues:
+    - The look-alike rundll32 lookups (app.telemetry-sync.vendor.example and ocsp.certs-sample.example)
+      are only loosely similar to the beaconing, but they are benign and correctly not matched.
+    - Both positives match the rule and exhibit generated-subdomain DNS beaconing from rundll32.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: The single quote is 'lookups for generated subdomains of telemetry-sync.example-cdn.test,
+      for example a1b2c3d4e5.telemetry-sync.example-cdn.test', and it is verbatim in the report. It supports
+      QueryName|endswith '.telemetry-sync.example-cdn.test'. Image|endswith '\rundll32.exe' (rundll32.exe)
+      is not in the quote and no assumption covers it. It does occur in the earlier sentence of the report
+      ('A loader executed through rundll32.exe'), but that sentence was not quoted, and the quotations
+      rather than the report are the evidence. So the Image value is unsupported at G4.
+    events_ok: true
+    incidental_issues:
+    - 'This is a quote-selection trap: the supporting text is in the report but not in the quote list.'
+    - The QueryName condition is effectively a domain IOC.
+    - 'Events and rule logic are consistent: the rundll32 look-alike queries to other domains do not match.'
 excluded: false
 exclusion_reason: ''

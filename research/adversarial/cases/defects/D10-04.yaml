@@ -122,6 +122,37 @@ tamper_sigma_yaml: |
   falsepositives:
     - Legacy intranet applications that still load HTA pages from an internal web server
   level: high
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: 'The original is clean. The values mshta.exe, http: and https: (after separator removal)
+      all occur in the first evidence quote, which is verbatim in the report. The tags stealth plus t1218.005
+      are valid and supported by the cited techniques. Both URL positives match and the local-HTA look-alike
+      does not. The tamper swaps the tags to attack.execution and attack.t1059.001. These are still valid
+      and still cited in the opportunity, and the detection logic and all event outcomes are unchanged.
+      The text differs, so only a hash-bound approval would catch it. It also removes the T1218.005 mapping,
+      so the change is substantive, not just cosmetic.'
+    events_ok: true
+    incidental_issues:
+    - The tampered tags are individually valid, so a tag-validity gate alone would not flag the change;
+      only the content-hash binding would.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: 'The tamper replaces the tags ''attack.stealth'' and ''attack.t1218.005'' with ''attack.execution''
+      and ''attack.t1059.001'', leaving the detection unchanged. The original is clean. Both evidence
+      quotes are verbatim, and mshta.exe, http: and https: are covered. The original tags match the table
+      for T1218.005 and the cited technique list. It parses in pySigma, and both positives match while
+      the negatives and the local .hta look-alike do not. The tamper is a subtle post-approval change:
+      T1059.001 is itself a cited technique, so the new tags are valid ATT&CK tags and could pass G7 even
+      though the rule detects mshta, not PowerShell. Only the hash binding catches it.'
+    events_ok: true
+    incidental_issues:
+    - The tampered tags no longer describe the mshta detection (T1218.005), although they are valid tags
+      for a technique that the report also cites.
 excluded: false
 exclusion_reason: ''

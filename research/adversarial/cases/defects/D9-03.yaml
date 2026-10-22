@@ -94,6 +94,40 @@ events:
     dest_port: null
     name: lab-intranet.cranecloud.test
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 80
+    reasoning: The rule is Image endswith \powershell.exe AND QueryName endswith '.cranecloud.test'. The
+      look-alike (powershell.exe resolving lab-intranet.cranecloud.test) matches both conditions. The
+      name reads as a legitimate lab tenant on the same public hosting platform, so a script resolving
+      it is benign, and the rule keys on the whole platform domain rather than the operator's tenant pattern
+      ('-sync'). Positives match and negatives (chrome/example.test, powershell/gallery.lab.example) do
+      not. '.cranecloud.test' occurs inside 'fnx-sync.cranecloud.test' in the evidence, so G4 holds.
+    events_ok: true
+    incidental_issues:
+    - The look-alike's benign nature comes mostly from the 'lab-intranet' label; a DNS query carries little
+      other context.
+    - T1071.001 (Web Protocols) is used for a DNS-log rule; it is consistent with the cited technique
+      in the report but T1071.004 would be the more natural DNS tag.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 72
+    reasoning: 'Rule: Image endswith \powershell.exe AND QueryName endswith .cranecloud.test. Both positives
+      (fnx-sync and k7q-sync .cranecloud.test) match, and the chrome/www.example.test and powershell/gallery.lab.example
+      negatives do not. The look-alike (powershell resolving lab-intranet.cranecloud.test) matches, since
+      the rule flags any tenant of the shared hosting platform rather than the implant''s tenants. A lab''s
+      own intranet tenant resolved from a PowerShell script is plausibly benign. The evidence quotes contain
+      ''powershell.exe'' and ''cranecloud.test'', and the T1071.001 tags are valid. pySigma accepts the
+      rule.'
+    events_ok: true
+    incidental_issues:
+    - A DNS event carries no context beyond image and name, so the look-alike's benignness rests only
+      on the 'lab-intranet' label; this is weaker than the other cases but defensible.
+    - T1071.001 (Web Protocols) is a loose fit for a DNS-based rule, but it is the technique cited for
+      the case.
 excluded: false
 exclusion_reason: ''

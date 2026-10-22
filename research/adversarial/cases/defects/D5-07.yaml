@@ -106,6 +106,43 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 80
+    reasoning: selection_task requires ScriptBlockText|contains|all [Register-ScheduledTask, WinSyncHelper],
+      while selection_host uses OriginalFileName, a valid process_creation field. The condition is an
+      AND, so the rule needs the unavailable script-block telemetry, which is the case-level logsource
+      windows_powershell_script_block. The declared process_creation category is available, so the dependency
+      is hidden at the logsource level. The two evidence quotations are verbatim, and both T1053.005 (execution,
+      persistence, privilege_escalation) and T1059.001 tags match the table.
+    events_ok: true
+    incidental_issues:
+    - 'Hybrid defect: the declared logsource (process_creation) does not match the ScriptBlockText field,
+      so G5 would also flag the field.'
+    - The report says task creation shows no child process and is visible only in the script block. The
+      positive events carry the cmdlet on the command line instead, which contradicts that premise.
+    - The lookalike (Register-ScheduledTask for NightlyBackupCheck) is a good look-alike and would not
+      match on WinSyncHelper. Events are the right kind (process_create) for the declared logsource.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 72
+    reasoning: selection_host uses OriginalFileName 'PowerShell.EXE', which is valid for process_creation,
+      but selection_task requires ScriptBlockText contains all Register-ScheduledTask and WinSyncHelper.
+      ScriptBlockText is not a process_creation field, and the contract places it only in the unavailable
+      script-block source. The condition ANDs the two, so the rule cannot be satisfied on available telemetry
+      and depends on script-block logging. As in D5-03, the declared logsource is available, so G5 would
+      fire and G6 behaviour is somewhat uncertain.
+    events_ok: true
+    incidental_issues:
+    - The event format has no OriginalFileName field, so selection_host depends on the harness deriving
+      it from the image. This is minor.
+    - The positives carry the cmdlet and task name in the command line, so CommandLine would have worked.
+      Under the rule as written (ScriptBlockText) none of the process_create events would match.
+    - The tags are correct (T1053.005 with execution, persistence, privilege_escalation; T1059.001), and
+      the look-alike (task NightlyBackupCheck) is a sensible benign near-miss.
 excluded: false
 exclusion_reason: ''

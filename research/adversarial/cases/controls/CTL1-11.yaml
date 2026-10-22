@@ -124,6 +124,40 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The YAML and pySigma parse and the metadata is complete. Image|endswith \cmstp.exe is ANDed
+      with CommandLine|contains|all of /s, /ns and .inf. All 3 positives match, including the order-swapped
+      '/ns /s \\files.cranemail.test\share\p.inf' on SysWOW64\cmstp.exe and the '/au /s /ns' variant.
+      The negatives (tasklist, OneDrive and schtasks) are not cmstp. The look-alike '/u ...vpnprofile.inf'
+      lacks '/s' and '/ns', and the look-alike '/s ...vpn.inf' lacks '/ns', so neither matches. The values
+      cmstp.exe, /s, /ns and .inf are all in the verbatim evidence quotes. Tags attack.stealth and attack.t1218.003
+      match the table. Two positive fields are used, and cmstp is absent from the baseline.
+    events_ok: true
+    incidental_issues:
+    - '''/s'' is a plain substring, so it would also match other switches such as /su. This is harmless
+      here because /ns is also required.'
+    - The rule has no windash handling. cmstp uses '/' switches, so this is acceptable.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'YAML parses and pySigma accepts it, and the metadata is complete. T1218.003 maps to attack.stealth
+      and attack.t1218.003, which is what the rule carries. Both evidence quotes are verbatim in the report
+      and cover cmstp.exe, the /s and /ns switches and ''.inf''. The 3 positives match (cmstp.exe with
+      /s, /ns and .inf, including the /au variant and the SysWOW64 UNC-path variant). The 3 negatives
+      are unrelated. Look-alike 1 (cmstp /u ...vpnprofile.inf) has no /s or /ns, and look-alike 2 (cmstp
+      /s ...vpn.inf) has no /ns, so neither matches. The rule is specific: a cmstp.exe image AND ''.inf''
+      (4 characters) on CommandLine, and cmstp.exe is absent from the benign baseline.'
+    events_ok: true
+    incidental_issues:
+    - '''/s'' is a very short substring; it is safe here only because it is ANDed with /ns, .inf and the
+      image.'
+    - There is no windash, so '-s -ns' spellings would be missed. This is a small coverage gap, not a
+      defect.
 excluded: false
 exclusion_reason: ''

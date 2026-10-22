@@ -101,6 +101,43 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: 'Both selections use ScriptBlockText, and the logsource is product windows with service
+      powershell and no category. That is the PowerShell logging service, not one of the three permitted
+      categories, and the case-level source is windows_powershell_script_block (available: false). The
+      ''or'' condition has two alternatives, and each depends solely on ScriptBlockText, so no available-telemetry
+      path exists. The evidence quotation is verbatim in report_text and contains Invoke-Mimikatz, -DumpCreds
+      and sekurlsa::logonpasswords. The tags are valid.'
+    events_ok: true
+    incidental_issues:
+    - The logsource has no category, so G3 (subset) would also reject it, in addition to G6.
+    - Events are process_create with the strings on the command line, while the report says the command
+      line showed only a short launcher. The positives are still correct, and Get-Process lsass is a sensible
+      lookalike.
+    - The report describes a roughly 1.2 MB script block. This does not affect the property.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 92
+    reasoning: The logsource is product windows with service powershell and no category, which is the
+      PowerShell operational (event 4104) source. Both selections use only ScriptBlockText (Invoke-Mimikatz
+      plus -DumpCreds, or sekurlsa::logonpasswords). Neither the logsource nor the field is in the available
+      subset, and the lab telemetry has no script-block data. So the rule requires the unavailable source
+      and G6 should block it. The YAML parses and the evidence quote is verbatim in the report (the line
+      wrap folds to a space).
+    events_ok: true
+    incidental_issues:
+    - The logsource does not use any of the three allowed categories (category is missing), so G1/G3 would
+      also object.
+    - 'The events are process_create with the strings in the command line, which does not match a service:
+      powershell log source. The positives are genuine Invoke-Mimikatz usage, and the look-alike (Get-Process
+      lsass) is benign.'
+    - The report says the real command line was only a short launcher, but the positives show the full
+      strings on the command line.
 excluded: false
 exclusion_reason: ''

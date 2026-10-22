@@ -117,6 +117,42 @@ events:
     dest_port: null
     name: www.wikipedia.org
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: YAML parses, pySigma accepts it with no errors, and all 12 required keys are present with
+      a valid UUID, a 2026/10/02 date and a urn reference. Fields QueryName and Image are both allowed
+      for dns_query, and the tags attack.discovery plus attack.t1016 match the table exactly. The quote
+      is verbatim in the report and covers ip-echo.example, myaddr.test, curl.exe and powershell.exe.
+      By hand, all 3 positives match (curl/ip-echo, powershell/myaddr, powershell/ip-echo). Both negatives
+      (svchost/windowsupdate, OneDrive/onedrive.live.com) and both look-alikes (chrome/ip-echo.example,
+      curl/www.wikipedia.org) fail one of the two ANDed selections. Baseline DNS has none of these names,
+      so about 0 matches.
+    events_ok: true
+    incidental_issues:
+    - Rule is effectively pinned to two named domains, so it is closer to an IOC rule with a process restriction
+      than a general behavioural rule.
+    - Positive 3 (powershell.exe resolving ip-echo.example) is a cross-combination not literally in the
+      report, but it is consistent with the rule's behaviour.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The rule parses and has complete metadata. The tags attack.discovery and attack.t1016 match
+      the T1016 row. ip-echo.example, myaddr.test, curl.exe and powershell.exe all occur in the one verbatim
+      evidence quote. The 3 positives match (curl and powershell querying ip-echo.example, powershell
+      querying myaddr.test). The svchost and OneDrive negatives match neither condition. The chrome look-alike
+      querying ip-echo.example fails the Image condition, and the curl look-alike querying www.wikipedia.org
+      fails the QueryName condition. None of the 60 baseline DNS domains is either service, so there are
+      0 matches.
+    events_ok: true
+    incidental_issues:
+    - The rule is tied to two specific fictional domains, so it is IOC-like in form, but both are quoted
+      in the report.
+    - T1016 is tagged without the .001 Internet Connection Discovery sub-technique. The contract table
+      lists T1016, so this is acceptable.
 excluded: false
 exclusion_reason: ''

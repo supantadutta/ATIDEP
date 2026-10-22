@@ -98,6 +98,34 @@ events:
     dest_port: '7070'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The detection block contains ''timeframe: 15m'' next to selection and condition. timeframe
+      is explicitly NOT allowed in the contract, so G3 should stop the rule. Both evidence quotes are
+      verbatim in the report. The positives (hbclient.exe to port 7070) fit the selection, and the negatives
+      and the fsclient.exe look-alike (port 7070 but a different image) do not.'
+    events_ok: true
+    incidental_issues:
+    - timeframe without any aggregation or count is semantically meaningless here, so it is a purely seeded
+      construct.
+    - The report says the client may fall back to ports 443 and 80, and the rule does not cover that.
+      This is outside the claimed defect.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: '`timeframe: 15m` sits inside `detection:` next to `selection` and `condition`. The contract
+      lists timeframe as NOT allowed, and nothing in the rule needs it (the condition is just `selection`).
+      The fields Image, DestinationPort and Initiated are valid. Both evidence quotes are verbatim in
+      the report.'
+    events_ok: true
+    incidental_issues:
+    - The look-alike (fsclient.exe, a different vendor, to port 7070) correctly does not match the hbclient.exe
+      image restriction.
+    - Nothing else is wrong.
 excluded: false
 exclusion_reason: ''

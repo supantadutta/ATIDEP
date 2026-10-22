@@ -96,6 +96,38 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The selection uses ''ParentCommandLine|exists: false''. exists is explicitly NOT allowed
+      in the contract, so G3 should stop the rule, even though ParentCommandLine itself is an allowed
+      field. Both evidence quotes are verbatim in the report. The two positives (rundll32 with hlp.dll,Start
+      and an empty parent_cmd) fit the rule''s logic, and the Fabrikam look-alike has a parent command
+      line, so it would not match.'
+    events_ok: true
+    incidental_issues:
+    - The positives set parent_cmd to an empty string, not an absent field. Whether '' counts as 'not
+      exists' depends on the harness, which makes the semantics of the exists test slightly ambiguous.
+    - The look-alike differs from the positives only in its parent command line, which is a good discriminating
+      look-alike.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: '`ParentCommandLine|exists: false` uses the `exists` modifier, which the contract lists
+      as NOT allowed. ParentCommandLine itself is an allowed field, but the modifier is not. Both evidence
+      quotes occur verbatim ("the ParentCommandLine field is absent" and the rundll32 hlp.dll,Start command
+      line).'
+    events_ok: true
+    incidental_issues:
+    - Positive events set parent_cmd to '' (empty string) instead of omitting the field. Under strict
+      `exists:false` semantics an empty value still counts as present, so the positives are borderline
+      for this rule. The label is still right for the behaviour.
+    - Positive parents are in Temp and Downloads, while the report describes ProgramData activity. This
+      is minor.
+    - The look-alike (fabhelp.exe with a populated parent command line) is good.
 excluded: false
 exclusion_reason: ''

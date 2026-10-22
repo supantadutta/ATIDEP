@@ -1,0 +1,76 @@
+{
+ "batch": "D8",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D8-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The rule's technique tag is attack.t1059.099, which is not in the contract table and is not a real ATT&CK technique. The opportunity cites T1059.001, whose table tags are attack.execution plus attack.t1059.001. attack.execution is fine, but the technique tag is invented, so the technique does not exist in v19.2 and G7 should stop it. I evaluated the rule by hand: both positives match, and the negatives and both look-alikes do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The second look-alike (Net.WebClient DownloadString to an intranet host without a hidden window) is a good near-miss. The rule is narrow on purpose, so no problem."
+   ]
+  },
+  {
+   "id": "D8-02",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "The rule's technique tag is attack.t1117, the legacy Regsvr32 technique that ATT&CK deprecated and replaced with T1218.010. It is not in the contract table. The opportunity cites T1218.010, so t1117 is both deprecated and unsupported by the opportunity. The tactic tag attack.stealth is valid, but the technique tag fails G7. Both positives match the rule on scrobj.dll and /i:http, and the negatives and both look-alikes (no scrobj.dll, no /i:http) do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "T1117 is not among the 'examples' of deprecated IDs listed in the contract (T1002 to T1034), so a gate that relies only on that list may miss it. It is still absent from the active table and differs from the cited T1218.010."
+   ]
+  },
+  {
+   "id": "D8-03",
+   "verdict": "present",
+   "confidence": 96,
+   "reasoning": "The tags include attack.defense_evasion. The contract says ATT&CK v19 renamed it and that the old name is INVALID. The correct tactic for T1197 is attack.stealth, giving attack.execution, attack.persistence, attack.stealth and attack.t1197. The technique T1197 is correct and supported by the opportunity, so the defect is purely the invalid tactic tag. I checked events by hand: both positives match (/transfer and /download), while the ipconfig/notepad negatives and the bitsadmin /list and /info look-alikes do not.",
+   "events_ok": true,
+   "incidental_issues": []
+  },
+  {
+   "id": "D8-04",
+   "verdict": "present",
+   "confidence": 80,
+   "reasoning": "The tags are attack.execution, attack.stealth and attack.t1218.011. The contract table maps T1218.011 (Rundll32) to attack.stealth only. attack.execution is a valid v19.2 tactic name but is not a tactic of this technique, so it is inconsistent with the technique and G7's 'tactic tags consistent with the techniques' check should flag it. The technique tag itself is correct and supported by the opportunity. The defect is subtle because the extra tag is syntactically valid. Events: both positives match (rundll32 under winword.exe with '.dll,'), and the look-alikes (explorer parent, chrome parent) and negatives do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The defect is a valid-but-unrelated extra tactic. A gate that only checks that each tactic is a valid name, and does not check it against the technique, would miss it."
+   ]
+  },
+  {
+   "id": "D8-05",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The rule is tagged attack.t1219 (Remote Access Tools), but the opportunity cites T1571 (Non-Standard Port). The report says no legitimate remote-administration or screen-sharing product was used, so T1219 is unsupported by the opportunity. The required T1571 tag is missing. T1219 is valid and active, and attack.command_and_control is a valid tactic for both. The mapping is still wrong, not just imprecise. Events: both positives match DestinationIp 203.0.113.50 with port 4444, and the negatives and the two look-alikes (different IPs, port 4444) do not.",
+   "events_ok": true,
+   "incidental_issues": []
+  },
+  {
+   "id": "D8-06",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The tags list only attack.command_and_control. There is no attack.tXXXX technique tag at all, although the opportunity cites T1071.004 (the table gives attack.command_and_control plus attack.t1071.004). G7 requires at least one technique tag, so it should stop this rule. By hand: QueryName endswith '.relay-check.valleycu-status.invalid' matches both positives, and does not match the negatives or the look-alikes (www.valleycu-status.invalid and heartbeat.relay-monitor.valleycu.example).",
+   "events_ok": true,
+   "incidental_issues": [
+    "The first look-alike (msedge resolving www.valleycu-status.invalid) is only a near-miss on the parent zone name, and it is the same .invalid parent. It is somewhat artificial but acceptable as a benign sibling-name look-alike."
+   ]
+  },
+  {
+   "id": "D8-07",
+   "verdict": "present",
+   "confidence": 60,
+   "reasoning": "The rule carries attack.t1003 (the parent OS Credential Dumping), while the opportunity cites T1003.001 and the contract table requires attack.credential_access plus attack.t1003.001. The tag t1003 is not among the opportunity's cited techniques, and it is not the table's exact tag. Under the literal G7 rule, 'supported by the opportunity's cited techniques', the mapping is unsupported. This is the weakest D8 case: T1003 exists, is active, and is a true parent of the right sub-technique, so a hierarchy-aware gate could accept it. Events are fine: -ma plus lsass matches both positives (including the renamed pd64.exe) and not the w3wp procdump look-alike or the tasklist look-alike ('imagename' has no hyphen before 'ma').",
+   "events_ok": true,
+   "incidental_issues": [
+    "The defect class is ambiguous here: a coarsened parent-technique tag is imprecise rather than invalid. The contract does not say whether a parent of a cited sub-technique counts as supported."
+   ]
+  }
+ ]
+}

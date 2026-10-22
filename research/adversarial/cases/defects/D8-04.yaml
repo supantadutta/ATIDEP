@@ -105,6 +105,36 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 75
+    reasoning: 'Per the contract table, T1218.011 maps only to attack.stealth, attack.t1218.011. The rule
+      adds attack.execution, which is a valid v19.2 tactic name but is not a tactic of this technique,
+      so the tactic tags are inconsistent with the technique under G7''s consistency requirement. The
+      technique tag and the cited technique agree. This is the subtlest defect in the batch because every
+      tag is individually valid. The rule logic is otherwise fine: Image endswith \rundll32.exe, ParentImage
+      endswith \winword.exe, CommandLine contains ''.dll,''. Both positives match; the negatives and the
+      two look-alikes (parents explorer.exe and chrome.exe) do not.'
+    events_ok: true
+    incidental_issues:
+    - The only defect is the extra attack.execution tag, which a lenient reader could call harmless.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 80
+    reasoning: 'The tags are attack.execution, attack.stealth and attack.t1218.011. The contract table
+      maps T1218.011 (Rundll32) to attack.stealth only. attack.execution is a valid v19.2 tactic name
+      but is not a tactic of this technique, so it is inconsistent with the technique and G7''s ''tactic
+      tags consistent with the techniques'' check should flag it. The technique tag itself is correct
+      and supported by the opportunity. The defect is subtle because the extra tag is syntactically valid.
+      Events: both positives match (rundll32 under winword.exe with ''.dll,''), and the look-alikes (explorer
+      parent, chrome parent) and negatives do not.'
+    events_ok: true
+    incidental_issues:
+    - The defect is a valid-but-unrelated extra tactic. A gate that only checks that each tactic is a
+      valid name, and does not check it against the technique, would miss it.
 excluded: false
 exclusion_reason: ''

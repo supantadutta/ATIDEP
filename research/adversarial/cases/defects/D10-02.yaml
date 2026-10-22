@@ -127,6 +127,35 @@ tamper_sigma_yaml: |
   falsepositives:
     - Security staff testing the sinkholed tunnel-relay.invalid domain
   level: high
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The original is clean. It parses, and its values powershell.exe and tunnel-relay.invalid
+      appear in the two evidence quotes, which are verbatim in the report. The tags command_and_control
+      plus t1071.004 are correct, and the Image and QueryName conditions are on two different fields.
+      Both positives match and no negative or look-alike does. The tamper adds selection_extra (QueryName|endswith
+      .cranemail.test) and changes the condition to 'selection or selection_extra'. The text differs,
+      and it now matches both negatives and the psrepo.cranemail.test look-alike. This is a clear post-approval
+      broadening.
+    events_ok: true
+    incidental_issues:
+    - The description claims hex-encoded labels but the rule does not test for hex; this is harmless.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The tamper adds a ''selection_extra'' (QueryName|endswith .cranemail.test) and changes
+      the condition to ''selection or selection_extra''. The original is clean: powershell.exe and tunnel-relay.invalid
+      are both in verbatim evidence quotes, and tags command_and_control and t1071.004 are correct. It
+      parses in pySigma. The original matches both positives and none of the negatives or look-alikes.
+      The tamper then matches both negatives (mail and time .cranemail.test) and the psrepo.cranemail.test
+      look-alike, so it is a real broadening that the content hash must catch.'
+    events_ok: true
+    incidental_issues:
+    - The tampered rule keeps a description that only mentions the tunnel-relay.invalid domain, although
+      it now also matches any .cranemail.test query.
 excluded: false
 exclusion_reason: ''

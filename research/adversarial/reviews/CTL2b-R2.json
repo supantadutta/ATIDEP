@@ -1,0 +1,78 @@
+{
+ "batch": "CTL2b",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "CTL2-12",
+   "verdict": "present",
+   "confidence": 75,
+   "reasoning": "The rule parses in pySigma 1.5.1 with no errors and has all 12 metadata keys, a valid v4 UUID and a '2026/10/02' date. Tags attack.discovery, t1082, t1033 and t1049 match the table. Image 'cmd.exe', 'systeminfo', 'whoami /all' and 'netstat -ano' all occur in the two evidence quotes, and both quotes are verbatim in the report. By hand and by script, all 3 positives match (including the 'netstat /ano' one, via windash) and both negatives and all 3 look-alikes (single systeminfo, netstat | findstr, whoami) do not. The only reservation is that pySigma's lint flags windash combined with 'all' (see incidental issues); its converted query is still the correct AND of ORs.",
+   "events_ok": true,
+   "incidental_issues": [
+    "pySigma's invalid_modifier_combinations validator reports a HIGH-severity 'windash cannot be combined with all' issue for CommandLine|contains|windash|all. The pySigma 1.5.1 conversion is still correct (systeminfo AND (whoami -all OR /all ...) AND (netstat -ano OR /ano ...)). A converter that appends the variants to one ANDed list would never match, so this is a latent portability risk.",
+    "The report sentence about 'netstat /ano' is not among the evidence quotes. The slash spelling is covered only through windash expansion of the quoted value, not through an explicit quotation or assumption.",
+    "The rule does not require a chaining operator (& or &&). It matches any cmd.exe command line containing all three strings, so the title's 'chained' is slightly stronger than the logic."
+   ]
+  },
+  {
+   "id": "CTL2-11",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "The rule parses cleanly, the metadata is complete, and the tags attack.discovery and attack.t1018 match the table. The regex '.*\\s/(dclist|domain_trusts|dsgetdc).*' has literal runs dclist, domain_trusts and dsgetdc, all in the single verbatim evidence quote, and 'nltest.exe' is there for the Image condition. Evaluating by hand and by script, the three nltest positives (/dclist:, /domain_trusts, /dsgetdc: /force) match. The ipconfig and whoami negatives fail the Image test. The nltest /sc_query and /sc_verify look-alikes fail the regex. The baseline has essentially no nltest, so the breadth limit holds, and Image plus CommandLine are two different fields.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The leading and trailing '.*' in the regex are redundant, because re is a search match.",
+    "The regex requires a '/' prefix. nltest also accepts '-', and windash is not used, though the report only shows slash forms.",
+    "/domain_trusts is really domain trust discovery (T1482), which is not in the contract table. Only T1018 is tagged, which the case's cited technique supports."
+   ]
+  },
+  {
+   "id": "CTL2-10",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The rule parses in pySigma and no non-network validator raises an issue. The tags are the union of the T1053.005 and T1059.001 rows (execution, persistence, privilege_escalation, t1053.005, t1059.001). powershell.exe, '-windowstyle hidden', '-w hidden', New-ScheduledTaskAction, Register-ScheduledTask and ccmexec.exe each occur in one of the three verbatim evidence quotes. All 3 positives match, including the '/w hidden' one via windash and the one with parent explorer.exe. The 2 negatives do not match. Look-alike 1 (hidden, no task cmdlets), look-alike 2 (full pattern but ParentImage ccmexec.exe, removed by the filter) and look-alike 3 (Get-ScheduledTask only) do not match. The baseline PowerShell commands lack the cmdlets, so there are 0 hits.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Abbreviated PowerShell parameters such as -win hidden or -window hidden are not covered. This is acceptable because the report names only -WindowStyle Hidden and -w hidden.",
+    "The windash variants (/windowstyle, en-dash and so on) have no direct quotation. They are covered through the quoted base values."
+   ]
+  },
+  {
+   "id": "CTL2-09",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The rule parses and the tags match the T1053.005 row exactly. Evidence covers every discriminating value: schtasks.exe, /create and /sc onlogon in quote 1, '\\Users\\Public\\' in quote 1's path, and '\\AppData\\Roaming\\' in quote 2's path. Both quotes are verbatim in the report. The 3 positives match; the ZoomUpdater one matches through case-insensitive 'ONLOGON' plus '\\AppData\\Roaming\\', and the Spooler2 one through Public\\Documents. The tasklist and whoami negatives fail the Image test. The /sc daily C:\\Scripts look-alike lacks onlogon, the OneDrive logon task under Program Files lacks the Public or Roaming path, and the /query look-alike lacks /create. The baseline schtasks activity is only /query, so there are 0 matches.",
+   "events_ok": true,
+   "incidental_issues": [
+    "schtasks.exe also accepts '-' switches and the rule has no windash. The report shows only slash forms, so this is a minor evasion gap, not a defect against the evidence.",
+    "Both path values end in a backslash. pySigma keeps them as literal text, but other converters could treat the trailing backslash as an escape."
+   ]
+  },
+  {
+   "id": "CTL2-08",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "The rule uses dns_query with only the allowed fields Image and QueryName, parses cleanly, and the tags attack.command_and_control and attack.t1071.004 match the table. '\\AppData\\Local\\Temp\\' is in evidence quote 1 and '.dyn-host.example' in quote 2, and both quotes are verbatim in the report. All 3 positives match (wsupd.exe and agent.exe under a user Temp path, each querying *.dyn-host.example). The chrome and Teams negatives fail both conditions. Look-alike 1 (Temp setup.exe querying cdn.jsdelivr.net) fails the QueryName test, and look-alike 2 (chrome querying home-nas.dyn-host.example) fails the Image-path test. The 60-event DNS baseline has no dyn-host.example, and the rule needs two fields, so the breadth guard is met.",
+   "events_ok": true,
+   "incidental_issues": [
+    "T1071.004 (DNS) is a loose fit for dynamic-DNS name resolution, which is closer to dynamic resolution. It is the only technique the case cites and is in the table, so G7 holds.",
+    "An exact lookup of 'dyn-host.example' with no subdomain would not match the endswith '.dyn-host.example' condition."
+   ]
+  },
+  {
+   "id": "CTL2-07",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The rule parses and has complete metadata. The tags attack.discovery and attack.t1016 match the T1016 row. ip-echo.example, myaddr.test, curl.exe and powershell.exe all occur in the one verbatim evidence quote. The 3 positives match (curl and powershell querying ip-echo.example, powershell querying myaddr.test). The svchost and OneDrive negatives match neither condition. The chrome look-alike querying ip-echo.example fails the Image condition, and the curl look-alike querying www.wikipedia.org fails the QueryName condition. None of the 60 baseline DNS domains is either service, so there are 0 matches.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule is tied to two specific fictional domains, so it is IOC-like in form, but both are quoted in the report.",
+    "T1016 is tagged without the .001 Internet Connection Discovery sub-technique. The contract table lists T1016, so this is acceptable."
+   ]
+  }
+ ]
+}

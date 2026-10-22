@@ -107,6 +107,34 @@ events:
     dest_port: '135'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The selection uses ''DestinationPort|gt: 8000''. The contract lists gt among the numeric
+      comparison modifiers that are NOT allowed, so G3 should stop it. The two evidence quotes are verbatim
+      in the report. By hand, the positives (rundll32 to 8443 and 9001) satisfy the rule''s logic, and
+      the look-alikes (rundll32 to 445 and 135) and the negatives do not.'
+    events_ok: true
+    incidental_issues:
+    - The look-alike rundll32 connections to SMB and RPC ports (445, 135) are only marginally 'benign',
+      but they are acceptable as look-alikes for a rule on high ports.
+    - Initiated is given as the string 'true'. The event format has no initiated field, so how the harness
+      fills it is implementation-dependent.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: '`DestinationPort|gt: 8000` uses the `gt` numeric comparison modifier, which the contract
+      lists as NOT allowed. The rest of the rule (Image|endswith, Initiated, and the ''selection'' condition)
+      is in-subset, so the only violation is the gt, which G3 should catch. Both evidence quotes are verbatim
+      in the report.'
+    events_ok: true
+    incidental_issues:
+    - The look-alikes are rundll32 connections to 445 and 135. These are plausible benign SMB/RPC traffic,
+      though not very common for rundll32.
+    - The event objects never set Initiated, so the harness presumably defaults it to true.
 excluded: false
 exclusion_reason: ''

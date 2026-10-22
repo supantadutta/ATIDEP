@@ -124,6 +124,42 @@ events:
     dest_port: '22'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 87
+    reasoning: The rule parses, the metadata is complete, and the fields Image, DestinationPort and DestinationIp
+      are all allowed. The condition 'all of selection* and not filter_bastion' correctly leaves the filter
+      out of the glob. plink.exe, ssh.exe, 2222, 8022 and 192.0.2.10 each occur in the three verbatim
+      evidence quotes. Tags command_and_control, t1090 and t1571 match the table for the cited T1090 and
+      T1571. By hand, all 3 positives match; Teams and chrome on 443/80 do not; ssh to the bastion 192.0.2.10:2222
+      is removed by the filter; and plink to port 22 fails the port test. Two fields mean G11 is satisfied,
+      and the baseline has no 2222/8022 traffic.
+    events_ok: true
+    incidental_issues:
+    - A reverse SSH tunnel is arguably better mapped to T1572 Protocol Tunneling, but that technique is
+      not in the table, so T1090 is acceptable here.
+    - Positive 3 (ssh to 203.0.113.88:2222) is a combination the report does not state verbatim. It still
+      exhibits the behaviour.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'The rule parses in pySigma, metadata is complete, and the fields Image, DestinationPort
+      and DestinationIp are all valid for network_connection. The values plink.exe, ssh.exe, 2222, 8022
+      and 192.0.2.10 are covered by the three verbatim quotes. The condition ''all of selection* and not
+      filter_bastion'' correctly excludes the filter, which does not match the selection* glob. Positives
+      (plink to 203.0.113.88:2222, ssh to 198.51.100.145:8022, ssh to 203.0.113.88:2222) all match. The
+      negatives do not match. The look-alikes are excluded as intended: ssh to the bastion 192.0.2.10:2222
+      is removed by the filter, and plink on port 22 misses the port list. Tags match the T1090 and T1571
+      rows.'
+    events_ok: true
+    incidental_issues:
+    - T1090 Proxy is a loose fit for a reverse SSH tunnel (T1572 Protocol Tunneling would be more natural),
+      but T1090 is in the table and is among the case's cited techniques.
+    - The bastion exclusion is by IP only, so it also silences 192.0.2.10 on port 8022, though the report
+      says only that port 2222 is sanctioned.
 excluded: false
 exclusion_reason: ''

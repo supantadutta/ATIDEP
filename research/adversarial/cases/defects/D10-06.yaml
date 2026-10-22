@@ -126,6 +126,35 @@ tamper_sigma_yaml: |
   falsepositives:
     - Legacy administration scripts that start programs through wmic
   level: high
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The original is clean. Its values wmic.exe and 'process call create' occur in the first
+      evidence quote, which is verbatim in the report. The tags execution plus t1047 are correct. Both
+      positives match (parent cmd.exe and parent powershell.exe), and the negatives and the two wmic look-alikes
+      do not. The tamper adds filter_automation (ParentImage|endswith \powershell.exe) with condition
+      'selection and not filter_automation'. The text differs, and the DC01 positive launched from powershell.exe
+      would now be missed. This is a classic post-approval evasion edit, and it contradicts the report's
+      second evidence quote that both parents were used.
+    events_ok: true
+    incidental_issues: []
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The tamper adds ''filter_automation: ParentImage|endswith: \powershell.exe'' and changes
+      the condition to ''selection and not filter_automation''. The original is clean. wmic.exe and ''process
+      call create'' are in a verbatim quote, and the tags execution and t1047 are correct. It parses in
+      pySigma. The original matches both positives and neither look-alike. The tamper stops matching positive
+      2 (wmic launched from powershell.exe, targeting DC01), a true positive. The report says the operator
+      ran wmic from both cmd.exe and powershell.exe, so this is an evasion-style change that a hash-bound
+      approval must catch.'
+    events_ok: true
+    incidental_issues:
+    - The second evidence quote (cmd.exe and powershell.exe) does not back any discriminating value in
+      the original rule. This is harmless because the values are already covered by the first quote.
 excluded: false
 exclusion_reason: ''

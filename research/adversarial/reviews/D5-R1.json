@@ -1,0 +1,94 @@
+{
+ "batch": "D5",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D5-01",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "The only discriminating field is ScriptBlockText|contains|all (Net.WebClient, DownloadString, cdn-assets.glasswharf.example), which the contract lists solely under the unavailable windows_powershell_script_block source. The Sigma logsource is category ps_script, which is not one of the three allowed categories, and the case-level logsource is windows_powershell_script_block. pySigma parses the rule, so the only blocker is the telemetry, which is what G6 should catch. Both evidence quotations occur verbatim in report_text, and the tags match the ATT&CK table, so no other defect masks this one.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Events are process_create although the rule's log source is ps_script. The event format has no script-block kind, so this is unavoidable, and a ScriptBlockText rule cannot match any of them.",
+    "The positive events put the cradle in cleartext on CommandLine. The report says the command line was encoded and the text is visible only in the script block log, so the events contradict the report's premise. They are still behaviourally correct positives.",
+    "The lookalike (Net.WebClient DownloadString from repo.corp.example) is a reasonable benign look-alike and does not contain the staging host."
+   ]
+  },
+  {
+   "id": "D5-02",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "detection is ScriptBlockText|contains|all [AmsiUtils, amsiInitFailed] and nothing else. The logsource is category ps_script, which is the unavailable script-block source. pySigma parses it, so G1 passes and G6 would be the gate that blocks. The evidence quotation is verbatim in the report, both values occur in it, and tags attack.stealth plus attack.t1562.001 match the table. The unavailable telemetry is the only defect.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Events are process_create, but the rule's source is ps_script. The report says the bypass is invisible in process telemetry, yet the positives carry it on the command line.",
+    "The lookalike calls GetType on AmsiUtils without amsiInitFailed, so it correctly would not match. It is a good benign look-alike.",
+    "The second positive spreads the string over two statements (a variable assignment, then GetField). It still contains both required tokens."
+   ]
+  },
+  {
+   "id": "D5-03",
+   "verdict": "present",
+   "confidence": 80,
+   "reasoning": "selection_loader uses ScriptBlockText|contains|all ['[Reflection.Assembly]::Load','FromBase64String'], and ScriptBlockText exists only in the unavailable windows_powershell_script_block source, which is the case-level logsource. The Sigma logsource is declared as process_creation (available) and mixes in Image|endswith powershell.exe, so a G6 that reads only the declared category would pass it and G5 would flag the field instead. The rule cannot work on process-creation telemetry, so the dependency on script-block logging is real. I rate confidence lower because the declared log source masks the dependency.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The declared logsource (process_creation) contradicts the field used (ScriptBlockText), so this is a hybrid D5 and G5 (invalid field) defect. An invalid-field check could fire before or alongside G6.",
+    "The positive events carry the loader on the command line, but the report says the launcher was encoded. The events are still behaviourally right and match the process_creation kind.",
+    "The lookalike (FromBase64String without Assembly::Load) is a good benign look-alike."
+   ]
+  },
+  {
+   "id": "D5-04",
+   "verdict": "present",
+   "confidence": 80,
+   "reasoning": "selection_script requires ScriptBlockText|contains|all [System.Net.Sockets.TCPClient, 203.0.113.77], and the rule ANDs it with Initiated: true. The Sigma logsource is network_connection, but ScriptBlockText is not a network_connection field and belongs only to the unavailable script-block source named in the case. The condition is selection_net and selection_script, so the rule can never match without script-block telemetry. G6 should block on the required source. The declared available category makes it a hybrid with a G5-style invalid field.",
+   "events_ok": true,
+   "incidental_issues": [
+    "All events are kind process_create although the rule's log source is network_connection. The contract requires events to match the rule's log source kind.",
+    "Positive events encode the TCPClient call in CommandLine, while the report says the script block is the only place it appears. They are still semantically valid positives, and the lookalike (TCPClient to 192.0.2.15:443) is a fair benign look-alike.",
+    "Port 4444 appears in the report evidence but not in the rule. Initiated: true is a boolean and exempt from G4."
+   ]
+  },
+  {
+   "id": "D5-05",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "Both selections use ScriptBlockText, and the logsource is product windows with service powershell and no category. That is the PowerShell logging service, not one of the three permitted categories, and the case-level source is windows_powershell_script_block (available: false). The 'or' condition has two alternatives, and each depends solely on ScriptBlockText, so no available-telemetry path exists. The evidence quotation is verbatim in report_text and contains Invoke-Mimikatz, -DumpCreds and sekurlsa::logonpasswords. The tags are valid.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The logsource has no category, so G3 (subset) would also reject it, in addition to G6.",
+    "Events are process_create with the strings on the command line, while the report says the command line showed only a short launcher. The positives are still correct, and Get-Process lsass is a sensible lookalike.",
+    "The report describes a roughly 1.2 MB script block. This does not affect the property."
+   ]
+  },
+  {
+   "id": "D5-06",
+   "verdict": "present",
+   "confidence": 80,
+   "reasoning": "The detection is ScriptBlockText|contains|all [Resolve-DnsName, '-Type TXT', beacon-relay.invalid], so every term lives in script-block text, the unavailable source named as the case's logsource. The Sigma logsource is declared as dns_query and the rule never uses QueryName, the only content field that source offers. Under dns_query telemetry it could never match, so it needs the unavailable script-block telemetry. G6 should block it. The evidence quote is verbatim and the tags (attack.command_and_control, attack.t1071.004, attack.execution, attack.t1059.001) match the table.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The declared dns_query logsource contradicts the field used (ScriptBlockText), so G5 would also fail. All events are process_create rather than dns_query, which breaks the contract's event-kind rule.",
+    "A QueryName|endswith beacon-relay.invalid rule would have been feasible on available telemetry. The report's claim that only script text is reliable is partly an artefact of how the case was built.",
+    "The positive events carry the call in CommandLine, and the _dmarc TXT lookalike is a fair benign look-alike."
+   ]
+  },
+  {
+   "id": "D5-07",
+   "verdict": "present",
+   "confidence": 80,
+   "reasoning": "selection_task requires ScriptBlockText|contains|all [Register-ScheduledTask, WinSyncHelper], while selection_host uses OriginalFileName, a valid process_creation field. The condition is an AND, so the rule needs the unavailable script-block telemetry, which is the case-level logsource windows_powershell_script_block. The declared process_creation category is available, so the dependency is hidden at the logsource level. The two evidence quotations are verbatim, and both T1053.005 (execution, persistence, privilege_escalation) and T1059.001 tags match the table.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Hybrid defect: the declared logsource (process_creation) does not match the ScriptBlockText field, so G5 would also flag the field.",
+    "The report says task creation shows no child process and is visible only in the script block. The positive events carry the cmdlet on the command line instead, which contradicts that premise.",
+    "The lookalike (Register-ScheduledTask for NightlyBackupCheck) is a good look-alike and would not match on WinSyncHelper. Events are the right kind (process_create) for the declared logsource."
+   ]
+  }
+ ]
+}

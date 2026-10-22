@@ -97,6 +97,39 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: detection is ScriptBlockText|contains|all [AmsiUtils, amsiInitFailed] and nothing else.
+      The logsource is category ps_script, which is the unavailable script-block source. pySigma parses
+      it, so G1 passes and G6 would be the gate that blocks. The evidence quotation is verbatim in the
+      report, both values occur in it, and tags attack.stealth plus attack.t1562.001 match the table.
+      The unavailable telemetry is the only defect.
+    events_ok: true
+    incidental_issues:
+    - Events are process_create, but the rule's source is ps_script. The report says the bypass is invisible
+      in process telemetry, yet the positives carry it on the command line.
+    - The lookalike calls GetType on AmsiUtils without amsiInitFailed, so it correctly would not match.
+      It is a good benign look-alike.
+    - The second positive spreads the string over two statements (a variable assignment, then GetField).
+      It still contains both required tokens.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The rule uses only ScriptBlockText|contains|all (AmsiUtils, amsiInitFailed) with logsource
+      category ps_script and product windows. That is the unavailable PowerShell script-block source and
+      not one of process_creation, network_connection or dns_query. Nothing in the rule can be evaluated
+      on available telemetry, so G6 should block it. The YAML parses, the evidence quote is verbatim in
+      the report, and the tags attack.stealth and attack.t1562.001 match the ATT&CK table.
+    events_ok: true
+    incidental_issues:
+    - The events are process_create with the AMSI line in the command line, which does not match the declared
+      ps_script log source. The behaviour is genuinely present in the positives.
+    - The look-alike (GetType AmsiUtils | Out-Null) lacks amsiInitFailed, so it is a reasonable benign
+      near-miss.
 excluded: false
 exclusion_reason: ''

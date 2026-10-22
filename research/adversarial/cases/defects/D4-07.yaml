@@ -108,6 +108,39 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 75
+    reasoning: The three CommandLine values (/create, /sc minute, \Users\Public\Libraries) all occur in
+      the schtasks.exe quotation after normalisation. Image|endswith '\Windows\System32\schtasks.exe'
+      normalises to 'windowssystem32schtasks.exe', which does not occur in the quotation (it has only
+      'schtasks.exe /create ...'). The strings 'windows' and 'system32' appear nowhere in the evidence
+      or report, and assumptions is empty. The defect is subtle, because the basename schtasks.exe is
+      supported. The unsupported full-path prefix is the only candidate, which lowers my confidence.
+    events_ok: true
+    incidental_issues:
+    - The title says 'Every Minute', but the evidence is '/sc minute /mo 5' (every five minutes).
+    - The rule does not constrain /mo, which is fine for the claim.
+    - Both positives match and both look-alikes (daily task; minute task pointing at C:\Tools) correctly
+      do not.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 78
+    reasoning: The quote 'schtasks.exe /create /tn OneDriveSyncHelper /sc minute /mo 5 /tr C:\Users\Public\Libraries\syncsvc.exe'
+      supports '/create', '/sc minute' and '\Users\Public\Libraries'. It also supports the file name schtasks.exe.
+      The Image value is '\Windows\System32\schtasks.exe', which with separators and case removed is 'windowssystem32schtasks.exe'.
+      'Windows' and 'System32' appear in no quote, no assumption (assumptions is empty) and nowhere in
+      the report. So the directory-qualified Image value is not traceable. The defect is subtler here,
+      since only the path prefix is unsupported and the basename is quoted.
+    events_ok: true
+    incidental_issues:
+    - The title says 'Every Minute', but the evidence is /mo 5 (every five minutes) and the rule matches
+      any minute interval; the second positive uses /mo 10.
+    - The directory prefix \Windows\System32\ is an invented narrowing that the evidence does not state.
+    - All six events evaluate as labelled.
 excluded: false
 exclusion_reason: ''

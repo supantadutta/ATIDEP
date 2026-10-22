@@ -118,6 +118,42 @@ events:
     dest_port: null
     name: onedrive.live.com
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 86
+    reasoning: The rule parses, the metadata is complete, and Image and QueryName are the allowed dns_query
+      fields. The value '.cloud-sync-assist.example' occurs literally in quote 2 ('api.cloud-sync-assist.example'),
+      and rundll32.exe and powershell.exe are in quote 3, with all three quotes verbatim. Tags command_and_control
+      and t1071.004 match the table. By hand, all 3 positives match (rundll32 or powershell with a subdomain),
+      and chrome to bing, svchost to windowsupdate, and powershell to login.microsoftonline.com and onedrive.live.com
+      do not. A 26-character QueryName suffix is a discriminating term, and none of the baseline DNS names
+      match, so 0 matches.
+    events_ok: true
+    incidental_issues:
+    - endswith '.cloud-sync-assist.example' would not match a lookup of the bare apex name. The report
+      only describes subdomain lookups, so this is a minor gap.
+    - T1071.004 is a loose fit, since the report describes resolving a controller domain rather than C2
+      carried inside DNS. It is still within the cited technique and the table.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: The rule parses and the fields QueryName and Image are valid for dns_query. The leading-dot
+      value '.cloud-sync-assist.example' appears inside 'api.cloud-sync-assist.example' in a verbatim
+      quote, and rundll32.exe and powershell.exe are in the third quote. The condition 'all of selection*'
+      needs both the domain and the process, so the breadth guard is met (26 characters on QueryName).
+      The 3 positives match, including the unobserved subdomain tasks., which the report says attackers
+      can change. The negatives (bing.com, windowsupdate.microsoft.com) and look-alikes (powershell resolving
+      login.microsoftonline.com and onedrive.live.com) do not. The baseline DNS set has no matching domain.
+      Tags match the T1071.004 row.
+    events_ok: true
+    incidental_issues:
+    - endswith '.cloud-sync-assist.example' does not match a lookup of the bare apex domain, although
+      the report says any lookup of the domain is suspicious.
+    - T1071.004 is arguably a looser fit for resolving a controller address than for DNS used as the C2
+      channel, but the case cites it and it is in the table.
 excluded: false
 exclusion_reason: ''

@@ -1,0 +1,78 @@
+{
+ "batch": "CTL1b",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "CTL1-07",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The rule parses as YAML and in pySigma, and all 12 metadata keys are present. The id is a valid UUID, the date is 2026/10/02, and the fields are only Image, CommandLine and ParentImage. By hand and by script, all 3 positives match: the regex process\\s+call\\s+create handles the 'process   call   create' spacing in positive 2. The 3 negatives and the 'wmic.exe process list brief' look-alike do not match, and the hdtools.exe-parent look-alike is removed by filter_helpdesk. Every value (wmic.exe, hdtools.exe, and the regex runs process, call and create) is in a verbatim evidence quote. Tags attack.execution and attack.t1047 match the table. Image plus CommandLine are two positive fields, and wmic is absent from the benign baseline.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Title says 'Remote Execution' but the rule does not require /node, and positive 3 is a local 'wmic.exe process call create' with no /node. This is consistent with the report's detection sentence but the title overstates.",
+    "The ParentImage hdtools.exe exclusion can be evaded by any attacker who names a binary hdtools.exe. This follows the report and is not a defect.",
+    "I could not check the Wazuh converter step (G3) directly. pySigma parse-ability and the allowed modifier subset were confirmed."
+   ]
+  },
+  {
+   "id": "CTL1-08",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The YAML and pySigma parse, the metadata is complete, and the modifiers are only endswith, contains and windash. Evaluated by hand and by script: all 3 positives match (including the pwsh.exe one with -WindowStyle Hidden -EncodedCommand). All 3 negatives are non-PowerShell. The CcmExec.exe-parent look-alike satisfies the image, -enc and hidden selections but is excluded by filter_sccm. The -File backup.ps1 look-alike has no -enc, the '-WindowStyle Hidden -File' one has no -enc, and the '-Encoding utf8' one contains '-enc' but no hidden window, so none match. All six values (powershell.exe, pwsh.exe, -enc, -w hidden, -WindowStyle Hidden, ccmexec.exe) occur in the 3 verbatim evidence quotes. Tags attack.execution and attack.t1059.001 are correct. The rule requires Image, -enc and hidden together, so it is narrow against the baseline.",
+   "events_ok": true,
+   "incidental_issues": [
+    "'-enc' is a substring of '-Encoding', so a hidden-window PowerShell that uses -Encoding would match. The falsepositives list only mentions management agents.",
+    "The hidden-window list does not cover abbreviated forms such as -win hidden. This follows the report wording and is not a defect."
+   ]
+  },
+  {
+   "id": "CTL1-09",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The YAML and pySigma parse and the metadata is complete. The fields ParentImage, Image and CommandLine are allowed, and the modifiers are endswith and contains. All 3 positives match: WINWORD or EXCEL as parent, powershell.exe as image, and the command line contains DownloadString, DownloadFile or Net.WebClient (positive 2 matches through System.Net.WebClient and DownloadFile). The negatives (Word, Outlook and Chrome launches) do not match. The Word-spawned 'Get-Service' look-alike fails selection_child, and the explorer-spawned DownloadFile look-alike fails selection_parent. Every value is in a verbatim evidence quote (winword.exe, excel.exe, powershell.exe, DownloadString, DownloadFile, Net.WebClient). Tags attack.execution and attack.t1059.001 are correct. The rule needs a parent plus an image and command-line condition, so it is specific.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Look-alike 1 (Word parent running Get-Service) is benign only by its command line. A Word-to-PowerShell parent chain is itself suspicious, so it is a slightly artificial look-alike.",
+    "Net.WebClient alone is enough to match, with no Invoke-Expression requirement. This follows the report's detection sentence."
+   ]
+  },
+  {
+   "id": "CTL1-10",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "The YAML and pySigma parse and the metadata is complete. The regex .*\\s-e(n|nc|ncodedcommand)?\\s+\\S{40,}.* matches all 3 positives: '-e', '-enc' and '-encodedcommand' each followed by a blob of at least 40 characters. The 3 negatives are non-PowerShell. The -File backup.ps1 look-alike has no encoded switch. The short-blob look-alike ('-enc VwBoAG8AYQBtAGkA', 16 characters) fails the 40-character quantifier. 'Get-Service ... -eq Running' does not match, because -eq is not followed by whitespace after the optional group. The only literal regex run of three or more characters is 'ncodedcommand', which is in the evidence quote '-EncodedCommand'. The Image literal powershell.exe is also in the evidence. T1059.001 plus T1027 give the tags attack.execution, attack.t1059.001, attack.stealth and attack.t1027, which are correct.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Look-alike 2 is an encoded command, which is not clearly benign. It is borderline and depends on the length threshold from the report.",
+    "\\S{40,} matches any long non-space token, not only base64 characters, so the rule is looser than the 'base64 argument' wording.",
+    "The 'at least 40 characters' sentence is not among the 2 evidence quotations. The threshold is a regex quantifier, not a literal run, so it is outside what G4 checks.",
+    "The \\S{40,} quantifier and the optional group are PCRE-style. The Wazuh converter was not testable by me, but pySigma accepts the rule."
+   ]
+  },
+  {
+   "id": "CTL1-11",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The YAML and pySigma parse and the metadata is complete. Image|endswith \\cmstp.exe is ANDed with CommandLine|contains|all of /s, /ns and .inf. All 3 positives match, including the order-swapped '/ns /s \\\\files.cranemail.test\\share\\p.inf' on SysWOW64\\cmstp.exe and the '/au /s /ns' variant. The negatives (tasklist, OneDrive and schtasks) are not cmstp. The look-alike '/u ...vpnprofile.inf' lacks '/s' and '/ns', and the look-alike '/s ...vpn.inf' lacks '/ns', so neither matches. The values cmstp.exe, /s, /ns and .inf are all in the verbatim evidence quotes. Tags attack.stealth and attack.t1218.003 match the table. Two positive fields are used, and cmstp is absent from the baseline.",
+   "events_ok": true,
+   "incidental_issues": [
+    "'/s' is a plain substring, so it would also match other switches such as /su. This is harmless here because /ns is also required.",
+    "The rule has no windash handling. cmstp uses '/' switches, so this is acceptable."
+   ]
+  },
+  {
+   "id": "CTL1-12",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The YAML and pySigma parse and the metadata is complete. 'all of selection*' ANDs Image|endswith \\schtasks.exe, CommandLine|contains|all of '/create' and 'powershell', and CommandLine|windash|contains '-w hidden' or '-WindowStyle Hidden'. All 3 positives match, including the multi-line YAML cmd values, which fold to a single line, and positive 3 with 'cmd.exe /c powershell.exe -w hidden'. The negatives are non-schtasks. The look-alike 'schtasks /query /fo LIST' has no /create, and the look-alike /create task for backup.ps1 runs powershell without a hidden style, so neither matches. Every value is in the 2 verbatim evidence quotes, and the line-wrapped '-w hidden' reads correctly. Tags attack.execution, attack.persistence, attack.privilege_escalation, attack.t1053.005 and attack.t1059.001 match the table for T1053.005 and T1059.001. The rule has three positive conditions on two fields, and baseline schtasks events are only /query.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule does not require the report's /sc onlogon or /ru SYSTEM, which is reasonable. Positives 2 and 3 use other schedules, so the rule is broader than the exact report command but within the report's detection sentence."
+   ]
+  }
+ ]
+}

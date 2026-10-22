@@ -150,6 +150,44 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'The YAML and pySigma parse, the metadata is complete, and the modifiers are only endswith,
+      contains and windash. Evaluated by hand and by script: all 3 positives match (including the pwsh.exe
+      one with -WindowStyle Hidden -EncodedCommand). All 3 negatives are non-PowerShell. The CcmExec.exe-parent
+      look-alike satisfies the image, -enc and hidden selections but is excluded by filter_sccm. The -File
+      backup.ps1 look-alike has no -enc, the ''-WindowStyle Hidden -File'' one has no -enc, and the ''-Encoding
+      utf8'' one contains ''-enc'' but no hidden window, so none match. All six values (powershell.exe,
+      pwsh.exe, -enc, -w hidden, -WindowStyle Hidden, ccmexec.exe) occur in the 3 verbatim evidence quotes.
+      Tags attack.execution and attack.t1059.001 are correct. The rule requires Image, -enc and hidden
+      together, so it is narrow against the baseline.'
+    events_ok: true
+    incidental_issues:
+    - '''-enc'' is a substring of ''-Encoding'', so a hidden-window PowerShell that uses -Encoding would
+      match. The falsepositives list only mentions management agents.'
+    - The hidden-window list does not cover abbreviated forms such as -win hidden. This follows the report
+      wording and is not a defect.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: YAML parses and pySigma converts the windash|contains selections, and the metadata is complete.
+      T1059.001 tags are correct. The three evidence quotes are verbatim and cover powershell.exe, pwsh.exe,
+      '-enc', '-w hidden', '-WindowStyle Hidden' and ccmexec.exe. All 3 positives match, with encoded
+      plus hidden in both short and long forms and powershell.exe and pwsh.exe images, and none has a
+      ccmexec.exe parent. The 3 negatives are unrelated. Look-alike 1 satisfies the image, -enc and hidden
+      selections, but its parent C:\Windows\CCM\CcmExec.exe satisfies filter_sccm, so it is excluded.
+      The -File, hidden-only and '-Encoding utf8' look-alikes each fail one of the -enc or hidden selections.
+    events_ok: true
+    incidental_issues:
+    - '''-enc'' as a substring also matches ''-Encoding'' (look-alike 4 shows this); the rule is saved
+      there only by the hidden-window requirement, so a hidden-window script using -Encoding would be
+      a false positive.'
+    - The short forms -e and -ec are not covered, a minor coverage gap.
+    - The ccmexec exclusion relies on the parent image name only.
 excluded: false
 exclusion_reason: ''

@@ -132,6 +132,49 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: 'YAML parses and pySigma accepts it with no errors. All 12 top-level keys are present,
+      with a valid UUID, status experimental and date 2026/10/02. Tags match the table for T1197 (execution,
+      persistence, stealth) and T1105 (command_and_control), and both techniques are cited. Every discriminating
+      value (bitsadmin.exe, /transfer, /download, powershell.exe, Start-BitsTransfer) is covered by the
+      two verbatim evidence quotes, which I confirmed occur in report_text. Only allowed fields and modifiers
+      are used, and each OR alternative of ''1 of selection*'' has a long CommandLine term. By hand: all
+      three positives match (two bitsadmin /transfer /download, one powershell Start-BitsTransfer), and
+      none of the negatives match. Neither look-alike matches (bitsadmin /list lacks /transfer; Get-BitsTransfer
+      is not Start-BitsTransfer). The baseline summary lists no matching command lines.'
+    events_ok: true
+    incidental_issues:
+    - 'Coverage is narrow: pwsh.exe is not covered, and bitsadmin /transfer without an explicit /download
+      (the default direction) would be missed. The report itself defines the pairing, so this is not a
+      defect.'
+    - The baseline has 25 powershell.exe events, of which only two command lines are listed, so the 0.5
+      percent breadth check relies on the summary.
+  - reviewer: R4
+    role: replacement
+    verdict: present
+    confidence: 86
+    reasoning: The YAML parses and pySigma accepts it with complete metadata. '1 of selection*' is allowed
+      and only Image and CommandLine are used. The tags execution, persistence and stealth plus t1197
+      match the table row for T1197, and command_and_control plus t1105 match T1105. Both quotations appear
+      word for word. 'bitsadmin.exe', '/transfer' and '/download' are in quote 1, and 'powershell.exe'
+      and 'Start-BitsTransfer' are in quote 2. By hand, positives 1 and 2 match selection_bitsadmin (bitsadmin
+      with /transfer and /download) and positive 3 matches selection_powershell (powershell.exe with Start-BitsTransfer).
+      The negatives (chrome, schtasks, powershell Get-Service) and the look-alikes (bitsadmin /list /allusers,
+      powershell Get-BitsTransfer) do not match. Each alternative has a CommandLine term of at least 9
+      characters, and the frequent powershell command lines in the baseline summary (backup.ps1, Get-Service)
+      do not contain Start-BitsTransfer.
+    events_ok: true
+    incidental_issues:
+    - selection_powershell anchors on \powershell.exe only, so pwsh.exe and encoded-command (-enc) forms
+      of Start-BitsTransfer are missed. This is a coverage gap, not a defect for this case.
+    - bitsadmin /transfer defaults to download when /download is omitted, so requiring /download misses
+      that form. The report explicitly names the pair as the marker.
+    - Positive 3 runs Start-BitsTransfer synchronously, without -Asynchronous, so it does not exactly
+      show the reboot-surviving job the report describes. The event is still a BITS download.
 excluded: false
 exclusion_reason: ''

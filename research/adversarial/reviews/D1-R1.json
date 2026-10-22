@@ -1,0 +1,84 @@
+{
+ "batch": "D1",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D1-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The sigma_yaml string contains a literal TAB character at the start of the line '  \\tCommandLine|contains: ...' (inside the selection map). yaml.safe_load raises ScannerError 'found character \\t that cannot start any token' at line 18, col 3, and pySigma SigmaRule.from_yaml fails with the same error. Replacing the tab with four spaces makes the rule convert cleanly, so the tab is the single defect and it is a real YAML-syntax failure that G1 should stop.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Even with the tab removed, the line is indented 2 spaces rather than 4, so it would have sat outside the selection map; the file has a second structural problem on the same line, not just the tab.",
+    "The 'https://' contains-value is short but is covered by the quoted evidence; no other issue found. Events are well labelled (mshta from WINWORD with an HTTPS URL is positive; local .hta from explorer is a fair benign look-alike)."
+   ]
+  },
+  {
+   "id": "D1-02",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The line 'QueryName|endswith: [\\'.lowtidewire.test\\'' opens a flow sequence that is never closed (no ']'). yaml.safe_load raises ParserError 'while parsing a flow sequence ... expected , or ]' at line 18 col 25, and pySigma also fails at parse. Adding the missing ']' makes the rule convert to 'Image endswith \\powershell.exe and QueryName endswith .lowtidewire.test', so this is the only defect and it is invalid YAML.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Evidence quotations ('c2k9x7.lowtidewire.test and q81mfa.lowtidewire.test' and 'the queries originated from powershell.exe rather than from a browser') are verbatim in the report text. Events are sound: PowerShell lookups of the lowtidewire zone are positive; PowerShell to northwind/cranemail names are plausible benign look-alikes."
+   ]
+  },
+  {
+   "id": "D1-03",
+   "verdict": "present",
+   "confidence": 80,
+   "reasoning": "The YAML parses and every top-level key is valid, but detection defines 'selection_rundll32' (two l's) while 'condition: selection_rundl32' (one l) references an undefined identifier. pySigma SigmaRule.from_yaml returns with no errors but evaluating the condition raises SigmaConditionError 'Detection selection_rundl32 not defined in detections', and TextQueryTestBackend.convert_rule fails the same way; correcting the typo makes it convert to 'Image endswith \\rundll32.exe and DestinationPort=4782'. A Sigma parser therefore does not accept it, so the defect is real, although the failure is lazy in pySigma and is a dangling reference rather than a structural YAML error.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The failure only surfaces when the condition is parsed or converted, not at SigmaRule.from_yaml; a G1 check that only constructs the rule object would miss it, so this case sits at the semantic edge of 'schema violation'.",
+    "With the typo fixed the rule would pass all events (positives are rundll32 to 4782; the look-alikes are rundll32 on 443 and nwsync.exe on 4782, neither matched). Evidence quotes are verbatim; tags attack.command_and_control + attack.t1571 match the ATT&CK table."
+   ]
+  },
+  {
+   "id": "D1-04",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "In sigma_yaml, 'detection:' holds a YAML sequence ('- selection: ...' and '- condition: selection') instead of a mapping. The YAML is syntactically valid but pySigma SigmaRule.from_yaml raises SigmaDetectionError 'Sigma detection must be a valid YAML map'. The Sigma schema requires detection to be a map with named selections and a condition key, so this is a genuine schema violation that a Sigma parser rejects.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Rule content is otherwise sensible: schtasks with /create, /sc onlogon and /ru SYSTEM matches both positives and neither look-alike (daily-SYSTEM task lacks /sc onlogon; Teams task lacks /ru SYSTEM). Tags match the T1053.005 row of the ATT&CK table; evidence quotes are verbatim."
+   ]
+  },
+  {
+   "id": "D1-05",
+   "verdict": "present",
+   "confidence": 96,
+   "reasoning": "The line 'tags: attack.command_and_control, attack.t1219' is a single scalar string, not a list, and the contract says tags must be a list. The YAML is valid, but pySigma raises SigmaTagError 'Sigma tags fields must be a list'. Changing it to a flow list makes the rule convert to 'Image endswith \\hbridge.exe and DestinationPort=7799', so this is the sole defect and a genuine schema violation.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Events are properly labelled: hbridge.exe from ProgramData\\Intel and Users\\Public to 203.0.113.64:7799 are positives; HelpBridge in Program Files on 443 and 8443 are legitimate look-alikes the rule does not match. Evidence quotes are verbatim; T1219 tags are correct."
+   ]
+  },
+  {
+   "id": "D1-06",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "The selection map has the key 'CommandLine|contains' twice ('/i:http' and 'scrobj.dll'). A mapping with duplicate keys is invalid under the YAML 1.2 spec, and pySigma 1.5.1 rejects it with YAMLError \"Duplicate key 'CommandLine|contains'\". Plain yaml.safe_load accepts it silently and keeps only 'scrobj.dll', dropping the '/i:http' condition, so a lenient loader hides the defect; a strict parser catches it. Removing the first key or merging into a |all list makes the rule convert.",
+   "events_ok": true,
+   "incidental_issues": [
+    "A lenient parse silently changes the rule to regsvr32 + scrobj.dll, so the malformation is semantic as well as syntactic; the events would still pass under the lenient reading, so only a strict YAML or Sigma parse exposes it.",
+    "Evidence quotes are verbatim; T1218.010 tags are correct; the look-alikes (local DLL registration, /u /s unregister of a local DLL) are fair benign activity."
+   ]
+  },
+  {
+   "id": "D1-07",
+   "verdict": "present",
+   "confidence": 96,
+   "reasoning": "The condition string 'selection_tool and or selection_domain' has two adjacent boolean operators, which is not a valid Sigma condition. The YAML loads and SigmaRule.from_yaml returns, but parsing the condition raises SigmaConditionError 'Expected end of text, found selection', and the TextQueryTestBackend conversion fails the same way. Using 'selection_tool and selection_domain' converts cleanly, so this is the single defect and a Sigma parser rejects the rule.",
+   "events_ok": true,
+   "incidental_issues": [
+    "As in D1-03, pySigma only fails when the condition is parsed or converted, not at SigmaRule.from_yaml.",
+    "Events are sound: certutil resolving *.reedmarsh-files.test is positive; certutil resolving ca01.northwind.test and crl.vendorpki.example are good benign look-alikes. The report text describes certutil -urlcache download behaviour, which fits the DNS rule only indirectly, but the quoted evidence is verbatim."
+   ]
+  }
+ ]
+}

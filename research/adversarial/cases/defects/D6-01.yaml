@@ -117,6 +117,38 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: The detection condition is 'selection | count() > 5', which is an aggregation with '|'
+      and count(). The contract names both as NOT allowed, so G3 should stop the rule. The two evidence
+      quotes are verbatim in the report. The selection (Image endswith \net.exe plus CommandLine containing
+      'net user' or 'localgroup administrators') matches each positive event on its own and none of the
+      negatives or look-alikes.
+    events_ok: true
+    incidental_issues:
+    - Only 3 positive events are given, so even if count() > 5 were supported the positive set would never
+      reach the threshold. The labels are still fine, because each event individually exhibits the enumeration
+      behaviour.
+    - 'The look-alike ''net use Z: ...'' does not contain ''net user'', so it is safe, but it is a fairly
+      weak look-alike.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The detection condition is `selection | count() > 5`, a pipe aggregation with count and
+      a numeric comparison. The contract forbids aggregation with '|' and count. pySigma also rejects
+      it ("pipe syntax ... deprecated"), so G3 should stop it. Both evidence quotes occur verbatim in
+      the report text.
+    events_ok: true
+    incidental_issues:
+    - The three positive events can never satisfy `count() > 5` event by event, so the rule could not
+      pass G8 even without the G3 stop.
+    - 'The look-alikes (`net localgroup "Remote Desktop Users"`, `net use Z: ...`) match neither CommandLine
+      value, so they are fine.'
+    - 'Nothing else is wrong: the fields are valid and the tags match T1087.001.'
 excluded: false
 exclusion_reason: ''

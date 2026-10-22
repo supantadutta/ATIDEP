@@ -1,0 +1,77 @@
+{
+ "batch": "CTL2a",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "CTL2-01",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "YAML and pySigma parse cleanly, all twelve keys are present, the id is a valid UUID, and the fields used (Image, DestinationPort) are in the network_connection catalog. Every discriminating value (powershell.exe, cmd.exe, 4444, 8888) occurs in one of the three evidence quotes, and each quote is verbatim in the report. Tags attack.command_and_control and attack.t1571 match the T1571 row exactly. By hand, all 3 positives match, and the 3 negatives (443) and 2 look-alikes (powershell on 443, msedge on 8888) do not. Each condition alternative has Image plus DestinationPort, so the breadth guard is met, and the baseline has only ports 80 and 443.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The msedge.exe look-alike on port 8888 slightly contradicts the report's claim that no sanctioned application uses these ports, but it is a defensible benign look-alike and the rule correctly ignores it.",
+    "Image matching on cmd.exe or powershell.exe is evadable by renaming the binary, which is normal for this kind of rule."
+   ]
+  },
+  {
+   "id": "CTL2-02",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The rule parses in pySigma, metadata is complete, and the fields Image, DestinationPort and DestinationIp are all valid for network_connection. The values plink.exe, ssh.exe, 2222, 8022 and 192.0.2.10 are covered by the three verbatim quotes. The condition 'all of selection* and not filter_bastion' correctly excludes the filter, which does not match the selection* glob. Positives (plink to 203.0.113.88:2222, ssh to 198.51.100.145:8022, ssh to 203.0.113.88:2222) all match. The negatives do not match. The look-alikes are excluded as intended: ssh to the bastion 192.0.2.10:2222 is removed by the filter, and plink on port 22 misses the port list. Tags match the T1090 and T1571 rows.",
+   "events_ok": true,
+   "incidental_issues": [
+    "T1090 Proxy is a loose fit for a reverse SSH tunnel (T1572 Protocol Tunneling would be more natural), but T1090 is in the table and is among the case's cited techniques.",
+    "The bastion exclusion is by IP only, so it also silences 192.0.2.10 on port 8022, though the report says only that port 2222 is sanctioned."
+   ]
+  },
+  {
+   "id": "CTL2-03",
+   "verdict": "present",
+   "confidence": 92,
+   "reasoning": "The rule parses, metadata is complete, and the fields are valid. rundll32.exe, regsvr32.exe, 8443 and 9001 are covered by the two verbatim quotes. The condition '(selection_rundll32 or selection_regsvr32) and selection_port' expands to two alternatives, each with Image and DestinationPort, so the breadth guard is met. Tags are attack.stealth with t1218.011 and t1218.010, plus attack.command_and_control with t1571, exactly as in the table. All 3 positives match, including rundll32 to 9001. The negatives (Outlook on 443, Chrome on 80) and look-alikes (chrome on 8443, msedge on 9001) do not match.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The third positive (rundll32 on port 9001) is not literally in the report, which pairs rundll32 with 8443 and regsvr32 with 9001, but the report says any connection from these binaries on those ports is C2, so it is justified.",
+    "The msedge look-alike on port 9001 is hypothetical, because the report mentions browsers only on 8443."
+   ]
+  },
+  {
+   "id": "CTL2-04",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The rule parses and the fields Image, DestinationIp and DestinationPort are valid. The values '198.51.100.', 8080, 8000, chrome.exe and msedge.exe all occur in the two verbatim quotes. DestinationIp|startswith '198.51.100.' is the right way to express the /24, since cidr is not allowed. It is also an 11-character positive term on a non-process field, which satisfies the breadth guard. The 3 positives match, including the unobserved host .131 and the non-browser binaries. The chrome and msedge look-alikes are removed by filter_browser. The powershell look-alike at 192.0.2.50:8080 is outside the prefix. The negatives are on ports 443 and 80, so they do not match. T1571 is the only tag pair and is correct.",
+   "events_ok": true,
+   "incidental_issues": [
+    "filter_browser excludes chrome.exe and msedge.exe on port 8000 as well, although the report exempts browsers only on 8080 (minor over-exclusion).",
+    "The browser exclusion is by image name only, so an attacker binary named chrome.exe would evade the rule.",
+    "Ports 8080 and 8000 are common alternate web ports, so T1571 is a modest stretch, though the case cites it."
+   ]
+  },
+  {
+   "id": "CTL2-05",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "The rule parses and the fields QueryName and Image are valid for dns_query. The leading-dot value '.cloud-sync-assist.example' appears inside 'api.cloud-sync-assist.example' in a verbatim quote, and rundll32.exe and powershell.exe are in the third quote. The condition 'all of selection*' needs both the domain and the process, so the breadth guard is met (26 characters on QueryName). The 3 positives match, including the unobserved subdomain tasks., which the report says attackers can change. The negatives (bing.com, windowsupdate.microsoft.com) and look-alikes (powershell resolving login.microsoftonline.com and onedrive.live.com) do not. The baseline DNS set has no matching domain. Tags match the T1071.004 row.",
+   "events_ok": true,
+   "incidental_issues": [
+    "endswith '.cloud-sync-assist.example' does not match a lookup of the bare apex domain, although the report says any lookup of the domain is suspicious.",
+    "T1071.004 is arguably a looser fit for resolving a controller address than for DNS used as the C2 channel, but the case cites it and it is in the table."
+   ]
+  },
+  {
+   "id": "CTL2-06",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The single regex '^[0-9a-f]{20,}\\.relay-hub\\.example$' on QueryName uses the allowed 're' modifier, and pySigma parses it. Its literal runs ('relay-hub', 'example') occur in the verbatim quote 'under the zone relay-hub.example'. I checked the hex labels by hand: the positives 9f2a61c0d4e87b35a1c2e7 (22 chars) and c04d7e91b2a85f36d9e0143a (24 chars) are all within [0-9a-f] and at least 20 long, so both match. The look-alikes status. (non-hex) and a1b2c3d4e5f6 (12 chars) fail the pattern, and the negatives are unrelated domains. The pattern is long and specific enough for the breadth guard, and the baseline DNS domains do not match. Tags are correct for T1071.004.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule does not constrain Image, which is fine given the report, but the hex test relies on case-insensitive matching, so uppercase hex would also match.",
+    "Whether Wazuh's regex engine accepts the {20,} quantifier cannot be verified from the contract, which lists 're' as allowed."
+   ]
+  }
+ ]
+}

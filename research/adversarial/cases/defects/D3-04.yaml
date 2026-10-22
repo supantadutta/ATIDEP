@@ -108,6 +108,38 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The rule is on process_creation, whose parent field is ParentImage. The filter selection
+      `filter_patch_agent` uses `ParentProcessName|endswith`, which is not allowed. The invented field
+      sits in a negated filter rather than the main selection, but it is still a field the rule uses,
+      so G5 should flag it. Image and CommandLine are valid.
+    events_ok: true
+    incidental_issues:
+    - Because the invented field is only in a 'not' filter, the positives would still pass logically (an
+      absent field never matches the filter), so the defect is hidden from the event tests and only G5
+      can catch it.
+    - The look-alikes (certutil -store under patchagent, certutil -hashfile) do not test the exclusion
+      filter. No event pairs patchagent.exe with -urlcache.
+    - Evidence quotes are verbatim in the report, and the tags (attack.command_and_control, attack.t1105)
+      are correct.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The filter_patch_agent selection uses ParentProcessName|endswith, which is not in the process_creation
+      allowed list; the valid field is ParentImage. The invented field sits in a negated filter, but G5
+      checks every field used, so the rule should still be stopped. Image and CommandLine are valid, and
+      the tags (attack.command_and_control, attack.t1105) are correct. With the field fixed, the two certutil
+      -urlcache -split positives match and the look-alikes (-store My, -hashfile) and the ping and tasklist
+      negatives do not.
+    events_ok: true
+    incidental_issues:
+    - The patchagent look-alike (certutil -store My) would not match the selection anyway because it lacks
+      -urlcache, so the filter is redundant for the tests.
 excluded: false
 exclusion_reason: ''

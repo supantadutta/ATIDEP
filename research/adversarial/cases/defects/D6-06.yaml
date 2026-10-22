@@ -105,6 +105,35 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The selection uses ''Image|fieldref: ParentImage''. fieldref is explicitly NOT allowed
+      in the contract, so G3 should stop the rule. Both evidence quotes are verbatim in the report. The
+      positives (child powershell.exe with ParentImage powershell.exe and -WindowStyle Hidden) fit the
+      rule''s logic. Look-alike 1 has the same-image parent but no hidden window, and look-alike 2 has
+      a hidden window but a svchost parent, so neither would match.'
+    events_ok: true
+    incidental_issues:
+    - The description says 'a process whose image is identical to its parent image', not specifically
+      PowerShell. This is acceptable because the report is about PowerShell.
+    - The CommandLine literal '-WindowStyle Hidden' would miss abbreviated forms such as '-w hidden'.
+      This is not related to the D6 defect.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: '`Image|fieldref: ParentImage` uses the `fieldref` modifier, explicitly NOT allowed (it
+      is a field-to-field comparison). pySigma parses it, so G3 is the stopping gate. Both evidence quotes
+      match the report once the YAML line fold is joined.'
+    events_ok: true
+    incidental_issues:
+    - The rule does not restrict Image to powershell.exe, so it relies on the fieldref plus '-WindowStyle
+      Hidden' alone. This is not a problem for the claimed property.
+    - 'The look-alikes are good: a self-relaunch without a hidden window, and a hidden window launched
+      from svchost with a different parent image.'
 excluded: false
 exclusion_reason: ''

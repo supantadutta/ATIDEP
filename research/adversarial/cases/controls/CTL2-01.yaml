@@ -129,6 +129,42 @@ events:
     dest_port: '8888'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: YAML and pySigma parse cleanly; all twelve top-level keys are present, the id is a valid
+      v4 UUID, and the date is valid. Fields Image and DestinationPort are allowed for network_connection,
+      and the tags (command_and_control, t1571) exactly match the table for T1571. The three evidence
+      quotes are verbatim in the report, and powershell.exe, cmd.exe, 4444 and 8888 each occur in them.
+      By hand, all 3 positives match; the 3 negatives (443) and both look-alikes (powershell to 443, msedge
+      to 8888, wrong image) do not. Image plus DestinationPort gives two fields, and the baseline has
+      only ports 80/443, so 0 matches.
+    events_ok: true
+    incidental_issues:
+    - The msedge.exe look-alike on port 8888 sits slightly against the report's statement that no sanctioned
+      application uses these ports. It is still a valid look-alike for a port-only rule.
+    - The image test is on the basename only, so renamed shells or pwsh.exe are not covered. This is acceptable
+      against the report.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: YAML and pySigma parse cleanly, all twelve keys are present, the id is a valid UUID, and
+      the fields used (Image, DestinationPort) are in the network_connection catalog. Every discriminating
+      value (powershell.exe, cmd.exe, 4444, 8888) occurs in one of the three evidence quotes, and each
+      quote is verbatim in the report. Tags attack.command_and_control and attack.t1571 match the T1571
+      row exactly. By hand, all 3 positives match, and the 3 negatives (443) and 2 look-alikes (powershell
+      on 443, msedge on 8888) do not. Each condition alternative has Image plus DestinationPort, so the
+      breadth guard is met, and the baseline has only ports 80 and 443.
+    events_ok: true
+    incidental_issues:
+    - The msedge.exe look-alike on port 8888 slightly contradicts the report's claim that no sanctioned
+      application uses these ports, but it is a defensible benign look-alike and the rule correctly ignores
+      it.
+    - Image matching on cmd.exe or powershell.exe is evadable by renaming the binary, which is normal
+      for this kind of rule.
 excluded: false
 exclusion_reason: ''

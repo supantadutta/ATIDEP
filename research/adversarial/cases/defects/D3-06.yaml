@@ -96,6 +96,39 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The rule is on process_creation, and the allowed fields do not include `Hashes`. The selection
+      uses `Hashes|contains` with a 64-hex-character SHA256. G5 should reject it, since the catalog has
+      no hash field for this log source. The hash value matches the one in the report and in the first
+      evidence quote.
+    events_ok: true
+    incidental_issues:
+    - The event format has no hash attribute, so the positive events could not match a Hashes condition
+      even if the field were allowed. This is a second reason the rule would fail the positive test.
+    - The rule needs the hash AND the file name AND '-ma lsass', so it is brittle and narrower than the
+      report's recommendation (svcstat.exe with -ma against lsass).
+    - The look-alike (procdump64.exe -ma w3wp.exe) is benign. The evidence quotes are verbatim, and the
+      tags (attack.credential_access, attack.t1003.001) are correct.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The process_creation selection includes Hashes|contains, which is not in the allowed list
+      (Image, CommandLine, ParentImage, ParentCommandLine, User, OriginalFileName), so G5 should reject
+      it. Image and CommandLine are valid, and the tags (attack.credential_access, attack.t1003.001) are
+      correct. The event format carries no hash value, so the two positives (svcstat.exe -accepteula -ma
+      lsass.exe) could never satisfy a hash condition. The Hashes condition is also what would block the
+      rule.
+    events_ok: true
+    incidental_issues:
+    - Hashes is a real Sysmon and Sigma field, but it is not in this lab's process_creation catalog.
+    - The hash condition makes the rule an IOC rule combined with a behaviour rule, and the test events
+      cannot exercise it.
+    - The procdump64 look-alike (-ma w3wp.exe) is a reasonable benign look-alike.
 excluded: false
 exclusion_reason: ''

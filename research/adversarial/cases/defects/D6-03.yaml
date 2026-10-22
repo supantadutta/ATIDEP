@@ -101,6 +101,32 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The selection uses ''CommandLine|base64offset|contains: DownloadString''. base64offset
+      is explicitly NOT allowed in the contract, so G3 should stop the rule. I checked that base64(''DownloadString'')
+      is ''RG93bmxvYWRTdHJpbmc='', which is the fragment in both positive command lines. The two evidence
+      quotes are verbatim in the report.'
+    events_ok: true
+    incidental_issues:
+    - The look-alike encodes 'Hello World' in base64 with PowerShell. It is a reasonable benign look-alike.
+    - The rule also hides the plain-text method name, so it depends on the base64offset semantics being
+      faithfully expanded. That is moot because the modifier is disallowed.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: '`CommandLine|base64offset|contains: ''DownloadString''` uses the `base64offset` modifier,
+      explicitly NOT allowed. pySigma parses it, so only G3 stops it. Both evidence quotes are verbatim,
+      and base64 of ''DownloadString'' is indeed RG93bmxvYWRTdHJpbmc=, as the report and positive events
+      show.'
+    events_ok: true
+    incidental_issues:
+    - The look-alike is a benign base64 decode of 'Hello World' in PowerShell, a good benign near-match.
+    - Technique and tag mapping (T1059.001 and T1027) is consistent.
 excluded: false
 exclusion_reason: ''

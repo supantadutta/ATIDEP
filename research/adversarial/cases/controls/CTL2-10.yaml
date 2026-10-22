@@ -144,6 +144,44 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: 'The rule parses in pySigma, and the test backend expands windash to -/ /–/—/― variants
+      for ''-windowstyle hidden'' and ''-w hidden''. Fields Image, CommandLine and ParentImage are allowed.
+      The condition ''all of selection* and not filter_mgmt'' is within the subset, since filter_mgmt
+      is not caught by selection*. Tags are the union for T1053.005 and T1059.001 and are correct. All
+      3 evidence quotes are verbatim and cover powershell.exe, both hidden spellings, both cmdlet names
+      and ccmexec.exe. Positives match: -WindowStyle Hidden, ''/w hidden'' (windash slash variant) and
+      ''-w hidden'', each with both cmdlets and a non-ccmexec parent. Negatives fail Image. Look-alikes:
+      the backup.ps1 script has no cmdlets, the ccmexec.exe-parented registration is removed by the filter,
+      and Get-ScheduledTask has no hidden window and no Register cmdlet. Baseline powershell command lines
+      contain neither cmdlet.'
+    events_ok: true
+    incidental_issues:
+    - Excluding by ParentImage name ccmexec.exe is spoofable by an attacker who names a process that,
+      but the report asks for exactly this exclusion.
+    - Positive 2 uses '/w hidden', which only matches through windash; it is a good test of that modifier.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The rule parses in pySigma and no non-network validator raises an issue. The tags are the
+      union of the T1053.005 and T1059.001 rows (execution, persistence, privilege_escalation, t1053.005,
+      t1059.001). powershell.exe, '-windowstyle hidden', '-w hidden', New-ScheduledTaskAction, Register-ScheduledTask
+      and ccmexec.exe each occur in one of the three verbatim evidence quotes. All 3 positives match,
+      including the '/w hidden' one via windash and the one with parent explorer.exe. The 2 negatives
+      do not match. Look-alike 1 (hidden, no task cmdlets), look-alike 2 (full pattern but ParentImage
+      ccmexec.exe, removed by the filter) and look-alike 3 (Get-ScheduledTask only) do not match. The
+      baseline PowerShell commands lack the cmdlets, so there are 0 hits.
+    events_ok: true
+    incidental_issues:
+    - Abbreviated PowerShell parameters such as -win hidden or -window hidden are not covered. This is
+      acceptable because the report names only -WindowStyle Hidden and -w hidden.
+    - The windash variants (/windowstyle, en-dash and so on) have no direct quotation. They are covered
+      through the quoted base values.
 excluded: false
 exclusion_reason: ''

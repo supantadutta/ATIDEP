@@ -102,6 +102,36 @@ events:
     dest_port: null
     name: update-check.cranemail.test
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The line ''QueryName|endswith: [\''.lowtidewire.test\'''' opens a flow sequence that is
+      never closed (no '']''). yaml.safe_load raises ParserError ''while parsing a flow sequence ... expected
+      , or ]'' at line 18 col 25, and pySigma also fails at parse. Adding the missing '']'' makes the
+      rule convert to ''Image endswith \powershell.exe and QueryName endswith .lowtidewire.test'', so
+      this is the only defect and it is invalid YAML.'
+    events_ok: true
+    incidental_issues:
+    - 'Evidence quotations (''c2k9x7.lowtidewire.test and q81mfa.lowtidewire.test'' and ''the queries
+      originated from powershell.exe rather than from a browser'') are verbatim in the report text. Events
+      are sound: PowerShell lookups of the lowtidewire zone are positive; PowerShell to northwind/cranemail
+      names are plausible benign look-alikes.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The line ''QueryName|endswith: [\''.lowtidewire.test\'''' opens a flow sequence that is
+      never closed (no '']''). PyYAML raises ParserError ''while parsing a flow sequence ... expected
+      , or ], but got <scalar>'' at the following ''condition:'' line. Adding the closing bracket makes
+      pySigma accept the rule, so the unclosed bracket is the only defect.'
+    events_ok: true
+    incidental_issues:
+    - The other top-level keys (UUID id, status experimental, tags attack.command_and_control and attack.t1071.004,
+      falsepositives, level) are fine.
+    - Evaluated against the intended logic, both positives match and the chrome and svchost negatives
+      and both powershell look-alikes (northwind and cranemail names) do not.
 excluded: false
 exclusion_reason: ''

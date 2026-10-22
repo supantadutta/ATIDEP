@@ -95,6 +95,39 @@ events:
     dest_port: '8443'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: The selection ANDs Image|endswith '.exe' with DestinationPort '443'. Two different fields,
+      so the structural second prong of G11 is technically met even though both terms are weak (every
+      Windows image ends in .exe, and 443 has 3 characters). The defect is carried by the baseline. The
+      contract says the 80 baseline network connections are ports 443 and 80 from chrome, msedge, Teams,
+      svchost and OneDrive. A large share are port 443 from .exe images, well above the 2-event limit.
+      Positives (crsync.exe:443) match, the negatives (123, 993) and the chrome:8443 lookalike do not.
+    events_ok: true
+    incidental_issues:
+    - The lookalike is chrome on port 8443, which the exact-match '443' misses. The truly confusing benign
+      case, chrome on 443, is absent, so G10 does not test the breadth.
+    - The two positive events are identical.
+    - The G4 values '.exe' and '443' appear in the evidence.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 92
+    reasoning: 'The selection is Image|endswith ''.exe'' AND DestinationPort ''443''. Image ''.exe'' matches
+      every executable and the port is only 3 characters, so there is no meaningful discriminator. The
+      contract baseline has 80 network connections, mostly port 443 from chrome, msedge, Teams, svchost
+      and OneDrive, all .exe images. Dozens would match, well over 0.5 percent of 400. Hand evaluation:
+      both positives (crsync.exe, port 443) match, and the negatives (port 123, port 993) and the chrome
+      8443 look-alike do not.'
+    events_ok: true
+    incidental_issues:
+    - The look-alike is chrome on port 8443, so it does not match and does not exercise the breadth. A
+      truly representative benign look-alike (chrome on 443) would match and fail G10.
+    - The two positive events are identical.
+    - The rule omits the report's discriminating terms (the crsync.exe image name or path, 203.0.113.50).
 excluded: false
 exclusion_reason: ''

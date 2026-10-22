@@ -102,6 +102,32 @@ events:
     dest_port: null
     name: heartbeat.relay-monitor.valleycu.example
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The tags list is only [attack.command_and_control], with no technique tag at all. The case
+      cites T1071.004, whose tag attack.t1071.004 is missing. G7 requires at least one technique tag,
+      so it should stop the rule. The rule logic (QueryName endswith '.relay-check.valleycu-status.invalid')
+      matches both positives and no negatives or look-alikes.
+    events_ok: true
+    incidental_issues:
+    - The false-positive and look-alike coverage is thin but reasonable.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The tags list only attack.command_and_control. There is no attack.tXXXX technique tag
+      at all, although the opportunity cites T1071.004 (the table gives attack.command_and_control plus
+      attack.t1071.004). G7 requires at least one technique tag, so it should stop this rule. By hand:
+      QueryName endswith ''.relay-check.valleycu-status.invalid'' matches both positives, and does not
+      match the negatives or the look-alikes (www.valleycu-status.invalid and heartbeat.relay-monitor.valleycu.example).'
+    events_ok: true
+    incidental_issues:
+    - The first look-alike (msedge resolving www.valleycu-status.invalid) is only a near-miss on the parent
+      zone name, and it is the same .invalid parent. It is somewhat artificial but acceptable as a benign
+      sibling-name look-alike.
 excluded: false
 exclusion_reason: ''

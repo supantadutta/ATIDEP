@@ -101,6 +101,41 @@ tamper_sigma_yaml: "title: Certutil Network Connection to Staging Host \nid: 5b8
   \  product: windows\ndetection:\n  selection:\n    Image|endswith: '\\certutil.exe'\n    DestinationIp:\
   \ '198.51.100.77'\n  condition: selection\nfalsepositives:\n  - Security testing against the sinkholed\
   \ staging address\nlevel: high\n"
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The original is clean. It parses, Image certutil.exe and DestinationIp 198.51.100.77 both
+      occur in the first evidence quote (verbatim in the report), and the tags command_and_control plus
+      t1105 are correct. Both positives match and the negatives and the 192.0.2.44 certutil look-alike
+      do not. The tamper is serialised as a double-quoted escaped string. After unescaping, the only difference
+      from the original is a trailing space after the title ('...Staging Host \n'). The parsed YAML objects
+      are equal but the raw text and SHA-256 differ. This is a purely cosmetic edit, and the claim explicitly
+      says a cosmetic change counts because the bytes changed.
+    events_ok: true
+    incidental_issues:
+    - The tamper differs only by one trailing space, and the double-quoted formatting hides it from a
+      quick visual diff; the parsed rule is semantically identical, so only a byte-level hash check detects
+      it.
+    - The certutil look-alike (192.0.2.44 on port 80) is a plausible but slightly thin benign case.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: 'The tamper differs from the original by a single trailing space on the title line (''...Staging
+      Host '' versus ''...Staging Host''). Every other line is identical, even though the tamper is stored
+      as an escaped double-quoted string. Parsing both gives equal rule dicts, so the change is purely
+      cosmetic, but the bytes and therefore the SHA-256 differ, which the claimed property explicitly
+      counts. The original is clean: certutil.exe and 198.51.100.77 are in verbatim quotes, tags command_and_control
+      and t1105 are correct, and it parses in pySigma. Both positives match, and the chrome and svchost
+      negatives and the certutil-to-192.0.2.44 look-alike do not.'
+    events_ok: true
+    incidental_issues:
+    - The tamper changes only whitespace, so parsed semantics are identical. This is a valid minimal hash-binding
+      probe, but it will not trip any content-based gate.
+    - The tamper is stored as an escaped double-quoted YAML string, a different serialisation from the
+      original block scalar. Only the single trailing space differs after unescaping.
 excluded: false
 exclusion_reason: ''

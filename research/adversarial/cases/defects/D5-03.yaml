@@ -102,6 +102,45 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 80
+    reasoning: selection_loader uses ScriptBlockText|contains|all ['[Reflection.Assembly]::Load','FromBase64String'],
+      and ScriptBlockText exists only in the unavailable windows_powershell_script_block source, which
+      is the case-level logsource. The Sigma logsource is declared as process_creation (available) and
+      mixes in Image|endswith powershell.exe, so a G6 that reads only the declared category would pass
+      it and G5 would flag the field instead. The rule cannot work on process-creation telemetry, so the
+      dependency on script-block logging is real. I rate confidence lower because the declared log source
+      masks the dependency.
+    events_ok: true
+    incidental_issues:
+    - The declared logsource (process_creation) contradicts the field used (ScriptBlockText), so this
+      is a hybrid D5 and G5 (invalid field) defect. An invalid-field check could fire before or alongside
+      G6.
+    - The positive events carry the loader on the command line, but the report says the launcher was encoded.
+      The events are still behaviourally right and match the process_creation kind.
+    - The lookalike (FromBase64String without Assembly::Load) is a good benign look-alike.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 72
+    reasoning: The detection's selection_loader requires ScriptBlockText contains all '[Reflection.Assembly]::Load'
+      and 'FromBase64String'. The contract assigns ScriptBlockText only to the unavailable windows_powershell_script_block
+      source, and it is not in the process_creation field list (Image, CommandLine, ParentImage, ParentCommandLine,
+      User, OriginalFileName). So the rule depends on script-block telemetry the lab does not have, even
+      though the logsource header says process_creation. The caveat is that the declared logsource is
+      available, so a gate keyed on the declared source might pass G6 and the failure would show at G5
+      (field validity). The dependency on unavailable telemetry is real, but 'G6 blocks it' is less certain
+      here than in D5-01/02.
+    events_ok: true
+    incidental_issues:
+    - 'The logsource header (process_creation) hides the real dependency, so the rule is incoherent: the
+      field exists only in the unavailable source, which makes G5 fire as well.'
+    - The positive events carry the loader text in the command line, so a CommandLine rule would match.
+      The rule as written (ScriptBlockText) would match none of the process_create events.
+    - The Image endswith \powershell.exe condition is fine, and the evidence quotes cover all values.
 excluded: false
 exclusion_reason: ''

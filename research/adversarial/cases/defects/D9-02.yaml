@@ -97,6 +97,39 @@ events:
     dest_port: '7070'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: The rule is Image endswith \hl_agent.exe AND DestinationPort 7070. The look-alike (C:\Program
+      Files\HelpLink\hl_agent.exe to 198.51.100.20:7070) satisfies both, so it matches. It is the vendor-installed
+      copy of a commercial remote-support tool using its default relay port, which is ordinary help-desk
+      use. The rule has no path or destination constraint to separate it from the operator's copy in C:\Users\Public\Libraries.
+      Positives match, negatives (firefox:443, svchost:445) do not. '7070' and 'hl_agent.exe' are in the
+      evidence quotes, and T1219 tags are correct.
+    events_ok: true
+    incidental_issues:
+    - Rule value DestinationPort is an integer while event dest_port is a string; both positives are treated
+      the same, so this does not change the result.
+    - The report does not state the 'Program Files' install path, so the look-alike's benign status rests
+      on context the case supplies itself.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 78
+    reasoning: 'Rule: Image endswith \hl_agent.exe AND DestinationPort 7070. Both positives (Public\Libraries\hl_agent.exe
+      to 203.0.113.77 and .78 on 7070) match, and the firefox:443 and svchost:445 negatives do not. The
+      look-alike (C:\Program Files\HelpLink\hl_agent.exe to 198.51.100.20:7070) matches because the rule
+      has no path or destination constraint. It is a properly installed copy of the sanctioned remote-support
+      tool connecting to the vendor''s default relay port, which is the classic legitimate-admin false
+      positive. Evidence quotes contain ''hl_agent.exe'' and ''7070'', and the T1219 tags match the table.
+      pySigma parses the rule.'
+    events_ok: true
+    incidental_issues:
+    - Benignness of the look-alike rests on the Program Files install path alone; a different destination
+      IP is the only other difference from the positives.
+    - DestinationPort is written as an integer in the rule and as a string in the events; this is harmless.
 excluded: false
 exclusion_reason: ''

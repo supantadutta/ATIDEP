@@ -100,6 +100,36 @@ events:
     dest_port: '8443'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 96
+    reasoning: 'The line ''tags: attack.command_and_control, attack.t1219'' is a single scalar string,
+      not a list, and the contract says tags must be a list. The YAML is valid, but pySigma raises SigmaTagError
+      ''Sigma tags fields must be a list''. Changing it to a flow list makes the rule convert to ''Image
+      endswith \hbridge.exe and DestinationPort=7799'', so this is the sole defect and a genuine schema
+      violation.'
+    events_ok: true
+    incidental_issues:
+    - 'Events are properly labelled: hbridge.exe from ProgramData\Intel and Users\Public to 203.0.113.64:7799
+      are positives; HelpBridge in Program Files on 443 and 8443 are legitimate look-alikes the rule does
+      not match. Evidence quotes are verbatim; T1219 tags are correct.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: '''tags: attack.command_and_control, attack.t1219'' is a single plain scalar string, not
+      a list. It is valid YAML, but Sigma requires tags to be a list. pySigma raises SigmaTagError ''Sigma
+      tags fields must be a list''. Rewriting it as a two-item list makes the rule parse cleanly, so this
+      is the sole defect.'
+    events_ok: true
+    incidental_issues:
+    - The tag values themselves are correct for T1219 (command_and_control plus t1219).
+    - Against the intended logic (hbridge.exe AND DestinationPort 7799), both positives match. The firefox
+      and svchost negatives and both Program Files\HelpBridge look-alikes (ports 443 and 8443) do not.
+    - The 8443 look-alike is only loosely 'default' behaviour, but it is benign and unmatched, so it is
+      harmless.
 excluded: false
 exclusion_reason: ''

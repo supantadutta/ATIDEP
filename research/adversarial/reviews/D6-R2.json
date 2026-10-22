@@ -1,0 +1,90 @@
+{
+ "batch": "D6",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D6-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The detection condition is `selection | count() > 5`, a pipe aggregation with count and a numeric comparison. The contract forbids aggregation with '|' and count. pySigma also rejects it (\"pipe syntax ... deprecated\"), so G3 should stop it. Both evidence quotes occur verbatim in the report text.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The three positive events can never satisfy `count() > 5` event by event, so the rule could not pass G8 even without the G3 stop.",
+    "The look-alikes (`net localgroup \"Remote Desktop Users\"`, `net use Z: ...`) match neither CommandLine value, so they are fine.",
+    "Nothing else is wrong: the fields are valid and the tags match T1087.001."
+   ]
+  },
+  {
+   "id": "D6-02",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "`DestinationPort|gt: 8000` uses the `gt` numeric comparison modifier, which the contract lists as NOT allowed. The rest of the rule (Image|endswith, Initiated, and the 'selection' condition) is in-subset, so the only violation is the gt, which G3 should catch. Both evidence quotes are verbatim in the report.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The look-alikes are rundll32 connections to 445 and 135. These are plausible benign SMB/RPC traffic, though not very common for rundll32.",
+    "The event objects never set Initiated, so the harness presumably defaults it to true."
+   ]
+  },
+  {
+   "id": "D6-03",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "`CommandLine|base64offset|contains: 'DownloadString'` uses the `base64offset` modifier, explicitly NOT allowed. pySigma parses it, so only G3 stops it. Both evidence quotes are verbatim, and base64 of 'DownloadString' is indeed RG93bmxvYWRTdHJpbmc=, as the report and positive events show.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The look-alike is a benign base64 decode of 'Hello World' in PowerShell, a good benign near-match.",
+    "Technique and tag mapping (T1059.001 and T1027) is consistent."
+   ]
+  },
+  {
+   "id": "D6-04",
+   "verdict": "absent",
+   "confidence": 72,
+   "reasoning": "I found no construct from the D6 list. The selections use only `endswith` and `startswith` on the allowed fields Image and QueryName. The condition is `1 of them`, which is standard Sigma for the same quantifier as the allowed `1 of selection*` and is not aggregation, count, near, timeframe, a numeric modifier, base64offset, cidr, exists, fieldref, expand or correlation. pySigma parses it. The only doubt is whether a strict converter would reject the literal keyword `them`, but nothing in the contract forbids it. By hand, all three positives and no negatives or look-alikes match.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Treat this as a possible control or decoy case rather than a true D6 defect. Its only fancy feature is `1 of them`, a mild ambiguity against the contract's literal '1 of selection*' wording.",
+    "The positive svchelper.exe events sit in C:\\ProgramData\\Fabrikam\\, which is a slightly odd path but harmless.",
+    "The look-alike nhagent.exe with an `nh-` query name is a good test of the Image restriction."
+   ]
+  },
+  {
+   "id": "D6-05",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "`ParentCommandLine|exists: false` uses the `exists` modifier, which the contract lists as NOT allowed. ParentCommandLine itself is an allowed field, but the modifier is not. Both evidence quotes occur verbatim (\"the ParentCommandLine field is absent\" and the rundll32 hlp.dll,Start command line).",
+   "events_ok": true,
+   "incidental_issues": [
+    "Positive events set parent_cmd to '' (empty string) instead of omitting the field. Under strict `exists:false` semantics an empty value still counts as present, so the positives are borderline for this rule. The label is still right for the behaviour.",
+    "Positive parents are in Temp and Downloads, while the report describes ProgramData activity. This is minor.",
+    "The look-alike (fabhelp.exe with a populated parent command line) is good."
+   ]
+  },
+  {
+   "id": "D6-06",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "`Image|fieldref: ParentImage` uses the `fieldref` modifier, explicitly NOT allowed (it is a field-to-field comparison). pySigma parses it, so G3 is the stopping gate. Both evidence quotes match the report once the YAML line fold is joined.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule does not restrict Image to powershell.exe, so it relies on the fieldref plus '-WindowStyle Hidden' alone. This is not a problem for the claimed property.",
+    "The look-alikes are good: a self-relaunch without a hidden window, and a hidden window launched from svchost with a different parent image."
+   ]
+  },
+  {
+   "id": "D6-07",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "`timeframe: 15m` sits inside `detection:` next to `selection` and `condition`. The contract lists timeframe as NOT allowed, and nothing in the rule needs it (the condition is just `selection`). The fields Image, DestinationPort and Initiated are valid. Both evidence quotes are verbatim in the report.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The look-alike (fsclient.exe, a different vendor, to port 7070) correctly does not match the hbclient.exe image restriction.",
+    "Nothing else is wrong."
+   ]
+  }
+ ]
+}

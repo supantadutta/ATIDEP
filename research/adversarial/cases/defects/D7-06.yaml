@@ -100,6 +100,40 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The selection_create alternative is specific (schtasks, /create and CraneSync, all required).
+      The selection_verify alternative is only CommandLine|contains 'schtasks /query', the benign verification
+      step. Structurally it has a 15-character CommandLine term, but the baseline defeats it. schtasks.exe
+      has 13 baseline events and 'schtasks /query /fo LIST' is a listed frequent command line, so this
+      alternative matches roughly 13 of 400 (3%), above the 2-event limit. The condition is 'or', so the
+      over-broad alternative makes the whole rule over-broad. Both positives match the create alternative,
+      and the BackupNightly lookalike matches neither.
+    events_ok: true
+    incidental_issues:
+    - The lookalike is a schtasks /create for a different task, not the /query form that drives the over-breadth,
+      so G10 passes while G11 should fail.
+    - The two positive events are identical apart from user.
+    - The tags match the table for T1053.005, and the G4 values occur in the evidence quotes.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'Alternative selection_verify is CommandLine|contains ''schtasks /query'', with no CraneSync
+      or other campaign term. It passes the structural test (15 characters, non-process field) but is
+      plain admin activity. The contract baseline has 13 schtasks.exe events and lists ''schtasks /query
+      /fo LIST'' as a frequent command line. That is a large share and far over 2 of 400, so G11 should
+      stop the rule. The selection_create alternative is properly specific. Hand evaluation: both positives
+      match on create, and negatives and the BackupNightly create look-alike do not.'
+    events_ok: true
+    incidental_issues:
+    - The look-alike (schtasks /create BackupNightly) does not match, so it does not show the over-breadth.
+      A benign 'schtasks /query /fo LIST' look-alike would.
+    - The falsepositives entry ('Administrators listing scheduled tasks') admits the defect itself.
+    - The positive events are identical except for the user.
 excluded: false
 exclusion_reason: ''

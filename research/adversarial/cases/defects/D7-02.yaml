@@ -102,6 +102,36 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The only condition is Image|endswith '\powershell.exe', a single positive condition on
+      a process-name field, so there is no discriminating term (G11 first prong). The contract baseline
+      has powershell.exe 25 of 400 events (6.25%), far above the 2-event limit, and these include the
+      benign backup.ps1 and Get-Service invocations. Both positives match and the powershell_ise and pwsh
+      lookalikes do not.
+    events_ok: true
+    incidental_issues:
+    - The lookalikes (powershell_ise.exe, pwsh.exe) are different binaries and so avoid the over-broad
+      match. A real look-alike would be benign powershell.exe, for example a backup.ps1 run, which this
+      rule would hit.
+    - The evidence quotes are verbatim from the report and the tags match the ATT&CK table.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The only condition is Image|endswith ''\powershell.exe'', a positive condition on a process-name
+      field and nothing else. Under G11''s structural rule that is not a discriminating term. The baseline
+      also has 25 powershell.exe events (backup.ps1 and Get-Service lines), far above the 2-event limit.
+      Hand evaluation: both positives match, and the negatives and look-alikes (powershell_ise.exe, pwsh.exe)
+      do not, so G8, G9 and G10 pass and only G11 can stop it.'
+    events_ok: true
+    incidental_issues:
+    - The look-alikes (powershell_ise.exe, pwsh.exe) do not match '\powershell.exe', so they hide the
+      defect. A look-alike of benign powershell.exe -File backup.ps1 would be the telling case.
+    - The rule drops the -EncodedCommand and -WindowStyle Hidden terms that the evidence quotation supports.
 excluded: false
 exclusion_reason: ''

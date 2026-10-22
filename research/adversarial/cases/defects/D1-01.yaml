@@ -78,6 +78,38 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The sigma_yaml string contains a literal TAB character at the start of the line ''  \tCommandLine|contains:
+      ...'' (inside the selection map). yaml.safe_load raises ScannerError ''found character \t that cannot
+      start any token'' at line 18, col 3, and pySigma SigmaRule.from_yaml fails with the same error.
+      Replacing the tab with four spaces makes the rule convert cleanly, so the tab is the single defect
+      and it is a real YAML-syntax failure that G1 should stop.'
+    events_ok: true
+    incidental_issues:
+    - Even with the tab removed, the line is indented 2 spaces rather than 4, so it would have sat outside
+      the selection map; the file has a second structural problem on the same line, not just the tab.
+    - The 'https://' contains-value is short but is covered by the quoted evidence; no other issue found.
+      Events are well labelled (mshta from WINWORD with an HTTPS URL is positive; local .hta from explorer
+      is a fair benign look-alike).
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'Line 18 of the decoded sigma_yaml is ''  \tCommandLine|contains: ...'', so the double-quoted
+      \t escape puts a literal TAB in the indentation. PyYAML fails with ScannerError ''found character
+      \t that cannot start any token'' at line 18, col 3. The line is also indented 2 spaces plus a tab
+      against the 4 spaces of the sibling Image key. With the tab replaced by 4 spaces, pySigma parses
+      the rule cleanly, so the tab is the sole cause.'
+    events_ok: true
+    incidental_issues:
+    - The rule is embedded as a double-quoted one-line string with \n escapes rather than a block scalar.
+      That is unusual but valid, and it is how the tab got in.
+    - With the tab fixed, the intended logic (Image endswith \mshta.exe AND CommandLine contains https://)
+      matches both positives and neither negative nor the local-HTA look-alike.
 excluded: false
 exclusion_reason: ''

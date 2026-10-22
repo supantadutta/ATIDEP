@@ -111,6 +111,36 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'In sigma_yaml, ''detection:'' holds a YAML sequence (''- selection: ...'' and ''- condition:
+      selection'') instead of a mapping. The YAML is syntactically valid but pySigma SigmaRule.from_yaml
+      raises SigmaDetectionError ''Sigma detection must be a valid YAML map''. The Sigma schema requires
+      detection to be a map with named selections and a condition key, so this is a genuine schema violation
+      that a Sigma parser rejects.'
+    events_ok: true
+    incidental_issues:
+    - 'Rule content is otherwise sensible: schtasks with /create, /sc onlogon and /ru SYSTEM matches both
+      positives and neither look-alike (daily-SYSTEM task lacks /sc onlogon; Teams task lacks /ru SYSTEM).
+      Tags match the T1053.005 row of the ATT&CK table; evidence quotes are verbatim.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: '''detection:'' is a YAML list (''- selection:'' and ''- condition: selection'') instead
+      of a mapping. yaml.safe_load gives [{''selection'':{...}},{''condition'':''selection''}], and pySigma
+      raises SigmaDetectionError ''Sigma detection must be a valid YAML map''. Merging the list items
+      into one map makes the rule parse, so the structural error is the only defect.'
+    events_ok: true
+    incidental_issues:
+    - The YAML itself is valid; the violation is purely against the Sigma structure.
+    - 'Against the intended logic (schtasks.exe AND /create AND /sc onlogon AND /ru system, case-insensitive),
+      both positives match. The tasklist and ping negatives and both look-alikes do not: the daily-schedule
+      task has no ''/sc onlogon'', and the Teams task has no ''/ru system''.'
+    - All three evidence quotes appear verbatim in the report text.
 excluded: false
 exclusion_reason: ''

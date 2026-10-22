@@ -106,6 +106,35 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: The technique tag is attack.t1117, the legacy Regsvr32 ID. It is deprecated and absent
+      from the contract's table of active techniques; the replacement is T1218.010, which is the technique
+      the case cites. The tactic attack.stealth is valid, but the technique tag is not supported by the
+      cited technique and is not active in v19.2, so G7 should fail. The rule matches both positives (Image
+      endswith \regsvr32.exe, CommandLine contains scrobj.dll and /i:http, including the SysWOW64 one).
+      It matches no negatives and no look-alikes.
+    events_ok: true
+    incidental_issues:
+    - The contract's list of deprecated IDs does not name T1117 explicitly, but it is absent from the
+      active table and is the known revoked Regsvr32 ID.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: The rule's technique tag is attack.t1117, the legacy Regsvr32 technique that ATT&CK deprecated
+      and replaced with T1218.010. It is not in the contract table. The opportunity cites T1218.010, so
+      t1117 is both deprecated and unsupported by the opportunity. The tactic tag attack.stealth is valid,
+      but the technique tag fails G7. Both positives match the rule on scrobj.dll and /i:http, and the
+      negatives and both look-alikes (no scrobj.dll, no /i:http) do not.
+    events_ok: true
+    incidental_issues:
+    - T1117 is not among the 'examples' of deprecated IDs listed in the contract (T1002 to T1034), so
+      a gate that relies only on that list may miss it. It is still absent from the active table and differs
+      from the cited T1218.010.
 excluded: false
 exclusion_reason: ''

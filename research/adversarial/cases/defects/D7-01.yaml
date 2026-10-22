@@ -104,6 +104,44 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: The only alternative is CommandLine|contains 'cmd.exe /c' (10 chars on CommandLine), so
+      structurally it has a discriminating term. The defect rests on the baseline rate. The contract lists
+      'cmd.exe /c ipconfig /all' and 'cmd.exe /c whoami' as frequent baseline command lines, and cmd.exe
+      has 31 baseline events, so the rule very likely matches well over 2 of 400 (0.5%). Both are benign
+      admin one-liners that contain 'cmd.exe /c', which is exactly what G11 should stop. The exact count
+      is not given, so this is inferred from the contract's frequent-command-line list. Both positives
+      match, and the negatives and lookalikes do not.
+    events_ok: true
+    incidental_issues:
+    - The two positive events are identical except for user and parent_cmd path.
+    - The lookalikes (cmd.exe /k and a bare cmd.exe) are not the benign activity that makes the rule over-broad.
+      The real look-alike would be 'cmd.exe /c ipconfig /all' or 'cmd.exe /c whoami', so G10 does not
+      exercise the breadth defect.
+    - 'The G4 and G7 metadata are fine: tags are attack.execution and attack.t1059.003, and the value
+      occurs in evidence quote 1.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: 'The only condition is CommandLine|contains ''cmd.exe /c''. It passes the structural test
+      (10 characters on a non-process field), but it is a generic shell invocation, not tied to the campaign''s
+      copy and start chain. The contract baseline lists ''cmd.exe /c ipconfig /all'' and ''cmd.exe /c
+      whoami'' among its frequent command lines, with 9 ipconfig.exe, 13 whoami.exe and 31 cmd.exe events.
+      That is almost certainly more than 2 of 400, so G11 should stop it. I evaluated the events by hand:
+      both positives match, and the negatives and look-alikes (cmd.exe /k, and bare cmd.exe) do not, so
+      G10 would not catch the breadth.'
+    events_ok: true
+    incidental_issues:
+    - The two positive events are identical except for the user and the parent_cmd path.
+    - The look-alikes (cmd /k, bare cmd) are not the benign activity that would actually trip the rule,
+      such as 'cmd.exe /c ipconfig /all'. They do not exercise the breadth defect.
+    - The report supports a more specific rule (copy and start of svcupd.exe, or a winword.exe parent),
+      so the broadness is a choice by the rule, not the evidence.
 excluded: false
 exclusion_reason: ''

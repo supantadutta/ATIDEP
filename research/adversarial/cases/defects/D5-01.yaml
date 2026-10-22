@@ -103,6 +103,43 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 95
+    reasoning: The only discriminating field is ScriptBlockText|contains|all (Net.WebClient, DownloadString,
+      cdn-assets.glasswharf.example), which the contract lists solely under the unavailable windows_powershell_script_block
+      source. The Sigma logsource is category ps_script, which is not one of the three allowed categories,
+      and the case-level logsource is windows_powershell_script_block. pySigma parses the rule, so the
+      only blocker is the telemetry, which is what G6 should catch. Both evidence quotations occur verbatim
+      in report_text, and the tags match the ATT&CK table, so no other defect masks this one.
+    events_ok: true
+    incidental_issues:
+    - Events are process_create although the rule's log source is ps_script. The event format has no script-block
+      kind, so this is unavoidable, and a ScriptBlockText rule cannot match any of them.
+    - The positive events put the cradle in cleartext on CommandLine. The report says the command line
+      was encoded and the text is visible only in the script block log, so the events contradict the report's
+      premise. They are still behaviourally correct positives.
+    - The lookalike (Net.WebClient DownloadString from repo.corp.example) is a reasonable benign look-alike
+      and does not contain the staging host.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The only detection field is ScriptBlockText (contains|all Net.WebClient, DownloadString,
+      cdn-assets.glasswharf.example), and logsource is category ps_script. The contract lists ScriptBlockText
+      as belonging to windows_powershell_script_block, which is marked available:false, and ps_script
+      is not one of the three allowed categories. The rule has no process_creation, network or DNS fallback,
+      so G6 should block it. The YAML parses, and both evidence quotes are verbatim in the report.
+    events_ok: true
+    incidental_issues:
+    - All events are process_create with the behaviour in the cmd string, but the rule's log source (ps_script)
+      has no matching event kind, so the event-kind rule in the contract cannot be met.
+    - The report says the real command line was Base64-encoded, but the positive events show the cradle
+      in clear text on the command line. This makes the 'only visible in script block' premise inconsistent
+      with the events.
+    - The tags are correct (attack.execution, attack.t1059.001, attack.command_and_control, attack.t1105).
 excluded: false
 exclusion_reason: ''

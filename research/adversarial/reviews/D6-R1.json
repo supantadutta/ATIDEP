@@ -1,0 +1,88 @@
+{
+ "batch": "D6",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D6-01",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The detection condition is 'selection | count() > 5', which is an aggregation with '|' and count(). The contract names both as NOT allowed, so G3 should stop the rule. The two evidence quotes are verbatim in the report. The selection (Image endswith \\net.exe plus CommandLine containing 'net user' or 'localgroup administrators') matches each positive event on its own and none of the negatives or look-alikes.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Only 3 positive events are given, so even if count() > 5 were supported the positive set would never reach the threshold. The labels are still fine, because each event individually exhibits the enumeration behaviour.",
+    "The look-alike 'net use Z: ...' does not contain 'net user', so it is safe, but it is a fairly weak look-alike."
+   ]
+  },
+  {
+   "id": "D6-02",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The selection uses 'DestinationPort|gt: 8000'. The contract lists gt among the numeric comparison modifiers that are NOT allowed, so G3 should stop it. The two evidence quotes are verbatim in the report. By hand, the positives (rundll32 to 8443 and 9001) satisfy the rule's logic, and the look-alikes (rundll32 to 445 and 135) and the negatives do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The look-alike rundll32 connections to SMB and RPC ports (445, 135) are only marginally 'benign', but they are acceptable as look-alikes for a rule on high ports.",
+    "Initiated is given as the string 'true'. The event format has no initiated field, so how the harness fills it is implementation-dependent."
+   ]
+  },
+  {
+   "id": "D6-03",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The selection uses 'CommandLine|base64offset|contains: DownloadString'. base64offset is explicitly NOT allowed in the contract, so G3 should stop the rule. I checked that base64('DownloadString') is 'RG93bmxvYWRTdHJpbmc=', which is the fragment in both positive command lines. The two evidence quotes are verbatim in the report.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The look-alike encodes 'Hello World' in base64 with PowerShell. It is a reasonable benign look-alike.",
+    "The rule also hides the plain-text method name, so it depends on the base64offset semantics being faithfully expanded. That is moot because the modifier is disallowed."
+   ]
+  },
+  {
+   "id": "D6-04",
+   "verdict": "absent",
+   "confidence": 65,
+   "reasoning": "I found none of the listed unsupported constructs. The detection has two selections (QueryName endswith/startswith, Image endswith), all modifiers are in the allowed set, and the fields are valid for dns_query. The only candidate is 'condition: 1 of them'. That is the same 'N of' quantifier the contract allows ('1 of selection*'), and both selections here start with 'selection', so it is equivalent. It is not on the contract's NOT-allowed list (count, near, timeframe, aggregation, correlation). By hand, the rule matches all 3 positives and none of the negatives or look-alikes (nhagent.exe with nh-status does not match, because the second selection requires Image \\svchelper.exe).",
+   "events_ok": true,
+   "incidental_issues": [
+    "The contract literally quotes only '1 of selection*' and 'all of selection*'. A strict reading of 'them' as a different keyword could make this a borderline case, which is why confidence is only moderate.",
+    "This rule looks like a within-subset control, not a seeded defect.",
+    "'nh-' is only 3 characters, which may matter for G4 or G11 but does not affect G3."
+   ]
+  },
+  {
+   "id": "D6-05",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The selection uses 'ParentCommandLine|exists: false'. exists is explicitly NOT allowed in the contract, so G3 should stop the rule, even though ParentCommandLine itself is an allowed field. Both evidence quotes are verbatim in the report. The two positives (rundll32 with hlp.dll,Start and an empty parent_cmd) fit the rule's logic, and the Fabrikam look-alike has a parent command line, so it would not match.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The positives set parent_cmd to an empty string, not an absent field. Whether '' counts as 'not exists' depends on the harness, which makes the semantics of the exists test slightly ambiguous.",
+    "The look-alike differs from the positives only in its parent command line, which is a good discriminating look-alike."
+   ]
+  },
+  {
+   "id": "D6-06",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The selection uses 'Image|fieldref: ParentImage'. fieldref is explicitly NOT allowed in the contract, so G3 should stop the rule. Both evidence quotes are verbatim in the report. The positives (child powershell.exe with ParentImage powershell.exe and -WindowStyle Hidden) fit the rule's logic. Look-alike 1 has the same-image parent but no hidden window, and look-alike 2 has a hidden window but a svchost parent, so neither would match.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The description says 'a process whose image is identical to its parent image', not specifically PowerShell. This is acceptable because the report is about PowerShell.",
+    "The CommandLine literal '-WindowStyle Hidden' would miss abbreviated forms such as '-w hidden'. This is not related to the D6 defect."
+   ]
+  },
+  {
+   "id": "D6-07",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The detection block contains 'timeframe: 15m' next to selection and condition. timeframe is explicitly NOT allowed in the contract, so G3 should stop the rule. Both evidence quotes are verbatim in the report. The positives (hbclient.exe to port 7070) fit the selection, and the negatives and the fsclient.exe look-alike (port 7070 but a different image) do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "timeframe without any aggregation or count is semantically meaningless here, so it is a purely seeded construct.",
+    "The report says the client may fall back to ports 443 and 80, and the rule does not cover that. This is outside the claimed defect."
+   ]
+  }
+ ]
+}

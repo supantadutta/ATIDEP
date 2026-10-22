@@ -94,6 +94,40 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 87
+    reasoning: The selection ANDs Image|endswith '\msiexec.exe' with CommandLine|contains '/qn'. Two different
+      fields, so the structural prong is met. The defect rests on the baseline. The contract lists msiexec.exe
+      at 9 of 400 events (2.25%) and names 'msiexec.exe /i C:\Temp\app.msi /qn' as a frequent benign command
+      line. Matches would very likely number at least 3, above the 2-event limit. The exact /qn count
+      is inferred from the contract, not stated. Positives match, and the Word and notepad negatives and
+      the /passive lookalike do not.
+    events_ok: true
+    incidental_issues:
+    - The lookalike uses /passive, which the rule does not match. The benign /qn install (C:\Temp\app.msi
+      /qn), which is the over-breadth source, is not used as the look-alike, so G10 does not test breadth.
+    - The two positive events are identical.
+    - '''/qn'' is only 3 characters, so it is a weak term on its own.'
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 80
+    reasoning: 'The selection is Image|endswith ''\msiexec.exe'' AND CommandLine|contains ''/qn''. It
+      passes the structural test with two fields, but ''/qn'' is a generic silent-install switch, and
+      the rule has no tie to the remote http://198.51.100.9 URL, WmiPrvSE parent or rmtsvc.msi. The contract
+      baseline has 9 msiexec.exe events, and its only listed msiexec command line is ''msiexec.exe /i
+      C:\Temp\app.msi /qn''. So the rule matches several benign events, likely most of those 9, and more
+      than 2 of 400 is very probable. The exact count is not given, which is why confidence is not higher.
+      Hand evaluation: both positives match, and the negatives and the /passive look-alike do not.'
+    events_ok: true
+    incidental_issues:
+    - The look-alike uses /passive, which avoids '/qn'. A look-alike with a local '/i C:\Temp\app.msi
+      /qn' would show the breadth defect.
+    - The two positives are identical.
+    - The ATT&CK mapping T1219 with command_and_control tags matches the table.
 excluded: false
 exclusion_reason: ''

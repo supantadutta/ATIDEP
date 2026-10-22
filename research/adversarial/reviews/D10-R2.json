@@ -1,0 +1,82 @@
+{
+ "batch": "D10",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D10-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The texts differ: the tamper deletes the 'CommandLine|contains|all: [comsvcs.dll, MiniDump]' condition and leaves only 'Image|endswith: \\rundll32.exe'. The original is clean. It parses in pySigma with no errors. Both evidence quotes are verbatim in the report, and every value (rundll32.exe, comsvcs.dll, MiniDump) is covered by a quote. The tags credential_access and t1003.001 match the ATT&CK table. Both positives match and the negatives and look-alikes do not. The tamper is a material post-approval change: it makes both rundll32 look-alikes (shell32 Control_RunDLL, user32 LockWorkStation) match, so a hash-bound approval must reject it.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tampered rule keeps the title and description that claim a comsvcs MiniDump detection, so its metadata no longer matches its logic. This follows from the defect and is not a separate flaw."
+   ]
+  },
+  {
+   "id": "D10-02",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The tamper adds a 'selection_extra' (QueryName|endswith .cranemail.test) and changes the condition to 'selection or selection_extra'. The original is clean: powershell.exe and tunnel-relay.invalid are both in verbatim evidence quotes, and tags command_and_control and t1071.004 are correct. It parses in pySigma. The original matches both positives and none of the negatives or look-alikes. The tamper then matches both negatives (mail and time .cranemail.test) and the psrepo.cranemail.test look-alike, so it is a real broadening that the content hash must catch.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tampered rule keeps a description that only mentions the tunnel-relay.invalid domain, although it now also matches any .cranemail.test query."
+   ]
+  },
+  {
+   "id": "D10-03",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The only byte difference is 'level: high' changed to 'level: low' (diff line 23). The original is clean. Image powershell.exe, DestinationIp 203.0.113.50 and DestinationPort 4444 all occur in verbatim evidence quotes. The tags command_and_control and t1571 are correct. It parses in pySigma, and I checked every event by hand. The detection logic is untouched, so no event result changes. Even so, downgrading the severity after approval is a metadata modification (alert triage priority) that an approval bound to the SHA-256 must catch, and a cosmetic change would count anyway.",
+   "events_ok": true,
+   "incidental_issues": [
+    "DestinationPort is written as the YAML integer 4444 while the test events carry the string '4444'. pySigma accepts it, but it is a possible type-mismatch risk for a converter. It does not affect the claimed defect.",
+    "The tamper changes only the severity field, so the detection result is identical to the original. The case therefore exercises metadata tampering, not detection-logic tampering."
+   ]
+  },
+  {
+   "id": "D10-04",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "The tamper replaces the tags 'attack.stealth' and 'attack.t1218.005' with 'attack.execution' and 'attack.t1059.001', leaving the detection unchanged. The original is clean. Both evidence quotes are verbatim, and mshta.exe, http: and https: are covered. The original tags match the table for T1218.005 and the cited technique list. It parses in pySigma, and both positives match while the negatives and the local .hta look-alike do not. The tamper is a subtle post-approval change: T1059.001 is itself a cited technique, so the new tags are valid ATT&CK tags and could pass G7 even though the rule detects mshta, not PowerShell. Only the hash binding catches it.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tampered tags no longer describe the mshta detection (T1218.005), although they are valid tags for a technique that the report also cites."
+   ]
+  },
+  {
+   "id": "D10-05",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The tamper changes the second 'CommandLine|contains|all' value from '\\ProgramData\\' to '\\Temp\\'. The original is clean. '/transfer' and '\\ProgramData\\' are both in verbatim quotes, and the T1197 tag set (execution, persistence, stealth, t1197) is exactly the table's. It parses in pySigma. The original matches both positives and neither the C:\\Windows\\Temp patch look-alike nor the negatives. The tamper stops matching both positives (their paths are under C:\\ProgramData) and starts matching the benign patch-job look-alike. That is a substantive logic change an approval bound to the content hash must catch.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tampered rule still says ProgramData in its title, description and falsepositives, so its text contradicts its logic."
+   ]
+  },
+  {
+   "id": "D10-06",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The tamper adds 'filter_automation: ParentImage|endswith: \\powershell.exe' and changes the condition to 'selection and not filter_automation'. The original is clean. wmic.exe and 'process call create' are in a verbatim quote, and the tags execution and t1047 are correct. It parses in pySigma. The original matches both positives and neither look-alike. The tamper stops matching positive 2 (wmic launched from powershell.exe, targeting DC01), a true positive. The report says the operator ran wmic from both cmd.exe and powershell.exe, so this is an evasion-style change that a hash-bound approval must catch.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The second evidence quote (cmd.exe and powershell.exe) does not back any discriminating value in the original rule. This is harmless because the values are already covered by the first quote."
+   ]
+  },
+  {
+   "id": "D10-07",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The tamper differs from the original by a single trailing space on the title line ('...Staging Host ' versus '...Staging Host'). Every other line is identical, even though the tamper is stored as an escaped double-quoted string. Parsing both gives equal rule dicts, so the change is purely cosmetic, but the bytes and therefore the SHA-256 differ, which the claimed property explicitly counts. The original is clean: certutil.exe and 198.51.100.77 are in verbatim quotes, tags command_and_control and t1105 are correct, and it parses in pySigma. Both positives match, and the chrome and svchost negatives and the certutil-to-192.0.2.44 look-alike do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tamper changes only whitespace, so parsed semantics are identical. This is a valid minimal hash-binding probe, but it will not trip any content-based gate.",
+    "The tamper is stored as an escaped double-quoted YAML string, a different serialisation from the original block scalar. Only the single trailing space differs after unescaping."
+   ]
+  }
+ ]
+}

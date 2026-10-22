@@ -104,6 +104,39 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: 'The author field is the string ''   '' (three spaces), which is whitespace-only. YAML
+      parsing confirms author == ''   ''. The key exists but carries no author value, so required metadata
+      is effectively blank or malformed. The other fields are valid: UUID ok, status experimental, date
+      2026/10/02, references urn, non-empty falsepositives, level high. pySigma still parses the rule,
+      so only a content-level G2 check catches this.'
+    events_ok: true
+    incidental_issues:
+    - This is a subtle defect, because a presence-only check on the 'author' key would pass. G2 must check
+      for non-blank content.
+    - Detection and events verified by hand. Both positives match (wmic.exe, '/node:' and 'process call
+      create', case-insensitive). The look-alike 'wmic.exe /node:LAB-FS-02 os get caption,version' lacks
+      'process call create' and does not match.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: The author field is the double-quoted string "   ", which parses to three spaces; stripping
+      it leaves nothing, so it is effectively blank. The contract requires an author. All other metadata
+      is valid (UUID id parses, experimental, date 2026/10/02, level high, references urn:atidep:case,
+      non-empty falsepositives, correct tags for T1047). pySigma does not object, so a naive truthiness
+      check would pass it and only a stripped-emptiness check catches it. It is still a genuine metadata
+      defect.
+    events_ok: true
+    incidental_issues:
+    - Strictness depends on whether G2 strips whitespace; a bare truthiness check would pass this rule,
+      so the case is a good probe but a borderline one.
+    - 'Look-alike 2 (wmic /node: with os get) is correctly not matched because it lacks ''process call
+      create''.'
 excluded: false
 exclusion_reason: ''

@@ -102,6 +102,34 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 96
+    reasoning: 'The date is ''02/10/2026'' (DD/MM/YYYY), not the required YYYY/MM/DD. It loads as a plain
+      string and is not a YAML date. The rest of the metadata is valid: UUID ok, status experimental,
+      urn reference, non-empty falsepositives, level high, tags attack.command_and_control and attack.t1105.'
+    events_ok: true
+    incidental_issues:
+    - 'pySigma rejects this rule (SigmaDateError: use yyyy-mm-dd), so G1 might fire before G2. Gate attribution
+      is ambiguous, though the metadata defect is genuinely present.'
+    - Detection logic verified. Both positives contain urlcache and split. The look-alike 'certutil.exe
+      -urlcache * delete' lacks 'split', so it correctly does not match. The hashfile look-alike does
+      not match either.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: The date is '02/10/2026' (DD/MM/YYYY), not the required YYYY/MM/DD. yaml.safe_load returns
+      it as a string, and pySigma rejects it with SigmaDateError. Everything else is valid (UUID id parses,
+      experimental, author case-author, level high, references urn:atidep:case, non-empty falsepositives,
+      correct tags for T1105). Both positives match 'urlcache' and 'split'. The hashfile look-alike and
+      the '-urlcache * delete' look-alike (no 'split') do not match.
+    events_ok: true
+    incidental_issues:
+    - pySigma rejects the date, so a G1 parser check might stop this rule before G2.
+    - The date is ambiguous between DD/MM and MM/DD, but either reading violates YYYY/MM/DD.
 excluded: false
 exclusion_reason: ''

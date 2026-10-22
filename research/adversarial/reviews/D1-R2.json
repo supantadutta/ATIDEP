@@ -1,0 +1,90 @@
+{
+ "batch": "D1",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D1-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "Line 18 of the decoded sigma_yaml is '  \\tCommandLine|contains: ...', so the double-quoted \\t escape puts a literal TAB in the indentation. PyYAML fails with ScannerError 'found character \\t that cannot start any token' at line 18, col 3. The line is also indented 2 spaces plus a tab against the 4 spaces of the sibling Image key. With the tab replaced by 4 spaces, pySigma parses the rule cleanly, so the tab is the sole cause.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule is embedded as a double-quoted one-line string with \\n escapes rather than a block scalar. That is unusual but valid, and it is how the tab got in.",
+    "With the tab fixed, the intended logic (Image endswith \\mshta.exe AND CommandLine contains https://) matches both positives and neither negative nor the local-HTA look-alike."
+   ]
+  },
+  {
+   "id": "D1-02",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The line 'QueryName|endswith: [\\'.lowtidewire.test\\'' opens a flow sequence that is never closed (no ']'). PyYAML raises ParserError 'while parsing a flow sequence ... expected , or ], but got <scalar>' at the following 'condition:' line. Adding the closing bracket makes pySigma accept the rule, so the unclosed bracket is the only defect.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The other top-level keys (UUID id, status experimental, tags attack.command_and_control and attack.t1071.004, falsepositives, level) are fine.",
+    "Evaluated against the intended logic, both positives match and the chrome and svchost negatives and both powershell look-alikes (northwind and cranemail names) do not."
+   ]
+  },
+  {
+   "id": "D1-03",
+   "verdict": "present",
+   "confidence": 82,
+   "reasoning": "The YAML parses and the selection is named 'selection_rundll32', but the condition reads 'selection_rundl32' (one 'l' missing). pySigma raises SigmaConditionError \"Detection 'selection_rundl32' not defined in detections\" when the condition is parsed. With the typo corrected the rule parses cleanly. The caveat is that SigmaRule.from_yaml and SigmaCollection.from_yaml accept the rule and rule.errors is empty, because pySigma parses conditions lazily. A G1 that only constructs the rule object would not catch it, but any conversion or condition parse will.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The defect is a dangling reference in the condition, not a pure YAML or JSON-schema violation. It is only detected once the condition is parsed or converted.",
+    "Against the corrected logic (rundll32.exe AND port 4782), both positives match. Neither negative nor either look-alike matches: rundll32 on 443 and nwsync.exe on 4782 do not."
+   ]
+  },
+  {
+   "id": "D1-04",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "'detection:' is a YAML list ('- selection:' and '- condition: selection') instead of a mapping. yaml.safe_load gives [{'selection':{...}},{'condition':'selection'}], and pySigma raises SigmaDetectionError 'Sigma detection must be a valid YAML map'. Merging the list items into one map makes the rule parse, so the structural error is the only defect.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The YAML itself is valid; the violation is purely against the Sigma structure.",
+    "Against the intended logic (schtasks.exe AND /create AND /sc onlogon AND /ru system, case-insensitive), both positives match. The tasklist and ping negatives and both look-alikes do not: the daily-schedule task has no '/sc onlogon', and the Teams task has no '/ru system'.",
+    "All three evidence quotes appear verbatim in the report text."
+   ]
+  },
+  {
+   "id": "D1-05",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "'tags: attack.command_and_control, attack.t1219' is a single plain scalar string, not a list. It is valid YAML, but Sigma requires tags to be a list. pySigma raises SigmaTagError 'Sigma tags fields must be a list'. Rewriting it as a two-item list makes the rule parse cleanly, so this is the sole defect.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tag values themselves are correct for T1219 (command_and_control plus t1219).",
+    "Against the intended logic (hbridge.exe AND DestinationPort 7799), both positives match. The firefox and svchost negatives and both Program Files\\HelpBridge look-alikes (ports 443 and 8443) do not.",
+    "The 8443 look-alike is only loosely 'default' behaviour, but it is benign and unmatched, so it is harmless."
+   ]
+  },
+  {
+   "id": "D1-06",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "The selection mapping repeats the key 'CommandLine|contains' ('/i:http' and then 'scrobj.dll'). Duplicate keys violate the YAML 1.2 requirement that mapping keys be unique. pySigma's loader rejects the rule with YAMLError \"Duplicate key 'CommandLine|contains'\". Plain yaml.safe_load silently accepts it and keeps only the last value ('scrobj.dll'), so the rule would quietly lose its '/i:http' condition. Using 'CommandLine|contains|all' with a list makes it parse. The confidence is not higher because the outcome depends on how strict the YAML loader is, but a Sigma parser does reject it.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Under plain PyYAML last-key-wins the rule would still match both positives and none of the negatives or look-alikes (none of those contain scrobj.dll). Without a strict-key parser the defect is a silent semantic loss rather than a crash.",
+    "Against the intended logic (regsvr32.exe AND /i:http AND scrobj.dll), both positives match. The whoami and net negatives and both regsvr32 look-alikes (local DLL register, /u /s oldcodec.dll) do not."
+   ]
+  },
+  {
+   "id": "D1-07",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The condition is 'selection_tool and or selection_domain', with two adjacent boolean operators. The YAML parses, but pySigma raises SigmaConditionError \"Expected end of text, found 'selection' (at char 22)\", and the full rule validator fails the same way. Changing it to 'selection_tool and selection_domain' makes the rule parse cleanly. Both selections are defined and the fields (Image, QueryName) are valid for dns_query.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Like D1-03, SigmaRule.from_yaml itself succeeds and the failure appears when the condition is parsed.",
+    "The intended operator is ambiguous. With 'and', both positives match and nothing else does. With 'or', the two certutil look-alikes (ca01.northwind.test, crl.vendorpki.example) would match because the certutil.exe selection alone would suffice, which would be a breadth or look-alike problem unrelated to G1.",
+    "Tags (attack.command_and_control, attack.t1105) match the ATT&CK table."
+   ]
+  }
+ ]
+}

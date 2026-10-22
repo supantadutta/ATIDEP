@@ -134,6 +134,52 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: 'The YAML and pySigma parse and the metadata is complete. The regex .*\s-e(n|nc|ncodedcommand)?\s+\S{40,}.*
+      matches all 3 positives: ''-e'', ''-enc'' and ''-encodedcommand'' each followed by a blob of at
+      least 40 characters. The 3 negatives are non-PowerShell. The -File backup.ps1 look-alike has no
+      encoded switch. The short-blob look-alike (''-enc VwBoAG8AYQBtAGkA'', 16 characters) fails the 40-character
+      quantifier. ''Get-Service ... -eq Running'' does not match, because -eq is not followed by whitespace
+      after the optional group. The only literal regex run of three or more characters is ''ncodedcommand'',
+      which is in the evidence quote ''-EncodedCommand''. The Image literal powershell.exe is also in
+      the evidence. T1059.001 plus T1027 give the tags attack.execution, attack.t1059.001, attack.stealth
+      and attack.t1027, which are correct.'
+    events_ok: true
+    incidental_issues:
+    - Look-alike 2 is an encoded command, which is not clearly benign. It is borderline and depends on
+      the length threshold from the report.
+    - \S{40,} matches any long non-space token, not only base64 characters, so the rule is looser than
+      the 'base64 argument' wording.
+    - The 'at least 40 characters' sentence is not among the 2 evidence quotations. The threshold is a
+      regex quantifier, not a literal run, so it is outside what G4 checks.
+    - The \S{40,} quantifier and the optional group are PCRE-style. The Wazuh converter was not testable
+      by me, but pySigma accepts the rule.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: YAML parses, pySigma converts it, and the metadata, tags and fields are valid. The tags
+      for T1059.001 plus T1027 (execution, stealth, t1059.001, t1027) match the table. The regex literal
+      runs ('powershell.exe', 'ncodedcommand') occur in evidence quotes that are verbatim in the report.
+      By hand, the three positives carry base64 arguments of 124, 132 and 60 characters after -e, -enc
+      and -encodedcommand, so all match. The 16-character '-enc VwBoAG8AYQBtAGkA' look-alike falls under
+      the 40-character floor and does not match. The -File and '-Command ... Status -eq Running' look-alikes
+      do not match, because ' -eq' and '-ExecutionPolicy' fail the (n|nc|ncodedcommand)?\s+ part. The
+      negatives are not powershell.exe.
+    events_ok: true
+    incidental_issues:
+    - The 40-character threshold is not in any evidence quotation or declared assumption. The report text
+      does say 'at least 40 characters', but the author did not quote it, and G4 does not check numeric
+      quantifiers.
+    - The alternation (n|nc|ncodedcommand) misses valid PowerShell prefixes such as -ec, -enco and -encod.
+    - The report says the argument is about 400 characters while the positives are 60 to 132; positive
+      1's base64 is also truncated and does not decode cleanly.
+    - The look-alike with a 16-character encoded 'Whoami' is a threshold probe rather than clearly benign
+      activity.
 excluded: false
 exclusion_reason: ''

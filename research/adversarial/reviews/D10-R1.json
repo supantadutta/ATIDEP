@@ -1,0 +1,77 @@
+{
+ "batch": "D10",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D10-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The original parses with yaml and pysigma. Its values (rundll32.exe, comsvcs.dll, minidump) all occur in the first evidence quote, which is verbatim in report_text. The tags credential_access plus t1003.001 match the ATT&CK table, and the events behave as labelled (both positives hit, negatives and the two rundll32 look-alikes do not). The tamper deletes the whole CommandLine|contains|all block, leaving only Image|endswith rundll32.exe. The text differs and the SHA-256 differs. This is a real post-approval weakening: both benign rundll32 look-alikes would now match.",
+   "events_ok": true,
+   "incidental_issues": []
+  },
+  {
+   "id": "D10-02",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The original is clean. It parses, and its values powershell.exe and tunnel-relay.invalid appear in the two evidence quotes, which are verbatim in the report. The tags command_and_control plus t1071.004 are correct, and the Image and QueryName conditions are on two different fields. Both positives match and no negative or look-alike does. The tamper adds selection_extra (QueryName|endswith .cranemail.test) and changes the condition to 'selection or selection_extra'. The text differs, and it now matches both negatives and the psrepo.cranemail.test look-alike. This is a clear post-approval broadening.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The description claims hex-encoded labels but the rule does not test for hex; this is harmless."
+   ]
+  },
+  {
+   "id": "D10-03",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The original is clean. Its Image, DestinationIp 203.0.113.50 and DestinationPort 4444 all appear in the first evidence quote, which is verbatim in the report. The tags command_and_control plus t1571 are correct. Both positives match, and the negatives and the two PowerShell look-alikes (192.0.2.88:5985, 198.51.100.30:443) do not. The tamper changes only 'level: high' to 'level: low'. The text and SHA-256 differ, with identical detection logic. A downgrade of rule severity after approval is exactly the kind of change a hash-bound approval must catch, so the claim holds.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tamper is a metadata-only change, so no event outcome changes; it is detectable only by the content hash."
+   ]
+  },
+  {
+   "id": "D10-04",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "The original is clean. The values mshta.exe, http: and https: (after separator removal) all occur in the first evidence quote, which is verbatim in the report. The tags stealth plus t1218.005 are valid and supported by the cited techniques. Both URL positives match and the local-HTA look-alike does not. The tamper swaps the tags to attack.execution and attack.t1059.001. These are still valid and still cited in the opportunity, and the detection logic and all event outcomes are unchanged. The text differs, so only a hash-bound approval would catch it. It also removes the T1218.005 mapping, so the change is substantive, not just cosmetic.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tampered tags are individually valid, so a tag-validity gate alone would not flag the change; only the content-hash binding would."
+   ]
+  },
+  {
+   "id": "D10-05",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The original is clean. Its values bitsadmin.exe, transfer and programdata all occur in the first evidence quote, which is verbatim in the report. The tags execution, persistence, stealth and t1197 match the table exactly. Both ProgramData positives match, and the negatives and the C:\\Windows\\Temp patch look-alike do not. The tamper replaces '\\ProgramData\\' with '\\Temp\\'. I evaluated it by hand: both positives would now miss and the benign look-alike would match. That is a substantive post-approval change, and the text differs.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tampered rule's falsepositives text still mentions ProgramData, which no longer matches its detection; minor inconsistency inside the tamper."
+   ]
+  },
+  {
+   "id": "D10-06",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The original is clean. Its values wmic.exe and 'process call create' occur in the first evidence quote, which is verbatim in the report. The tags execution plus t1047 are correct. Both positives match (parent cmd.exe and parent powershell.exe), and the negatives and the two wmic look-alikes do not. The tamper adds filter_automation (ParentImage|endswith \\powershell.exe) with condition 'selection and not filter_automation'. The text differs, and the DC01 positive launched from powershell.exe would now be missed. This is a classic post-approval evasion edit, and it contradicts the report's second evidence quote that both parents were used.",
+   "events_ok": true,
+   "incidental_issues": []
+  },
+  {
+   "id": "D10-07",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The original is clean. It parses, Image certutil.exe and DestinationIp 198.51.100.77 both occur in the first evidence quote (verbatim in the report), and the tags command_and_control plus t1105 are correct. Both positives match and the negatives and the 192.0.2.44 certutil look-alike do not. The tamper is serialised as a double-quoted escaped string. After unescaping, the only difference from the original is a trailing space after the title ('...Staging Host \\n'). The parsed YAML objects are equal but the raw text and SHA-256 differ. This is a purely cosmetic edit, and the claim explicitly says a cosmetic change counts because the bytes changed.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The tamper differs only by one trailing space, and the double-quoted formatting hides it from a quick visual diff; the parsed rule is semantically identical, so only a byte-level hash check detects it.",
+    "The certutil look-alike (192.0.2.44 on port 80) is a plausible but slightly thin benign case."
+   ]
+  }
+ ]
+}

@@ -113,6 +113,43 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: The rule parses in pySigma and the metadata is complete. It uses Image|endswith and CommandLine|re,
+      both allowed, and the T1018 tags attack.discovery plus attack.t1018 are correct. The single quote
+      is verbatim, and the regex literal runs dclist, domain_trusts and dsgetdc plus nltest.exe all occur
+      in it. By hand, `.*\s/(dclist|domain_trusts|dsgetdc).*` matches 'nltest.exe /dclist:corp.example',
+      'nltest /domain_trusts' and 'nltest /dsgetdc:corp.example /force'. It does not match the look-alikes
+      /sc_query and /sc_verify, and the ipconfig and whoami negatives fail Image. Two fields are used,
+      and nltest is absent from the baseline, so about 0 matches.
+    events_ok: true
+    incidental_issues:
+    - nltest also accepts '-' as the switch prefix, and the regex only matches the '/' form. This is a
+      minor recall gap.
+    - /domain_trusts is arguably T1482 Domain Trust Discovery, but T1018 is the cited technique and is
+      in the table, so this is not a defect here.
+    - The leading and trailing '.*' in the regex are redundant.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: 'The rule parses cleanly, the metadata is complete, and the tags attack.discovery and attack.t1018
+      match the table. The regex ''.*\s/(dclist|domain_trusts|dsgetdc).*'' has literal runs dclist, domain_trusts
+      and dsgetdc, all in the single verbatim evidence quote, and ''nltest.exe'' is there for the Image
+      condition. Evaluating by hand and by script, the three nltest positives (/dclist:, /domain_trusts,
+      /dsgetdc: /force) match. The ipconfig and whoami negatives fail the Image test. The nltest /sc_query
+      and /sc_verify look-alikes fail the regex. The baseline has essentially no nltest, so the breadth
+      limit holds, and Image plus CommandLine are two different fields.'
+    events_ok: true
+    incidental_issues:
+    - The leading and trailing '.*' in the regex are redundant, because re is a search match.
+    - The regex requires a '/' prefix. nltest also accepts '-', and windash is not used, though the report
+      only shows slash forms.
+    - /domain_trusts is really domain trust discovery (T1482), which is not in the contract table. Only
+      T1018 is tagged, which the case's cited technique supports.
 excluded: false
 exclusion_reason: ''

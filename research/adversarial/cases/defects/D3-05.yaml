@@ -96,6 +96,37 @@ events:
     dest_port: '5985'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The rule is on network_connection, whose allowed field is spelled `DestinationIp`. The
+      rule uses `DestinationIP` (capital P). The contract says field names are case-sensitive exactly
+      as written, so this name is not in the allowed list and G5 should stop it. This is a subtle case-variant
+      invented field. Image and DestinationPort are valid.
+    events_ok: true
+    incidental_issues:
+    - The only reason the field is wrong is capitalisation. A system that compares field names case-insensitively
+      would accept it, so the defect depends on G5 being case-sensitive as the contract states.
+    - The look-alike (powershell to 192.0.2.30:5985) is genuinely benign according to the report. The
+      rule hard-pins the destination IP, which makes it IOC-like rather than behavioural.
+    - The evidence quotes are verbatim in the report and the tags (attack.command_and_control, attack.t1571)
+      are correct.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: The network_connection rule uses DestinationIP, but the contract lists DestinationIp and
+      says field names are case-sensitive exactly as written, so DestinationIP is not an allowed field
+      and G5 should stop it. The defect is subtle, a case-only difference, but it is a genuine violation
+      of the stated contract. Image and DestinationPort are valid, and the tags (attack.command_and_control,
+      attack.t1571) are correct. With the casing fixed, the two powershell.exe positives to 203.0.113.120:4444
+      would match and the 192.0.2.30:5985 look-alike would not.
+    events_ok: true
+    incidental_issues:
+    - The invented field is a case variant of a real field rather than a wholly new name, which may or
+      may not count as invented under a looser reading of the class.
 excluded: false
 exclusion_reason: ''

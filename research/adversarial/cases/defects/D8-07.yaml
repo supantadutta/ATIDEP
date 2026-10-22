@@ -106,6 +106,39 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 65
+    reasoning: The technique tag is attack.t1003 (the parent OS Credential Dumping), not the cited T1003.001,
+      whose exact tag in the contract table is attack.t1003.001. The tag is therefore not the one the
+      opportunity cites and is not in the table, so a strict G7 would reject it. This is the weakest defect
+      in the batch, because T1003 is a real, active parent technique and a lenient reader could call it
+      supported. The tactic attack.credential_access is valid and consistent. The rule logic (CommandLine
+      contains all '-ma' and 'lsass') matches both positives (including the renamed pd64.exe). It does
+      not match the w3wp.exe look-alike (no lsass) or the tasklist look-alike (no '-ma').
+    events_ok: true
+    incidental_issues:
+    - attack.t1003 is a genuine ATT&CK technique, so whether G7 should stop it depends on how strictly
+      it compares tags against the cited sub-technique.
+    - The rule has no Image or process-name condition, which is deliberate so renamed tools are caught.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 60
+    reasoning: 'The rule carries attack.t1003 (the parent OS Credential Dumping), while the opportunity
+      cites T1003.001 and the contract table requires attack.credential_access plus attack.t1003.001.
+      The tag t1003 is not among the opportunity''s cited techniques, and it is not the table''s exact
+      tag. Under the literal G7 rule, ''supported by the opportunity''s cited techniques'', the mapping
+      is unsupported. This is the weakest D8 case: T1003 exists, is active, and is a true parent of the
+      right sub-technique, so a hierarchy-aware gate could accept it. Events are fine: -ma plus lsass
+      matches both positives (including the renamed pd64.exe) and not the w3wp procdump look-alike or
+      the tasklist look-alike (''imagename'' has no hyphen before ''ma'').'
+    events_ok: true
+    incidental_issues:
+    - 'The defect class is ambiguous here: a coarsened parent-technique tag is imprecise rather than invalid.
+      The contract does not say whether a parent of a cited sub-technique counts as supported.'
 excluded: false
 exclusion_reason: ''

@@ -1,0 +1,86 @@
+{
+ "batch": "D2",
+ "reviewer": "R2",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D2-01",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The id is '5c0e7a1d-93b4-4f28-a6d1-9d41c2e7b05g'. Its last character 'g' is not hexadecimal, so it is not a UUID (Python uuid.UUID raises, and pySigma raises SigmaIdentifierError 'must be an UUID'). The other metadata is intact: status experimental, date 2026/10/02, level high, references urn:atidep:case, non-empty falsepositives. The detection logic matches both positives and neither negative nor look-alike, so the id is the only defect and it is what a metadata gate should stop.",
+   "events_ok": true,
+   "incidental_issues": [
+    "pySigma itself rejects the malformed id, so a G1 'Sigma parser accepts the rule' check would likely stop this rule before G2; it is not strictly 'otherwise valid Sigma'.",
+    "Positive 2 uses the SysWOW64 rundll32 path and upper-case JAVASCRIPT; both are matched by the case-insensitive endswith/contains, which is good coverage."
+   ]
+  },
+  {
+   "id": "D2-02",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The rule has 'status: stable', but the contract requires status to be experimental. All other metadata is valid: UUID id parses, date 2026/10/02, level high, references urn:atidep:case, falsepositives non-empty, tags attack.command_and_control and attack.t1571 are correct. pySigma accepts the rule, so the status is the only defect. Both positives match (updchk.exe with 203.0.113.77:8531) and the port-8531 look-alikes with other images and IPs do not match.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule keys on one hard-coded IP, port and process name; that is fine for this case but narrow."
+   ]
+  },
+  {
+   "id": "D2-03",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The rule has 'falsepositives: []', which parses to an empty list. The contract requires at least one falsepositives entry. All other metadata is valid (UUID id, experimental, date 2026/10/02, level high, references urn:atidep:case, tags correct for T1071.004), and pySigma accepts the rule. Both positives (names ending tunnel.vesperline.test) match, and the negatives and look-alikes (www./mail.vesperline.test) do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "QueryName|endswith 'tunnel.vesperline.test' would also match 'faketunnel.vesperline.test' because no leading dot is included; minor, not relevant to the defect.",
+    "The evidence quote is verbatim in the report, but the report's 'long hex-encoded labels' behaviour is only loosely captured by the rule."
+   ]
+  },
+  {
+   "id": "D2-04",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The author field is the double-quoted string \"   \", which parses to three spaces; stripping it leaves nothing, so it is effectively blank. The contract requires an author. All other metadata is valid (UUID id parses, experimental, date 2026/10/02, level high, references urn:atidep:case, non-empty falsepositives, correct tags for T1047). pySigma does not object, so a naive truthiness check would pass it and only a stripped-emptiness check catches it. It is still a genuine metadata defect.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Strictness depends on whether G2 strips whitespace; a bare truthiness check would pass this rule, so the case is a good probe but a borderline one.",
+    "Look-alike 2 (wmic /node: with os get) is correctly not matched because it lacks 'process call create'."
+   ]
+  },
+  {
+   "id": "D2-05",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The date is '02/10/2026' (DD/MM/YYYY), not the required YYYY/MM/DD. yaml.safe_load returns it as a string, and pySigma rejects it with SigmaDateError. Everything else is valid (UUID id parses, experimental, author case-author, level high, references urn:atidep:case, non-empty falsepositives, correct tags for T1105). Both positives match 'urlcache' and 'split'. The hashfile look-alike and the '-urlcache * delete' look-alike (no 'split') do not match.",
+   "events_ok": true,
+   "incidental_issues": [
+    "pySigma rejects the date, so a G1 parser check might stop this rule before G2.",
+    "The date is ambiguous between DD/MM and MM/DD, but either reading violates YYYY/MM/DD."
+   ]
+  },
+  {
+   "id": "D2-06",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The references list is [''], one empty string. The contract requires at least one URL or urn, and this list has none. The check is stricter than just a missing key because the list itself is non-empty and pySigma accepts it. All other metadata is valid (UUID id parses, experimental, author case-author, date 2026/10/02, level high, non-empty falsepositives, correct tags for T1219). Both positives match tetherdesk.exe to 198.51.100.61, and the look-alikes (crsupport.exe to .62, mstsc.exe) do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "A gate that only tests 'references list is non-empty' would pass this rule; only content validation (URL or urn) catches it.",
+    "Port values are strings in the events and are not used by the rule, which is fine."
+   ]
+  },
+  {
+   "id": "D2-07",
+   "verdict": "present",
+   "confidence": 99,
+   "reasoning": "Parsing sigma_yaml gives the keys title, id, status, description, references, author, date, tags, logsource, detection and falsepositives. The 'level' key is missing entirely. The contract requires level (informational, low, medium, high or critical). All other metadata is valid (UUID id parses, experimental, date 2026/10/02, references urn:atidep:case, non-empty falsepositives, correct tags for T1053.005). Both positives match '/create', 'onlogon' and 'msdrv', and the daily-backup and query look-alikes do not.",
+   "events_ok": true,
+   "incidental_issues": [
+    "pySigma accepts a rule without level, so only a metadata gate (not G1) would catch this.",
+    "Both evidence quotes are verbatim in the report; the second ('a binary in a folder named msdrv under ProgramData') supports the 'msdrv' value."
+   ]
+  }
+ ]
+}

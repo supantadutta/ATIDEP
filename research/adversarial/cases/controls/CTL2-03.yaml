@@ -124,6 +124,41 @@ events:
     dest_port: '9001'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 88
+    reasoning: The rule parses with complete metadata and allowed fields. rundll32.exe, regsvr32.exe,
+      8443 and 9001 all appear in the two verbatim evidence quotes. Tags stealth, t1218.011, t1218.010,
+      command_and_control and t1571 match the table exactly. The condition '(selection_rundll32 or selection_regsvr32)
+      and selection_port' expands to two alternatives, each with Image plus DestinationPort, so G11 holds.
+      By hand, all 3 positives match, and the 2 negatives (Outlook 443, chrome 80) and 2 look-alikes (chrome
+      to 8443, msedge to 9001, both wrong image) do not. The baseline has no rundll32/regsvr32 network
+      events and no 8443/9001 traffic.
+    events_ok: true
+    incidental_issues:
+    - Positive 3 (rundll32 to 198.51.100.9:9001) is a cross-combination not stated in the report. It is
+      still the behaviour the rule targets.
+    - The msedge.exe look-alike on port 9001 is not backed by the report, which mentions browsers only
+      on 8443. It is still benign and does not match.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 92
+    reasoning: The rule parses, metadata is complete, and the fields are valid. rundll32.exe, regsvr32.exe,
+      8443 and 9001 are covered by the two verbatim quotes. The condition '(selection_rundll32 or selection_regsvr32)
+      and selection_port' expands to two alternatives, each with Image and DestinationPort, so the breadth
+      guard is met. Tags are attack.stealth with t1218.011 and t1218.010, plus attack.command_and_control
+      with t1571, exactly as in the table. All 3 positives match, including rundll32 to 9001. The negatives
+      (Outlook on 443, Chrome on 80) and look-alikes (chrome on 8443, msedge on 9001) do not match.
+    events_ok: true
+    incidental_issues:
+    - The third positive (rundll32 on port 9001) is not literally in the report, which pairs rundll32
+      with 8443 and regsvr32 with 9001, but the report says any connection from these binaries on those
+      ports is C2, so it is justified.
+    - The msedge look-alike on port 9001 is hypothetical, because the report mentions browsers only on
+      8443.
 excluded: false
 exclusion_reason: ''

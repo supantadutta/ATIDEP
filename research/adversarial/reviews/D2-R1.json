@@ -1,0 +1,89 @@
+{
+ "batch": "D2",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D2-01",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The id is 5c0e7a1d-93b4-4f28-a6d1-9d41c2e7b05g. The last group ends in 'g', which is not a hex digit, and Python's uuid.UUID() rejects it. The other metadata is complete: status experimental, date 2026/10/02, references urn:atidep:case, non-empty falsepositives, level high, valid tags. The malformed UUID is therefore the only metadata defect, and it matches the D2 claim.",
+   "events_ok": true,
+   "incidental_issues": [
+    "pySigma's SigmaRule.from_yaml also rejects this rule (SigmaIdentifierError: identifier must be a UUID), so G1 could stop it before G2 does. Gate attribution is ambiguous, though the defect is real.",
+    "The falsepositives entry says legitimate software 'was not observed'. That is a statement of absence, not a false-positive scenario. It is non-empty, so it is not the seeded defect.",
+    "Hand check of the detection logic found no other defect. Both positives match (Image endswith \\rundll32.exe, CommandLine contains javascript: and RunHTMLApplication, case-insensitive). The negatives and look-alikes do not match."
+   ]
+  },
+  {
+   "id": "D2-02",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The rule has status: stable. The contract requires status to be experimental, so G2 should stop it. The id is a valid UUID, the date is 2026/10/02, references and falsepositives are non-empty, and level is high. The only metadata defect is the status, and the rule parses in pySigma, so it is a pure G2 case.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The falsepositives text is weak and self-referential: 'A different product that happens to share the file name... is not expected'.",
+    "The look-alikes (bkagent.exe and syncvault.exe on port 8531) do not match, because Image and DestinationIp differ. The detection logic and events are otherwise sound."
+   ]
+  },
+  {
+   "id": "D2-03",
+   "verdict": "present",
+   "confidence": 97,
+   "reasoning": "The rule has falsepositives: [], an empty list. The contract requires a list with at least one entry. The other required keys are present and well-formed: valid UUID, status experimental, date 2026/10/02, urn reference, tags, level high. pySigma accepts the rule, so the empty falsepositives list is the isolated defect that G2 should catch.",
+   "events_ok": true,
+   "incidental_issues": [
+    "QueryName|endswith 'tunnel.vesperline.test' has no leading dot. It would also match an unrelated label such as 'eviltunnel.vesperline.test'. This is minor.",
+    "Both positives (hex label . tunnel.vesperline.test) match. www.vesperline.test and mail.vesperline.test do not, so the look-alikes are labelled correctly."
+   ]
+  },
+  {
+   "id": "D2-04",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The author field is the string '   ' (three spaces), which is whitespace-only. YAML parsing confirms author == '   '. The key exists but carries no author value, so required metadata is effectively blank or malformed. The other fields are valid: UUID ok, status experimental, date 2026/10/02, references urn, non-empty falsepositives, level high. pySigma still parses the rule, so only a content-level G2 check catches this.",
+   "events_ok": true,
+   "incidental_issues": [
+    "This is a subtle defect, because a presence-only check on the 'author' key would pass. G2 must check for non-blank content.",
+    "Detection and events verified by hand. Both positives match (wmic.exe, '/node:' and 'process call create', case-insensitive). The look-alike 'wmic.exe /node:LAB-FS-02 os get caption,version' lacks 'process call create' and does not match."
+   ]
+  },
+  {
+   "id": "D2-05",
+   "verdict": "present",
+   "confidence": 96,
+   "reasoning": "The date is '02/10/2026' (DD/MM/YYYY), not the required YYYY/MM/DD. It loads as a plain string and is not a YAML date. The rest of the metadata is valid: UUID ok, status experimental, urn reference, non-empty falsepositives, level high, tags attack.command_and_control and attack.t1105.",
+   "events_ok": true,
+   "incidental_issues": [
+    "pySigma rejects this rule (SigmaDateError: use yyyy-mm-dd), so G1 might fire before G2. Gate attribution is ambiguous, though the metadata defect is genuinely present.",
+    "Detection logic verified. Both positives contain urlcache and split. The look-alike 'certutil.exe -urlcache * delete' lacks 'split', so it correctly does not match. The hashfile look-alike does not match either."
+   ]
+  },
+  {
+   "id": "D2-06",
+   "verdict": "present",
+   "confidence": 94,
+   "reasoning": "references is [''], a list holding only an empty string. The contract requires a list with at least one URL or urn, and an empty string is neither, so the references metadata is malformed. All other fields are valid: UUID ok, status experimental, author case-author, date 2026/10/02, non-empty falsepositives, level high, tags attack.command_and_control and attack.t1219. pySigma accepts the rule, so this is a genuine G2-only case.",
+   "events_ok": true,
+   "incidental_issues": [
+    "A presence-only check (key exists, list non-empty) would pass. G2 must check that each reference is a non-empty URL or urn.",
+    "Detection is Image endswith \\tetherdesk.exe plus DestinationIp 198.51.100.61. Both positives match. The look-alikes (crsupport.exe to .62, mstsc.exe to 192.0.2.30) do not match."
+   ]
+  },
+  {
+   "id": "D2-07",
+   "verdict": "present",
+   "confidence": 98,
+   "reasoning": "The `level` key is absent from sigma_yaml. After falsepositives, the rule ends with no level line, and YAML parsing shows missing keys ['level']. The contract lists level as required (informational through critical). Everything else is intact: UUID ok, status experimental, date 2026/10/02, urn reference, non-empty falsepositives, correct T1053.005 tags. pySigma still parses the rule, because level is optional there, so G2 is the gate meant to stop it.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The positives match. Both schtasks commands contain /create, onlogon (case-insensitive) and msdrv.",
+    "The look-alikes do not match. The BackupNightly task has no onlogon or msdrv, and the /query command has no /create.",
+    "Both evidence quotations are verbatim in the report text. G4 would be satisfied by the quotes."
+   ]
+  }
+ ]
+}

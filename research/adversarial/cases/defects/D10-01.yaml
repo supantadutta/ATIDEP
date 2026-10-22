@@ -127,6 +127,34 @@ tamper_sigma_yaml: |
   falsepositives:
     - Legitimate crash-dump collection by administrators using comsvcs.dll MiniDump
   level: high
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The original parses with yaml and pysigma. Its values (rundll32.exe, comsvcs.dll, minidump)
+      all occur in the first evidence quote, which is verbatim in report_text. The tags credential_access
+      plus t1003.001 match the ATT&CK table, and the events behave as labelled (both positives hit, negatives
+      and the two rundll32 look-alikes do not). The tamper deletes the whole CommandLine|contains|all
+      block, leaving only Image|endswith rundll32.exe. The text differs and the SHA-256 differs. This
+      is a real post-approval weakening: both benign rundll32 look-alikes would now match.'
+    events_ok: true
+    incidental_issues: []
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The texts differ: the tamper deletes the ''CommandLine|contains|all: [comsvcs.dll, MiniDump]''
+      condition and leaves only ''Image|endswith: \rundll32.exe''. The original is clean. It parses in
+      pySigma with no errors. Both evidence quotes are verbatim in the report, and every value (rundll32.exe,
+      comsvcs.dll, MiniDump) is covered by a quote. The tags credential_access and t1003.001 match the
+      ATT&CK table. Both positives match and the negatives and look-alikes do not. The tamper is a material
+      post-approval change: it makes both rundll32 look-alikes (shell32 Control_RunDLL, user32 LockWorkStation)
+      match, so a hash-bound approval must reject it.'
+    events_ok: true
+    incidental_issues:
+    - The tampered rule keeps the title and description that claim a comsvcs MiniDump detection, so its
+      metadata no longer matches its logic. This follows from the defect and is not a separate flaw.
 excluded: false
 exclusion_reason: ''

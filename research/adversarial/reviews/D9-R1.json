@@ -1,0 +1,88 @@
+{
+ "batch": "D9",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D9-01",
+   "verdict": "present",
+   "confidence": 90,
+   "reasoning": "The rule needs Image endswith \\cmstp.exe plus CommandLine containing '/s', '/ni' and '.inf'. Look-alike 1 ('cmstp.exe /s /ni C:\\ProgramData\\CraneVPN\\cranevpn.inf') contains all three, so it matches. It is a VPN vendor setup exe running as SYSTEM and installing its own connection profile, which is benign. The discriminating '/au' switch is missing from the rule. Look-alike 2 ('/u ...') does not match; both positives match and both negatives do not. Evidence values appear in the quotes, and the tags attack.stealth + attack.t1218.003 match the table.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Rule omits /au, the auto-elevation switch the report highlights, which is the cause of the over-match.",
+    "falsepositives is only 'Unknown'."
+   ]
+  },
+  {
+   "id": "D9-02",
+   "verdict": "present",
+   "confidence": 85,
+   "reasoning": "The rule is Image endswith \\hl_agent.exe AND DestinationPort 7070. The look-alike (C:\\Program Files\\HelpLink\\hl_agent.exe to 198.51.100.20:7070) satisfies both, so it matches. It is the vendor-installed copy of a commercial remote-support tool using its default relay port, which is ordinary help-desk use. The rule has no path or destination constraint to separate it from the operator's copy in C:\\Users\\Public\\Libraries. Positives match, negatives (firefox:443, svchost:445) do not. '7070' and 'hl_agent.exe' are in the evidence quotes, and T1219 tags are correct.",
+   "events_ok": true,
+   "incidental_issues": [
+    "Rule value DestinationPort is an integer while event dest_port is a string; both positives are treated the same, so this does not change the result.",
+    "The report does not state the 'Program Files' install path, so the look-alike's benign status rests on context the case supplies itself."
+   ]
+  },
+  {
+   "id": "D9-03",
+   "verdict": "present",
+   "confidence": 80,
+   "reasoning": "The rule is Image endswith \\powershell.exe AND QueryName endswith '.cranecloud.test'. The look-alike (powershell.exe resolving lab-intranet.cranecloud.test) matches both conditions. The name reads as a legitimate lab tenant on the same public hosting platform, so a script resolving it is benign, and the rule keys on the whole platform domain rather than the operator's tenant pattern ('-sync'). Positives match and negatives (chrome/example.test, powershell/gallery.lab.example) do not. '.cranecloud.test' occurs inside 'fnx-sync.cranecloud.test' in the evidence, so G4 holds.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The look-alike's benign nature comes mostly from the 'lab-intranet' label; a DNS query carries little other context.",
+    "T1071.001 (Web Protocols) is used for a DNS-log rule; it is consistent with the cited technique in the report but T1071.004 would be the more natural DNS tag."
+   ]
+  },
+  {
+   "id": "D9-04",
+   "verdict": "present",
+   "confidence": 93,
+   "reasoning": "The rule needs Image endswith \\schtasks.exe plus CommandLine containing '/create', '/sc onlogon' and '/rl highest'. Look-alike 1 (CraneBackupTray, '/sc onlogon /rl highest', parent msiexec.exe installing crane_backup.msi, user SYSTEM) satisfies all of them after YAML line folding, so it matches. It is a backup product's installer creating its tray autostart task, which is benign. Look-alike 2 ('/sc daily') does not match. Positives match, negatives do not, evidence values are in the quotes, and the tag set for T1053.005 is exactly the table's.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The report says the task is never created by an installer, but the rule has no parent or user condition, which would have separated the two.",
+    "falsepositives is only 'Unknown'."
+   ]
+  },
+  {
+   "id": "D9-05",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "The rule is Image endswith \\wmic.exe AND CommandLine|re '/node:[^ ]+ process call create'. Look-alike 1 ('wmic.exe /node:APP01 process call create \"C:\\Program Files\\CranePatch\\patchrun.exe /quiet\"', parent cpconsole.exe, user LAB\\patch-admin) matches the regex. It is a patch-management console running its own runner remotely, which is a plausible benign admin use of the same WMI call. Look-alike 2 ('product get') does not match the regex. Positives match, negatives do not, and the literal runs '/node:' and ' process call create' are in the evidence quote. T1047 tags are correct.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule has no condition on the target binary path (C:\\Users\\Public) or the parent process, so legitimate remote execution is indistinguishable from the attack.",
+    "falsepositives is only 'Unknown'."
+   ]
+  },
+  {
+   "id": "D9-06",
+   "verdict": "present",
+   "confidence": 78,
+   "reasoning": "The rule is Image endswith \\certutil.exe plus CommandLine containing '-split', '-f' and 'http://'. The look-alike ('certutil.exe -verifyctl -f -split http://pki.cranehealth.test/ctl/authrootstl.cab', parent svchost.exe Schedule, SYSTEM) contains all three and so matches. It is a scheduled certificate-trust-list refresh from an internal PKI host, which is benign; the rule does not require '-urlcache'. Negatives (-hashfile, -store) and positives behave as stated. Evidence values are in the quotes and the T1105 tags are correct.",
+   "events_ok": true,
+   "incidental_issues": [
+    "certutil -verifyctl -f -split is also a documented download primitive, so a strict reader could call the look-alike dual-use; the scheduled-task parent, SYSTEM account and internal PKI .cab URL make it benign here.",
+    "The rule could be made specific by requiring -urlcache, which the report quotes."
+   ]
+  },
+  {
+   "id": "D9-07",
+   "verdict": "absent",
+   "confidence": 58,
+   "reasoning": "Mechanically the rule (Image endswith \\mshta.exe AND DestinationPort 8080) matches the look-alike (System32\\mshta.exe to 192.0.2.40:8080). But nothing in the event shows it is benign. Network events carry only image, IP and port, and the event is identical to the positives except for the destination address. The report says mshta.exe made no other network connections, so any mshta connection to 8080 is the behaviour the rule is meant to catch and alerting on it is correct. An internal HTA server is imaginable, but the case does not establish it. G10 would be stopping what is arguably a true positive, not a benign look-alike.",
+   "events_ok": false,
+   "incidental_issues": [
+    "The look-alike is not distinguishable from the positives by behaviour; only the destination IP differs, so benignity is asserted, not demonstrated.",
+    "Compare the other D9 cases, whose look-alikes carry benign context (installer parent, SYSTEM, vendor path); this one carries none.",
+    "Positives are fine; the second positive uses SysWOW64\\mshta.exe, which the rule still matches."
+   ]
+  }
+ ]
+}

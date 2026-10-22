@@ -108,6 +108,39 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The rule declares category process_creation, but the selection uses `ScriptBlockText|contains|all`.
+      ScriptBlockText belongs to the windows_powershell_script_block log source, which is not available,
+      and it is not in the process_creation allowed list (Image, CommandLine, ParentImage, ParentCommandLine,
+      User, OriginalFileName). G5 should stop it. The right field would be CommandLine, which the process_create
+      events do carry.
+    events_ok: true
+    incidental_issues:
+    - The field comes from an unavailable log source, so the defect straddles G5 and G6. Because the declared
+      log source is process_creation, G5 is the gate that applies.
+    - The process_create events have no ScriptBlockText, so the positives would also fail G8 as written.
+    - The look-alikes (a management-agent inventory script and Invoke-WebRequest to an intranet .test
+      host) are benign and resemble the cradle. The evidence quotes are verbatim, and the tags (attack.execution,
+      attack.t1059.001) are correct.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 96
+    reasoning: The process_creation rule matches on ScriptBlockText|contains|all, but ScriptBlockText
+      belongs to windows_powershell_script_block, which the contract says is not available, and it is
+      not in the process_creation allowed list (the command line is CommandLine), so G5 should stop it.
+      Image is valid, and the tags (attack.execution, attack.t1059.001) are correct. With the field changed
+      to CommandLine, both positives (IEX plus DownloadString) would match and the inventory.ps1 and Invoke-WebRequest
+      look-alikes would not.
+    events_ok: true
+    incidental_issues:
+    - ScriptBlockText is a real Sigma field from a different, unavailable log source, so the case is also
+      near the G6 telemetry-availability territory. The rule still declares process_creation, so G5 is
+      the gate that applies.
 excluded: false
 exclusion_reason: ''

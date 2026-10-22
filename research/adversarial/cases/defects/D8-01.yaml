@@ -107,6 +107,33 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The technique tag is attack.t1059.099. No such sub-technique exists in the contract''s
+      table or in ATT&CK, and the case cites T1059.001 (PowerShell), whose exact tag is attack.t1059.001.
+      attack.execution is a valid tactic, but there is no valid technique tag, so G7 should stop it. I
+      also checked the rule logic: both positives match, and neither negative nor either look-alike does
+      (the look-alikes each lack one of ''WindowStyle Hidden'' or ''Net.WebClient'').'
+    events_ok: true
+    incidental_issues:
+    - The look-alike with an internal DownloadString but no hidden window is a reasonable near-miss; no
+      other problems.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The rule''s technique tag is attack.t1059.099, which is not in the contract table and
+      is not a real ATT&CK technique. The opportunity cites T1059.001, whose table tags are attack.execution
+      plus attack.t1059.001. attack.execution is fine, but the technique tag is invented, so the technique
+      does not exist in v19.2 and G7 should stop it. I evaluated the rule by hand: both positives match,
+      and the negatives and both look-alikes do not.'
+    events_ok: true
+    incidental_issues:
+    - The second look-alike (Net.WebClient DownloadString to an intranet host without a hidden window)
+      is a good near-miss. The rule is narrow on purpose, so no problem.
 excluded: false
 exclusion_reason: ''

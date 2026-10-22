@@ -124,6 +124,36 @@ tamper_sigma_yaml: |
   falsepositives:
     - Administrators deploying files into ProgramData with bitsadmin
   level: medium
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The original is clean. Its values bitsadmin.exe, transfer and programdata all occur in
+      the first evidence quote, which is verbatim in the report. The tags execution, persistence, stealth
+      and t1197 match the table exactly. Both ProgramData positives match, and the negatives and the C:\Windows\Temp
+      patch look-alike do not. The tamper replaces ''\ProgramData\'' with ''\Temp\''. I evaluated it by
+      hand: both positives would now miss and the benign look-alike would match. That is a substantive
+      post-approval change, and the text differs.'
+    events_ok: true
+    incidental_issues:
+    - The tampered rule's falsepositives text still mentions ProgramData, which no longer matches its
+      detection; minor inconsistency inside the tamper.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: The tamper changes the second 'CommandLine|contains|all' value from '\ProgramData\' to
+      '\Temp\'. The original is clean. '/transfer' and '\ProgramData\' are both in verbatim quotes, and
+      the T1197 tag set (execution, persistence, stealth, t1197) is exactly the table's. It parses in
+      pySigma. The original matches both positives and neither the C:\Windows\Temp patch look-alike nor
+      the negatives. The tamper stops matching both positives (their paths are under C:\ProgramData) and
+      starts matching the benign patch-job look-alike. That is a substantive logic change an approval
+      bound to the content hash must catch.
+    events_ok: true
+    incidental_issues:
+    - The tampered rule still says ProgramData in its title, description and falsepositives, so its text
+      contradicts its logic.
 excluded: false
 exclusion_reason: ''

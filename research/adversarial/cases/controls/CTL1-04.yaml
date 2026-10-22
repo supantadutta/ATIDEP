@@ -130,6 +130,50 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 85
+    reasoning: 'YAML and pySigma parse cleanly and metadata is complete. T1218.005 gets attack.stealth
+      and attack.t1218.005, as in the table. Every value is covered by the three evidence quotes confirmed
+      in report_text: mshta.exe, http, vbscript:, javascript:, hrportal.exe and hrportal.hta. The condition
+      ''selection_img and selection_cli and not filter_hr'' uses only allowed constructs, and ParentImage
+      is an allowed process_creation field. By hand: the three positives (http URL, vbscript:, javascript:
+      with embedded http) match and are not filtered because their parents are WINWORD, cmd and explorer.
+      The negatives have no mshta. Look-alike 1 (hrportal.exe parent, hrportal.hta plus an http arg) matches
+      the selection but is removed by filter_hr. Look-alike 2 (help.hta) has no http, vbscript: or javascript:
+      term, so it does not match. The baseline has no mshta.'
+    events_ok: true
+    incidental_issues:
+    - Look-alike 1 adds an http argument to the HR launcher, slightly beyond the report's claim that it
+      always uses only the local file. It does exercise the exclusion, so it is a good test.
+    - The 'http' term is exactly four characters, right at the G11 minimum, and matches any substring
+      'http' in an mshta command line. The filter would also suppress a malicious mshta whose parent is
+      hrportal.exe and whose command line contains hrportal.hta. Both are acceptable and report-supported.
+  - reviewer: R4
+    role: replacement
+    verdict: present
+    confidence: 85
+    reasoning: 'The YAML parses and pySigma accepts it with complete metadata. The fields are Image, CommandLine
+      and ParentImage, all allowed, and the tags attack.stealth and attack.t1218.005 are correct. All
+      three quotations appear word for word, and every value (''mshta.exe'', ''http'', ''vbscript:'',
+      ''javascript:'', ''hrportal.exe'', ''hrportal.hta'') occurs in them. By hand, the positives (an
+      http URL from a WINWORD parent, vbscript:Execute, a SysWOW64 mshta with javascript:) match and none
+      has an hrportal parent. Look-alike 1 contains http but is excluded by filter_hr: its parent ends
+      in \hrportal.exe and its command line contains hrportal.hta. Look-alike 2 (help.hta) has no http,
+      vbscript: or javascript:. The negatives are not mshta. The shortest alternative term, ''http'',
+      is exactly 4 characters on CommandLine, so it meets the breadth guard at the limit, and the baseline
+      summary lists no mshta.exe.'
+    events_ok: true
+    incidental_issues:
+    - The selection term 'http' is only just at the 4-character breadth minimum and matches 'http' anywhere
+      in an mshta command line. It is acceptable because the rule is anchored on mshta.exe, but it is
+      a broad term.
+    - The report says hrportal.exe always runs mshta with its local hrportal.hta, yet look-alike 1 adds
+      an http SSO URL. That is plausible, but it is not literally the behaviour the report describes.
+    - filter_hr would also suppress a malicious mshta child of hrportal.exe whose command line mentions
+      hrportal.hta. This bypass is narrow and accepted by the report's exclusion.
 excluded: false
 exclusion_reason: ''

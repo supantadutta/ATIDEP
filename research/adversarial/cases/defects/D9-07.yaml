@@ -94,6 +94,45 @@ events:
     dest_port: '8080'
     name: null
 tamper_sigma_yaml: ''
-review: {}
-excluded: false
-exclusion_reason: ''
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: absent
+    confidence: 58
+    reasoning: Mechanically the rule (Image endswith \mshta.exe AND DestinationPort 8080) matches the
+      look-alike (System32\mshta.exe to 192.0.2.40:8080). But nothing in the event shows it is benign.
+      Network events carry only image, IP and port, and the event is identical to the positives except
+      for the destination address. The report says mshta.exe made no other network connections, so any
+      mshta connection to 8080 is the behaviour the rule is meant to catch and alerting on it is correct.
+      An internal HTA server is imaginable, but the case does not establish it. G10 would be stopping
+      what is arguably a true positive, not a benign look-alike.
+    events_ok: false
+    incidental_issues:
+    - The look-alike is not distinguishable from the positives by behaviour; only the destination IP differs,
+      so benignity is asserted, not demonstrated.
+    - Compare the other D9 cases, whose look-alikes carry benign context (installer parent, SYSTEM, vendor
+      path); this one carries none.
+    - Positives are fine; the second positive uses SysWOW64\mshta.exe, which the rule still matches.
+  - reviewer: R2
+    role: primary
+    verdict: absent
+    confidence: 62
+    reasoning: The rule (Image endswith \mshta.exe AND DestinationPort 8080) does match the look-alike,
+      which is mshta.exe from System32 to 192.0.2.40:8080; both positives match and both negatives do
+      not. However, the look-alike is not shown to be benign. It is the same binary, path and port as
+      the positives, differing only in the destination address, and there is no parent, command line or
+      user to suggest a sanctioned internal HTA application. The report itself says mshta made no other
+      network connections, and an outbound mshta connection to an unrecognised host on a non-standard
+      web port is behaviour a detection should alert on. So the claim that the event is genuinely benign
+      and that G10 should stop it is not established.
+    events_ok: false
+    incidental_issues:
+    - 'The look-alike is mislabelled or at best unsupported as benign: network_connection events give
+      no context that separates it from the positives, and mshta.exe making any outbound connection is
+      generally treated as suspicious.'
+    - The only benign cue is the 192.0.2.40 address, which is a documentation range and not clearly an
+      internal or sanctioned host.
+    - The rule is otherwise valid (tags, evidence for 'mshta.exe' and '8080', pySigma parse).
+excluded: true
+exclusion_reason: claimed property judged absent by 2 of 2 reviewers

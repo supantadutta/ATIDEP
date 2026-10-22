@@ -103,6 +103,32 @@ events:
     dest_port: '4444'
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 96
+    reasoning: The rule is tagged attack.t1219 (Remote Access Tools), but the case's cited technique is
+      T1571 (Non-Standard Port). The report explicitly says the operators did not install or abuse any
+      remote-administration or screen-sharing product, so the opportunity does not support T1219. The
+      tactic attack.command_and_control is valid. The rule logic (DestinationIp 203.0.113.50 and DestinationPort
+      4444) matches both positives and none of the negatives or look-alikes (which use different IPs).
+    events_ok: true
+    incidental_issues:
+    - The rule is tied to a single IP plus a port, so it is close to an IOC rule; the port-based behaviour
+      from the report is only partly captured. This does not affect the D8 claim.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: 'The rule is tagged attack.t1219 (Remote Access Tools), but the opportunity cites T1571
+      (Non-Standard Port). The report says no legitimate remote-administration or screen-sharing product
+      was used, so T1219 is unsupported by the opportunity. The required T1571 tag is missing. T1219 is
+      valid and active, and attack.command_and_control is a valid tactic for both. The mapping is still
+      wrong, not just imprecise. Events: both positives match DestinationIp 203.0.113.50 with port 4444,
+      and the negatives and the two look-alikes (different IPs, port 4444) do not.'
+    events_ok: true
+    incidental_issues: []
 excluded: false
 exclusion_reason: ''

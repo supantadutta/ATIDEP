@@ -125,6 +125,44 @@ events:
     dest_port: null
     name: null
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 90
+    reasoning: 'YAML and pySigma parse cleanly and all required keys are present with a valid UUID and
+      date. T1218.011 gets attack.stealth and attack.t1218.011, matching the table. The values rundll32.exe,
+      javascript: and RunHTMLApplication are covered by the two verbatim evidence quotes, which I confirmed
+      in report_text. Fields and modifiers (Image|endswith, CommandLine|contains|all) are within the subset.
+      By hand: all three positives match, including the lower-case ''runhtmlapplication'' variant on SysWOW64,
+      under case-insensitive matching. The negatives (cmd ipconfig, chrome, schtasks) do not match. The
+      look-alikes (rundll32 shell32 Control_RunDLL desk.cpl, and printui.dll) lack javascript: and RunHTMLApplication,
+      so they do not match. The baseline has no rundll32 activity of this kind.'
+    events_ok: true
+    incidental_issues:
+    - References is the placeholder 'urn:atidep:case', which the contract allows.
+    - Report text says the parent is Word or Explorer, but the rule does not depend on the parent, which
+      is fine.
+  - reviewer: R4
+    role: replacement
+    verdict: present
+    confidence: 90
+    reasoning: 'The YAML parses and pySigma accepts it. All twelve metadata keys are present, status is
+      experimental and the id is a valid UUID. The only fields are Image and CommandLine with endswith
+      and contains|all on process_creation, and the tags attack.stealth and attack.t1218.011 match the
+      table for T1218.011. Both evidence quotations appear word for word in report_text. ''rundll32.exe''
+      and ''RunHTMLApplication'' are in quote 1 and ''javascript:'' is in quote 2. By hand, all three
+      positives match: each has an image ending in \rundll32.exe (System32 or SysWOW64) and a command
+      line containing both javascript: and RunHTMLApplication, with the mixed case in positive 2 matched
+      case-insensitively. None of the negatives (cmd ipconfig, chrome, schtasks) or the look-alikes (rundll32
+      Control_RunDLL desk.cpl, PrintUIEntry) has javascript:, so none matches. The only alternative has
+      an 11-character CommandLine term, and no rundll32 javascript: pattern appears in the baseline summary.'
+    events_ok: true
+    incidental_issues:
+    - Neither look-alike tests one half of the contains|all pair alone (for example rundll32 loading mshtml
+      without javascript:), so the AND is not exercised against a near miss.
+    - 'Coverage gap that does not violate the case: the mshtml ordinal form (mshtml,#135) and other javascript:
+      loaders that do not name RunHTMLApplication are not detected.'
 excluded: false
 exclusion_reason: ''

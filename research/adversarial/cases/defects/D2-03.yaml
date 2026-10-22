@@ -100,6 +100,36 @@ events:
     dest_port: null
     name: mail.vesperline.test
 tamper_sigma_yaml: ''
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 97
+    reasoning: 'The rule has falsepositives: [], an empty list. The contract requires a list with at least
+      one entry. The other required keys are present and well-formed: valid UUID, status experimental,
+      date 2026/10/02, urn reference, tags, level high. pySigma accepts the rule, so the empty falsepositives
+      list is the isolated defect that G2 should catch.'
+    events_ok: true
+    incidental_issues:
+    - QueryName|endswith 'tunnel.vesperline.test' has no leading dot. It would also match an unrelated
+      label such as 'eviltunnel.vesperline.test'. This is minor.
+    - Both positives (hex label . tunnel.vesperline.test) match. www.vesperline.test and mail.vesperline.test
+      do not, so the look-alikes are labelled correctly.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 98
+    reasoning: 'The rule has ''falsepositives: []'', which parses to an empty list. The contract requires
+      at least one falsepositives entry. All other metadata is valid (UUID id, experimental, date 2026/10/02,
+      level high, references urn:atidep:case, tags correct for T1071.004), and pySigma accepts the rule.
+      Both positives (names ending tunnel.vesperline.test) match, and the negatives and look-alikes (www./mail.vesperline.test)
+      do not.'
+    events_ok: true
+    incidental_issues:
+    - QueryName|endswith 'tunnel.vesperline.test' would also match 'faketunnel.vesperline.test' because
+      no leading dot is included; minor, not relevant to the defect.
+    - The evidence quote is verbatim in the report, but the report's 'long hex-encoded labels' behaviour
+      is only loosely captured by the rule.
 excluded: false
 exclusion_reason: ''

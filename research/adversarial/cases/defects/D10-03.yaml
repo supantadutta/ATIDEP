@@ -127,6 +127,38 @@ tamper_sigma_yaml: |
   falsepositives:
     - Penetration test exercises using the same listener address
   level: low
-review: {}
+review:
+  verdicts:
+  - reviewer: R1
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: 'The original is clean. Its Image, DestinationIp 203.0.113.50 and DestinationPort 4444
+      all appear in the first evidence quote, which is verbatim in the report. The tags command_and_control
+      plus t1571 are correct. Both positives match, and the negatives and the two PowerShell look-alikes
+      (192.0.2.88:5985, 198.51.100.30:443) do not. The tamper changes only ''level: high'' to ''level:
+      low''. The text and SHA-256 differ, with identical detection logic. A downgrade of rule severity
+      after approval is exactly the kind of change a hash-bound approval must catch, so the claim holds.'
+    events_ok: true
+    incidental_issues:
+    - The tamper is a metadata-only change, so no event outcome changes; it is detectable only by the
+      content hash.
+  - reviewer: R2
+    role: primary
+    verdict: present
+    confidence: 93
+    reasoning: 'The only byte difference is ''level: high'' changed to ''level: low'' (diff line 23).
+      The original is clean. Image powershell.exe, DestinationIp 203.0.113.50 and DestinationPort 4444
+      all occur in verbatim evidence quotes. The tags command_and_control and t1571 are correct. It parses
+      in pySigma, and I checked every event by hand. The detection logic is untouched, so no event result
+      changes. Even so, downgrading the severity after approval is a metadata modification (alert triage
+      priority) that an approval bound to the SHA-256 must catch, and a cosmetic change would count anyway.'
+    events_ok: true
+    incidental_issues:
+    - DestinationPort is written as the YAML integer 4444 while the test events carry the string '4444'.
+      pySigma accepts it, but it is a possible type-mismatch risk for a converter. It does not affect
+      the claimed defect.
+    - The tamper changes only the severity field, so the detection result is identical to the original.
+      The case therefore exercises metadata tampering, not detection-logic tampering.
 excluded: false
 exclusion_reason: ''
