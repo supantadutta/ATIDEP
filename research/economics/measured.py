@@ -188,6 +188,35 @@ def _fresh(r: dict[str, str]) -> bool:
     return replayed is None or replayed == 0
 
 
+def review_time(analyst: list[dict[str, str]]
+                ) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, bool | None]],
+                           list[str]]:
+    """Per item key and condition: analyst review hours (summed over each analyst's sessions,
+    then averaged over analysts) and the disposition (the primary analyst's last one; the
+    primary analyst is the one who worked on the most items). Operations sessions are not
+    review. Returns (hours, accepted, analyst names)."""
+    sessions = [a for a in analyst if a.get("activity") != "operations"]
+    names = sorted({a.get("analyst") or "" for a in sessions})
+    reach = {n: len({a.get("item_key") for a in sessions if (a.get("analyst") or "") == n})
+             for n in names}
+    primary = max(names, key=lambda n: (reach[n], -names.index(n))) if names else None
+    hours: dict[str, dict[str, float]] = defaultdict(dict)
+    accepted: dict[str, dict[str, bool | None]] = defaultdict(dict)
+    for key in sorted({a.get("item_key") or "" for a in sessions} - {""}):
+        mine_all = [a for a in sessions if a.get("item_key") == key]
+        for cond in sorted({a["condition"] for a in mine_all}):
+            mine = [a for a in mine_all if a["condition"] == cond]
+            per_analyst: dict[str, float] = defaultdict(float)
+            for a in mine:
+                per_analyst[a.get("analyst") or ""] += _f(a["active_seconds"]) or 0.0
+            hours[key][cond] = fmean(per_analyst.values()) / 3600.0
+            own = [a for a in mine if (a.get("analyst") or "") == primary] or mine
+            last = own[-1].get("disposition")
+            accepted[key][cond] = None if last in (None, "", "in_progress") else (
+                last == "accepted")
+    return dict(hours), dict(accepted), [n for n in names if n]
+
+
 def load_measured(export_dir: Path | str, categories: dict[str, str] | None = None) -> Measured:
     d = Path(export_dir)
     runs, analyst, live = _read(d / "runs.csv"), _read(d / "analyst_effort.csv"), _read(
@@ -221,11 +250,7 @@ def load_measured(export_dir: Path | str, categories: dict[str, str] | None = No
         else:
             by_item_other[(r["item"], r["condition"])].append(r)
 
-    sessions_all = [a for a in analyst if a.get("activity") != "operations"]
-    names = sorted({a.get("analyst") or "" for a in sessions_all})
-    reach = {n: len({a.get("item_key") for a in sessions_all if (a.get("analyst") or "") == n})
-             for n in names}
-    primary = max(names, key=lambda n: (reach[n], -names.index(n))) if names else None
+    hours_by_key, accepted_by_key, analyst_names = review_time(analyst)
     ops = [a for a in analyst if a.get("activity") == "operations"]
     replayed_out = 0
     items: list[ItemMeasure] = []
@@ -254,19 +279,10 @@ def load_measured(export_dir: Path | str, categories: dict[str, str] | None = No
         if cloud and all(_b(r.get("cost.tokens_reliable")) for r in cloud):
             im.cloud_tokens_in = _mean([_f(r.get("cost.input_tokens")) for r in cloud])
             im.cloud_tokens_out = _mean([_f(r.get("cost.output_tokens")) for r in cloud])
-        mine_all = [a for a in sessions_all if key and a.get("item_key") == key]
         for cond in ("A", "B"):
-            mine = [a for a in mine_all if a["condition"] == cond]
-            if not mine:
-                continue
-            per_analyst = defaultdict(float)
-            for a in mine:
-                per_analyst[a.get("analyst") or ""] += _f(a["active_seconds"]) or 0.0
-            im.analyst_h[cond] = fmean(per_analyst.values()) / 3600.0
-            own = [a for a in mine if (a.get("analyst") or "") == primary] or mine
-            last = own[-1].get("disposition")
-            im.accepted[cond] = None if last in (None, "", "in_progress") else (
-                last == "accepted")
+            if key and cond in hours_by_key.get(key, {}):
+                im.analyst_h[cond] = hours_by_key[key][cond]
+                im.accepted[cond] = accepted_by_key[key][cond]
         if live and key:
             rules = [x for x in live if x["item_key"] == key]
             im.approved_rules = sum(_b(x["approved"]) is True for x in rules)
@@ -285,7 +301,7 @@ def load_measured(export_dir: Path | str, categories: dict[str, str] | None = No
                     replayed_runs_without_wait=replayed_out,
                     operations_hours=(sum(_f(a["active_seconds"]) or 0.0 for a in ops) / 3600.0
                                       if ops else None),
-                    analysts=[n for n in names if n])
+                    analysts=analyst_names)
 
 
 def _scaled(seconds: float | None) -> float | None:

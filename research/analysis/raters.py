@@ -56,10 +56,11 @@ def dimension_agreement(path: Path) -> dict[str, Any]:
                                                                       categories=SCALE),
                                      "differ_by_more_than_one": sum(abs(p - q) > 1
                                                                     for p, q in both)}
+        defined = [p["weighted_kappa"] for p in pairs.values() if p["weighted_kappa"] is not None]
         out["dimensions"][d] = {
-            "pairs": pairs,
-            "mean_weighted_kappa": fmean(p["weighted_kappa"] for p in pairs.values())
-            if pairs else None}
+            "pairs": pairs, "mean_weighted_kappa": fmean(defined) if defined else None,
+            "pairs_with_undefined_kappa": sum(1 for p in pairs.values()
+                                              if p["weighted_kappa"] is None)}
     return out
 
 

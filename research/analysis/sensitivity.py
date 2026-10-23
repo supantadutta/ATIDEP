@@ -18,13 +18,14 @@ def rank_stability(components: np.ndarray, weights: np.ndarray, *, n_draws: int 
     rng = np.random.default_rng(seed)
     taus, kept = [], []
     top = set(np.argsort(-base)[:top_k])
+    k = len(top)                         # top_k may exceed the number of items
     for _ in range(n_draws):
         wp = w * np.exp(rng.normal(0.0, spread, size=len(w)))
         wp *= w.sum() / wp.sum()
         score = c @ wp
         tau = kendalltau(base, score).statistic
         taus.append(1.0 if np.isnan(tau) else float(tau))
-        kept.append(len(top & set(np.argsort(-score)[:top_k])) / top_k)
+        kept.append(len(top & set(np.argsort(-score)[:top_k])) / k)
     t = np.array(taus)
     return {"tau_mean": float(t.mean()), "tau_p05": float(np.quantile(t, 0.05)),
             "tau_min": float(t.min()), "top_k": top_k, "top_k_retained_mean": float(np.mean(kept)),

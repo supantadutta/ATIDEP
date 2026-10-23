@@ -17,8 +17,15 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--out", required=True)
     r.add_argument("--config", default=str(DEFAULT_CONFIG_DIR))
     r.add_argument("--adversarial", help="summary.json from research.adversarial")
+    r.add_argument("--dataset", help="dataset folder, for item categories (the stratified "
+                                     "first-exposure comparison)")
     a = ap.parse_args(argv)
-    res = run_analysis(a.export, a.out, config_dir=a.config, adversarial_summary=a.adversarial)
+    categories = None
+    if a.dataset:
+        from research.dataset.model import load_dataset
+        categories = {i.id: i.category for i in load_dataset(a.dataset).items}
+    res = run_analysis(a.export, a.out, config_dir=a.config, adversarial_summary=a.adversarial,
+                       categories=categories)
     for k in ("H1", "H4", "H2", "H3"):
         print(k, "->", res[k].get("not_evaluable", "computed"))
     print(f"written to {a.out}")

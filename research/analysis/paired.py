@@ -39,7 +39,9 @@ def bca(data: np.ndarray, stat: Callable[[np.ndarray], float], *, n_resamples: i
     idx = rng.integers(0, n, size=(n_resamples, n))
     boots = np.array([stat(data[i]) for i in idx], dtype=float)
     boots = boots[np.isfinite(boots)]
-    prop = float(np.mean(boots < theta)) if len(boots) else 0.5
+    # replicates equal to the estimate count as half below it (as scipy does); with a median
+    # many replicates tie, and counting them as "not below" pushes the bound into the tail
+    prop = float(np.mean(boots < theta) + 0.5 * np.mean(boots == theta)) if len(boots) else 0.5
     z0 = float(stats.norm.ppf(min(max(prop, 1.0 / (len(boots) + 1)), 1 - 1.0 / (len(boots) + 1))))
     jack = np.array([stat(np.delete(data, k, axis=0)) for k in range(n)], dtype=float)
     jm = jack.mean()
@@ -63,13 +65,27 @@ def bca(data: np.ndarray, stat: Callable[[np.ndarray], float], *, n_resamples: i
 
 
 # ---- H1: efficiency --------------------------------------------------------------------------
+def rank_biserial(diffs: np.ndarray) -> float | None:
+    """Matched-pairs rank-biserial correlation (W+ - W-) / (W+ + W-) over the non-zero
+    differences: the effect size that goes with the Wilcoxon signed-rank test."""
+    d = np.asarray(diffs, float)
+    d = d[d != 0]
+    if not len(d):
+        return None
+    ranks = stats.rankdata(np.abs(d))
+    plus, minus = float(ranks[d > 0].sum()), float(ranks[d < 0].sum())
+    return (plus - minus) / (plus + minus)
+
+
 def h1(minutes_manual: list[float], minutes_atidep: list[float], *, delta_t_pct: float,
-       n_resamples: int = 10000, seed: int = 0) -> dict[str, Any]:
+       n_resamples: int = 10000, seed: int = 0, alpha: float = 0.05) -> dict[str, Any]:
     """H1. Per item, the relative reduction r = (A - B) / A in analyst active minutes (A manual,
     B ATIDEP). As pre-registered, supported if the median r is at least delta_t and the
-    one-sided 95% BCa lower bound of the median is above 0. The stricter reading (the lower
+    one-sided (1 - alpha) BCa lower bound of the median is above 0; ``alpha`` is 0.05 on its
+    own and the Holm level inside the confirmatory family. The stricter reading (the lower
     bound itself at least delta_t) is reported beside it. The Wilcoxon test is on log(A/B), and
-    the Hodges-Lehmann estimate of the log ratio is turned back into a ratio."""
+    the Hodges-Lehmann estimate of the log ratio is turned back into a ratio. The criterion
+    here is unadjusted; the confirmatory verdict also needs Holm's rejection (``run``)."""
     a, b = np.asarray(minutes_manual, float), np.asarray(minutes_atidep, float)
     if len(a) != len(b) or len(a) < 3:
         raise ValueError("H1 needs matched minutes for at least three items")
@@ -77,41 +93,52 @@ def h1(minutes_manual: list[float], minutes_atidep: list[float], *, delta_t_pct:
         raise ValueError("active minutes must be positive")
     rel = (a - b) / a
     lb = bca(rel.reshape(-1, 1), lambda x: float(np.median(x)), n_resamples=n_resamples,
-             seed=seed, side="lower")
+             seed=seed, side="lower", alpha=alpha)
     logratio = np.log(a / b)
     w = wilcoxon(logratio, "greater")
     hl_ci = bca(logratio.reshape(-1, 1), lambda x: hodges_lehmann(x[:, 0]),
-                n_resamples=min(n_resamples, 2000), seed=seed, side="two-sided")
+                n_resamples=n_resamples, seed=seed, side="two-sided")
     med = float(np.median(rel))
     delta = delta_t_pct / 100.0
-    return {"n": len(a), "median_relative_reduction": med, "lower_bound_95_one_sided": lb["lower"],
-            "delta_t": delta, "supported_as_preregistered": bool(med >= delta and lb["lower"] > 0),
+    return {"n": len(a), "alpha": alpha, "median_relative_reduction": med,
+            "lower_bound_one_sided": lb["lower"], "lower_bound_95_one_sided": lb["lower"]
+            if alpha == 0.05 else None, "delta_t": delta,
+            "supported_as_preregistered": bool(med >= delta and lb["lower"] > 0),
             "lower_bound_reaches_delta_t": bool(lb["lower"] >= delta),
-            "wilcoxon_log_ratio": w, "hodges_lehmann_ratio": math.exp(hodges_lehmann(logratio)),
+            "wilcoxon_log_ratio": w, "effect_size_rank_biserial": rank_biserial(logratio),
+            "hodges_lehmann_ratio": math.exp(hodges_lehmann(logratio)),
             "hodges_lehmann_ratio_ci95": [math.exp(hl_ci["lower"]), math.exp(hl_ci["upper"])],
+            "bootstrap_resamples": {"median_bound": lb["resamples"],
+                                    "hodges_lehmann_ci": hl_ci["resamples"]},
             "median_minutes": {"manual": float(np.median(a)), "atidep": float(np.median(b))},
             "p_for_holm": w["p"]}
 
 
 # ---- H4: non-inferiority ---------------------------------------------------------------------
 def h4(rubric_manual: list[float], rubric_atidep: list[float], *, delta_q: float,
-       n_resamples: int = 10000, seed: int = 0) -> dict[str, Any]:
+       n_resamples: int = 10000, seed: int = 0, alpha: float = 0.05) -> dict[str, Any]:
     """H4. Paired differences d = B - A in item-level mean blinded rubric score. Non-inferiority:
-    the one-sided 95% lower bound of the mean difference exceeds -delta_q (equivalently the lower
-    arm of TOST at 5%). The t-based bound is primary; the BCa bound is a check."""
+    the one-sided (1 - alpha) lower bound of the mean difference exceeds -delta_q (equivalently
+    the lower arm of TOST at alpha); ``alpha`` is 0.05 on its own and the Holm level inside the
+    confirmatory family. The t-based bound is primary; the BCa bound is a check. The criterion
+    here is unadjusted; the confirmatory verdict also needs Holm's rejection (``run``)."""
     a, b = np.asarray(rubric_manual, float), np.asarray(rubric_atidep, float)
     if len(a) != len(b) or len(a) < 3:
         raise ValueError("H4 needs matched scores for at least three items")
     d = b - a
     n = len(d)
     mean, se = float(d.mean()), float(d.std(ddof=1) / math.sqrt(n))
-    t_crit = float(stats.t.ppf(0.95, n - 1))
+    t_crit = float(stats.t.ppf(1 - alpha, n - 1))
     lower = mean - t_crit * se
     t_stat = (mean + delta_q) / se if se > 0 else math.inf
     p = float(stats.t.sf(t_stat, n - 1)) if se > 0 else (0.0 if mean > -delta_q else 1.0)
     boot = bca(d.reshape(-1, 1), lambda x: float(np.mean(x)), n_resamples=n_resamples, seed=seed,
-               side="lower")
-    return {"n": n, "mean_difference": mean, "se": se, "lower_bound_95_one_sided": lower,
+               side="lower", alpha=alpha)
+    sd = float(d.std(ddof=1))
+    return {"n": n, "alpha": alpha, "mean_difference": mean, "se": se,
+            "lower_bound_one_sided": lower,
+            "lower_bound_95_one_sided": lower if alpha == 0.05 else None,
+            "effect_size_dz": mean / sd if sd > 0 else None,
             "delta_q": delta_q, "non_inferior": bool(lower > -delta_q), "p_tost_lower_arm": p,
             "bca_lower_bound": boot["lower"], "bca_agrees": bool(boot["lower"] > -delta_q) ==
             bool(lower > -delta_q), "p_for_holm": p}

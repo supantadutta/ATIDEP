@@ -187,8 +187,10 @@ def test_the_mixed_model_recovers_the_time_ratio_and_the_order_effect():
 def test_the_first_exposure_comparison_is_unpaired_and_free_of_carry_over():
     r = first_exposure(crossover_frame(n=60, order_effect=0.6), n_resamples=500, seed=1)
     assert r["n_manual_first"] == r["n_atidep_first"] == 30
-    assert r["time_ratio_hl"] == pytest.approx(0.5, abs=0.2) and r["p"] < 0.01
-    assert r["time_ratio_ci95"][0] < r["time_ratio_hl"] < r["time_ratio_ci95"][1]
+    u = r["unstratified"]
+    assert u["time_ratio_hl"] == pytest.approx(0.5, abs=0.2) and u["p"] < 0.01
+    assert u["time_ratio_ci95"][0] < u["time_ratio_hl"] < u["time_ratio_ci95"][1]
+    assert "not_evaluable" in r["stratified"]                 # no categories in this frame
 
 
 # ---- sensitivity and power ---------------------------------------------------------------------------------------
@@ -263,7 +265,7 @@ def test_the_runner_computes_the_confirmatory_family_and_the_secondary_summaries
     adv.write_text('{"conditions": {"B": {"defective": {"n": 40, "escapes": 0}}}}')
     res = run_analysis(make_export(tmp_path), out, adversarial_summary=adv)
     assert res["H1"]["supported_as_preregistered"] and res["H1"]["median_relative_reduction"] > 0.4
-    assert res["H4"]["non_inferior"] and res["items_measured"] == 24
+    assert res["H4"]["non_inferior"] and res["items_with_minutes_in_both_conditions"] == 24
     assert set(res["holm"]) == {"H1", "H4"} and all(v["reject"] for v in res["holm"].values())
     assert res["crossover"]["mixed_model"]["condition_B_vs_A"]["time_ratio"] < 0.7
     assert res["H2"]["post_repair_rate"] == 1.0 and res["H2"]["met"]

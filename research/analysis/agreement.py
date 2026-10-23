@@ -7,7 +7,9 @@ from collections.abc import Hashable, Sequence
 import numpy as np
 
 
-def cohen_kappa(a: Sequence[Hashable], b: Sequence[Hashable]) -> float:
+def cohen_kappa(a: Sequence[Hashable], b: Sequence[Hashable]) -> float | None:
+    """Cohen's kappa, or None when it is undefined: both raters used one single category, so
+    chance agreement is 1 and (po - pe) / (1 - pe) is 0/0. That is not perfect agreement."""
     if len(a) != len(b) or not a:
         raise ValueError("two equal-length, non-empty label lists are needed")
     cats = sorted(set(a) | set(b), key=str)
@@ -18,12 +20,13 @@ def cohen_kappa(a: Sequence[Hashable], b: Sequence[Hashable]) -> float:
     n = m.sum()
     po = np.trace(m) / n
     pe = float(np.sum(m.sum(axis=1) * m.sum(axis=0)) / (n * n))
-    return 1.0 if pe == 1 else float((po - pe) / (1 - pe))
+    return None if pe == 1 else float((po - pe) / (1 - pe))
 
 
 def weighted_kappa(a: Sequence[int], b: Sequence[int], *, categories: Sequence[int] | None = None,
-                   weights: str = "quadratic") -> float:
-    """Weighted kappa for ordinal ratings (the rubric); quadratic weights by default."""
+                   weights: str = "quadratic") -> float | None:
+    """Weighted kappa for ordinal ratings (the rubric); quadratic weights by default. None when
+    it is undefined (no disagreement is possible by chance, for example one score throughout)."""
     cats = list(categories) if categories is not None else sorted(set(a) | set(b))
     k = len(cats)
     ix = {c: i for i, c in enumerate(cats)}
@@ -36,7 +39,7 @@ def weighted_kappa(a: Sequence[int], b: Sequence[int], *, categories: Sequence[i
     w = dist**2 if weights == "quadratic" else dist
     expected = np.outer(m.sum(axis=1), m.sum(axis=0)) / n
     denom = np.sum(w * expected)
-    return 1.0 if denom == 0 else float(1.0 - np.sum(w * m) / denom)
+    return None if denom == 0 else float(1.0 - np.sum(w * m) / denom)
 
 
 def icc_2_1(ratings: np.ndarray) -> float:

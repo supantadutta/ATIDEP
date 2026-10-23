@@ -367,7 +367,7 @@ def bootstrap_bca(measured: Measured, stat, *, n_resamples: int, seed: int,
         return {"valid": False, "reason": "too many resamples were undefined",
                 "undefined_resamples": undefined}
     boots_a = np.array(boots)
-    prop = float(np.mean(boots_a < theta))
+    prop = float(np.mean(boots_a < theta) + 0.5 * np.mean(boots_a == theta))
     z0 = norm.ppf(min(max(prop, 1e-6), 1 - 1e-6))
     jack = []
     for k in range(len(items)):

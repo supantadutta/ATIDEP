@@ -46,7 +46,7 @@ python -m research.economics check --config config            # what cost inputs
 python -m research.dataset check DATASET_DIR --cutoff YYYY-MM-DD --second-labels FILE
 python -m research.freeze make --label prereg-v1 --out research/preregistration/prereg-v1.json
 python -m research.adversarial run --out research/adversarial/results/v0 --freeze research/adversarial/FREEZE.json
-python -m research.analysis run --export EXPORT_DIR --out OUT_DIR --adversarial research/adversarial/results/v0/summary.json
+python -m research.analysis run --export EXPORT_DIR --out OUT_DIR --dataset DATASET_DIR --adversarial research/adversarial/results/v0/summary.json
 python tools/model_probe.py --provider ollama --model NAME --items PILOT_DIR
 python tools/licence_audit.py
 ```
